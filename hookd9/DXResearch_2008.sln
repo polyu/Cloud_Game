@@ -1,0 +1,93 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "loader", "loader\loader.vcproj", "{6185C4CB-468A-4665-B823-7B9E62DF99F0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26BF3555-F333-436A-9148-B12B0BFBC559} = {26BF3555-F333-436A-9148-B12B0BFBC559}
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997} = {0FCC7CCE-E9F7-4F78-9F14-431216C84997}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detours", "detours\detours.vcproj", "{26BF3555-F333-436A-9148-B12B0BFBC559}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "scwlapi", "scwlapi\scwlapi.vcproj", "{0FCC7CCE-E9F7-4F78-9F14-431216C84997}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{0E500875-101E-4CF7-9487-B0F44644B067}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DetourFormatter", "DetourFormatter\DetourFormatter.csproj", "{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blob", "blob\blob.vcproj", "{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{26BF3555-F333-436A-9148-B12B0BFBC559} = {26BF3555-F333-436A-9148-B12B0BFBC559}
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997} = {0FCC7CCE-E9F7-4F78-9F14-431216C84997}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|Win32 = Debug|Win32
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Debug|Win32.Build.0 = Debug|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Release|Any CPU.ActiveCfg = Release|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Release|Win32.ActiveCfg = Release|Win32
+		{6185C4CB-468A-4665-B823-7B9E62DF99F0}.Release|Win32.Build.0 = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Win32.ActiveCfg = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Debug|Win32.Build.0 = Debug|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Any CPU.ActiveCfg = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Win32.ActiveCfg = Release|Win32
+		{26BF3555-F333-436A-9148-B12B0BFBC559}.Release|Win32.Build.0 = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Debug|Win32.Build.0 = Debug|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Any CPU.ActiveCfg = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Win32.ActiveCfg = Release|Win32
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997}.Release|Win32.Build.0 = Release|Win32
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68}.Release|Win32.ActiveCfg = Release|Any CPU
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Debug|Win32.Build.0 = Debug|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Any CPU.ActiveCfg = Release|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Win32.ActiveCfg = Release|Win32
+		{7898EB8B-626E-4FB9-BD4B-23EDE25165A7}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0FCC7CCE-E9F7-4F78-9F14-431216C84997} = {0E500875-101E-4CF7-9487-B0F44644B067}
+		{26BF3555-F333-436A-9148-B12B0BFBC559} = {0E500875-101E-4CF7-9487-B0F44644B067}
+		{F7A78B27-5EBA-4E66-B90F-746BF2DB5D68} = {0E500875-101E-4CF7-9487-B0F44644B067}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,36 @@
+#include "..\\Shares\\ver.inc"
+#include "windows.h"
+
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION COMMON_VERSION
+ PRODUCTVERSION COMMON_VERSION
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080004b0"
+        BEGIN
+            VALUE "FileDescription", "MmsSpy Shell DLL"
+            VALUE "ProductName", "MmsSpy Shell DLL"
+            VALUE "InternalName", "MmsSpy"
+            VALUE "OriginalFilename", "mmsspy.dll"
+            VALUE "CompanyName", COMMON_COMPANY_INC
+            VALUE "LegalCopyright", COMMON_COPYRIGHT_INC
+            VALUE "FileVersion", COMMON_VERSION_INC
+            VALUE "ProductVersion", COMMON_VERSION_INC
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x800, 1200
+    END
+END

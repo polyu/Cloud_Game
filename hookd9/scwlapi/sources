@@ -1,0 +1,38 @@
+TARGETNAME=scwlapi
+TARGETTYPE=LIBRARY
+
+UNICODE=1
+USE_NATIVE_EH=1
+USE_MSVCRT=1
+USE_ATL=1
+ATL_VER=70
+
+C_DEFINES=$(C_DEFINES) -DUNICODE -D_UNICODE
+
+#always have INCLUDES include itself as the first entry because the project sources.inc adds a path to this include. 
+INCLUDES= \
+	$(INCLUDES); \
+	$(SDK_INC_PATH); \
+	$(OBJ_PATH)\$O; \
+	$(BASEDIR)\sdpublic\internal\ds\inc; \
+	..\; \
+
+SOURCES= \
+	System.Diagnostics.Process.cpp \
+	System.Runtime.InteropServices.Marshal.cpp \
+	System.Security.Injection.cpp \
+	System.String.cpp \
+
+TARGETLIBS = $(TARGETLIBS) \
+	$(SDK_LIB_PATH)\kernel32.lib \
+	$(SDK_LIB_PATH)\user32.lib \
+	$(SDK_LIB_PATH)\ole32.lib \
+	$(SDK_LIB_PATH)\oleaut32.lib \
+	$(SDK_LIB_PATH)\Activeds.lib \
+	$(SDK_LIB_PATH)\Advapi32.lib \
+	$(SDK_LIB_PATH)\adsiid.lib \
+	$(SDK_LIB_PATH)\wldap32.lib \
+	$(SDK_LIB_PATH)\Dnsapi.lib \
+	$(SDK_LIB_PATH)\Ws2_32.lib \
+	$(SDK_LIB_PATH)\Ntdsapi.lib \
+	$(SDK_LIB_PATH)\netapi32.Lib \
