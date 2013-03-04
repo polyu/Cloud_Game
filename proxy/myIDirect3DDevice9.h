@@ -7,7 +7,6 @@
 
 #define RESERVEDMEMORY 256
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
-
 #define MAXFPS 30
 
 class myIDirect3DDevice9 : public IDirect3DDevice9
