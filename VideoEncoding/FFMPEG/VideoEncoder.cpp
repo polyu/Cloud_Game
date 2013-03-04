@@ -4,15 +4,8 @@
 VideoEncoder::VideoEncoder()
 {
 
-	//========Debug==========
 	
-			f = fopen("c:/debug.h264", "wb");
-			if (!f) {
-				 fprintf(stderr, "could not open file\n" );
-				
-			}
-			frameCounter=0;
-	//===================
+	frameCounter=0;
 	encodingPerformanceTime=0;
 	lastGetFrameTime=0;
 	lastWidth=0;
@@ -111,9 +104,11 @@ bool VideoEncoder::initVideoCodec()
         printf( "codec not found/n");
 		return false;
     }
-	av_dict_set(&opt, "vprofile", "baseline", 0);
+	
 	av_dict_set(&opt, "tune", "zerolatency", 0);
 	av_dict_set(&opt, "preset","ultrafast",0);
+	av_dict_set(&opt, "vprofile", "main", 0);
+	av_dict_set(&opt,"intra-refresh","1",0);
     c= avcodec_alloc_context();
 	/* put sample parameters */
     c->bit_rate = 300000;
@@ -121,9 +116,9 @@ bool VideoEncoder::initVideoCodec()
     c->width = RWIDTH;
     c->height = RHEIGHT;
     /* frames per second */
-    c->time_base.num = 1; 
-	c->time_base.den = 25;
-    c->gop_size = 10; /* emit one intra frame every ten frames */
+    //c->time_base.num = 1; 
+	//c->time_base.den = 25;
+	c->gop_size=0;
     c->max_b_frames=1;
     c->pix_fmt = PIX_FMT_YUV420P;
 	c->me_range = 16;
@@ -133,11 +128,12 @@ bool VideoEncoder::initVideoCodec()
     c->qcompress = (0.6f);
 	c->refs=1;
 	c->dia_size=1;
-	c->keyint_min=48;
+	c->keyint_min=20;
+	
 	c->thread_type=CODEC_CAP_SLICE_THREADS;
 	c->thread_count=4;
 	c->slices=4;
-	c->slice_count=4;
+	//c->slice_count=4;
     if (avcodec_open2(c, codec,&opt) < 0) 
 	{
         printf( "could not open codec\n");
@@ -155,7 +151,7 @@ void VideoEncoder::debugEncoder(const char *filename)
         fprintf(stderr, "could not open %s/n", filename);
         exit(1);
     }
-	
+	picture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
     /* alloc image and output buffer */
     outbuf_size = 100000;
     outbuf = (uint8_t *)malloc(outbuf_size);
@@ -170,8 +166,8 @@ void VideoEncoder::debugEncoder(const char *filename)
     picture->linesize[2] = c->width / 2;
 	picture->pts=0;
 	long performance=clock();
-    /* encode 1 second of video */
-    for(i=0;i<25;i++) {
+    /* encode 10 second of video */
+    for(i=0;i<250;i++) {
         fflush(stdout);
         /* prepare a dummy image */
         /* Y */
@@ -272,31 +268,13 @@ void VideoEncoder::encodeFrameLoop()
 			int rgb_stride[3]={4*width, 0, 0};
 			sws_scale(img_convert_ctx, rgb_src, rgb_stride, 0, height, picture->data, picture->linesize);
 			//=============Write encoded frame and send=============================
-
-			int  out_size,  outbuf_size;
+			int out_size, outbuf_size;
 			outbuf_size = 100000;
 			if(outbuf==NULL)
 			{
 				outbuf = (uint8_t *)malloc(outbuf_size);
 			}
 			out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
-			if(frameCounter<1000)
-			{
-				fwrite(outbuf,1,out_size,f);
-				frameCounter++;
-				if(frameCounter==1000)
-				{
-					for(; out_size; frameCounter++) {
-					fflush(stdout);
-					out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
-					printf("write frame %3d (size=%5d)\n", frameCounter, out_size);
-					fwrite(outbuf, 1, out_size, f);
-					}
-					fclose(f);
-					printf("Debug Finish\n");
-					return;
-				}
-			}
 			printf("Encoding perfomance:%d\n",1000/(clock()-encodingPerformanceTime));
 			
 			//==========================================
@@ -346,8 +324,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	VideoEncoder encoder;
 	encoder.initEncoder();
-	encoder.encodeFrameLoop();
-	//encoder.debugEncoder("c:/test1.avi");
+	//encoder.encodeFrameLoop();
+	encoder.debugEncoder("c:/test.264");
 	return 0;
 }
 
