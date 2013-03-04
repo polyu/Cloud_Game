@@ -3,6 +3,20 @@
 
 VideoEncoder::VideoEncoder()
 {
+
+	//========Debug==========
+	
+			f = fopen("c:/debug.h264", "wb");
+			if (!f) {
+				 fprintf(stderr, "could not open file\n" );
+				
+			}
+			frameCounter=0;
+	//===================
+	encodingPerformanceTime=0;
+	lastGetFrameTime=0;
+	lastWidth=0;
+	lastHeight=0;
 	lpvMem=NULL;
 	hMapObject=NULL;
 	//=========Remebem to free above var
@@ -10,7 +24,9 @@ VideoEncoder::VideoEncoder()
     c= NULL;
 	picture=NULL;
 	outbuf=NULL;
+	
 	picture_buf=NULL;
+	img_convert_ctx=NULL;
 	//=================================
 	opt = NULL;
 	workingThread=false;
@@ -38,6 +54,8 @@ VideoEncoder::~VideoEncoder()
 		free(outbuf);
 		outbuf=NULL;
 	}
+	
+	removeSwscale();
 	uninstallSharedMemory();
 }
 bool VideoEncoder::isMemoryReadable()
@@ -100,8 +118,8 @@ bool VideoEncoder::initVideoCodec()
 	/* put sample parameters */
     c->bit_rate = 300000;
     /* resolution must be a multiple of two */
-    c->width = 720;
-    c->height = 480;
+    c->width = RWIDTH;
+    c->height = RHEIGHT;
     /* frames per second */
     c->time_base.num = 1; 
 	c->time_base.den = 25;
@@ -125,7 +143,7 @@ bool VideoEncoder::initVideoCodec()
         printf( "could not open codec\n");
         return false;
     }
-	picture= avcodec_alloc_frame();
+	
 	return true;
 }
 void VideoEncoder::debugEncoder(const char *filename)
@@ -137,7 +155,7 @@ void VideoEncoder::debugEncoder(const char *filename)
         fprintf(stderr, "could not open %s/n", filename);
         exit(1);
     }
-
+	
     /* alloc image and output buffer */
     outbuf_size = 100000;
     outbuf = (uint8_t *)malloc(outbuf_size);
@@ -151,6 +169,7 @@ void VideoEncoder::debugEncoder(const char *filename)
     picture->linesize[1] = c->width / 2;
     picture->linesize[2] = c->width / 2;
 	picture->pts=0;
+	long performance=clock();
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
         fflush(stdout);
@@ -172,8 +191,10 @@ void VideoEncoder::debugEncoder(const char *filename)
 
         /* encode the image */
         out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
+		
 		picture->pts ++;
-        printf("encoding frame %3d (size=%5d)/n", i, out_size);
+		printf("encoding frame %3d (size=%5d),FPS:%d\n", i, out_size,1000/(clock()-performance));
+		performance=clock();
         fwrite(outbuf, 1, out_size, f);
     }
 
@@ -182,7 +203,8 @@ void VideoEncoder::debugEncoder(const char *filename)
         fflush(stdout);
 
         out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
-        printf("write frame %3d (size=%5d)/n", i, out_size);
+        printf("write frame %3d (size=%5d)\n", i, out_size);
+		
         fwrite(outbuf, 1, out_size, f);
     }
 	fclose(f);
@@ -209,6 +231,8 @@ void VideoEncoder::encodeFrameLoop()
 	{
 		if(isMemoryReadable())
 		{
+			int fps=1000/(clock()-lastGetFrameTime);
+			lastGetFrameTime=clock();
 			int copySize=0;
 			int height=0;
 			int width=0;
@@ -217,11 +241,70 @@ void VideoEncoder::encodeFrameLoop()
 			memcpy((void *)&height,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height),sizeof(height));
 			memcpy((void *)&width,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*2,sizeof(width));
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
-			printf("%d bytes height:%d width:%d bpp:%d\n",copySize,height,width,bpp);
+			printf("%d bytes height:%d width:%d bpp:%d, FPS:%d\n",copySize,height,width,bpp,fps);
+			if(bpp!=4)
+			{
+				printf("Encoder cannot handle this format\n");
+				return;
+			}
+			encodingPerformanceTime=clock();
+			//===============RGB32toYUV420P===================
+			if(lastWidth!=width||lastHeight!=height)
+			{
+				printf("Swscale Rebuilt\n");
+				lastWidth=width;
+				lastHeight=height;
+				this->removeSwscale();
+				if(!this->setupSwscale(width,height))
+				{
+					printf("Swscale failed\n");
+					return;
+				}
+				if(picture!=NULL)
+				{
+					av_free(picture);
+				}
+				picture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
+
+			}
+			
+			uint8_t *rgb_src[3]={lpvMem,NULL,NULL};
+			int rgb_stride[3]={4*width, 0, 0};
+			sws_scale(img_convert_ctx, rgb_src, rgb_stride, 0, height, picture->data, picture->linesize);
+			//=============Write encoded frame and send=============================
+
+			int  out_size,  outbuf_size;
+			outbuf_size = 100000;
+			if(outbuf==NULL)
+			{
+				outbuf = (uint8_t *)malloc(outbuf_size);
+			}
+			out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
+			if(frameCounter<1000)
+			{
+				fwrite(outbuf,1,out_size,f);
+				frameCounter++;
+				if(frameCounter==1000)
+				{
+					for(; out_size; frameCounter++) {
+					fflush(stdout);
+					out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
+					printf("write frame %3d (size=%5d)\n", frameCounter, out_size);
+					fwrite(outbuf, 1, out_size, f);
+					}
+					fclose(f);
+					printf("Debug Finish\n");
+					return;
+				}
+			}
+			printf("Encoding perfomance:%d\n",1000/(clock()-encodingPerformanceTime));
+			
+			//==========================================
 			setMemoryWritable();
 		}
 		else
 		{
+			//printf("Try to see if i sleep too much");
 			Sleep(1000/MAXFPS);
 		}
 	}
@@ -230,13 +313,41 @@ void VideoEncoder::stopEncode()
 {
 	workingThread=false;
 }
+bool VideoEncoder::setupSwscale(int in_width,int in_height)
+{
+	img_convert_ctx = sws_getContext(in_width, in_height, PIX_FMT_RGB32, 
+	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_POINT, 
+	NULL, NULL, NULL);
+	if(img_convert_ctx == NULL) { 
+	printf( "Cannot initialize the conversion context!\n"); 
+	return false; 
+	}
+	return true;
+}
+void VideoEncoder::removeSwscale()
+{
+	if(img_convert_ctx!=NULL)
+	{
+		sws_freeContext(img_convert_ctx);
+		img_convert_ctx=NULL;
+	}
+	
+}
+AVFrame *VideoEncoder::alloc_picture(enum PixelFormat pix_fmt, int width, int height)
+{
+	AVFrame *picture = avcodec_alloc_frame();
+    if (!picture || avpicture_alloc((AVPicture *)picture, pix_fmt, width, height) < 0)
+        av_freep(&picture);
+    return picture;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	
 	VideoEncoder encoder;
 	encoder.initEncoder();
-	//encoder.encodeFrameLoop();
-	encoder.debugEncoder("c:/test1.avi");
+	encoder.encodeFrameLoop();
+	//encoder.debugEncoder("c:/test1.avi");
 	return 0;
 }
 

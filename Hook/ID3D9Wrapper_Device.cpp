@@ -848,8 +848,8 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 	{
 		DXLOG("SURFLOCAL CREATING");
 		
-		hRes = device->CreateOffscreenPlainSurface( surfaceDesc.Width,
-												surfaceDesc.Height,
+		hRes = device->CreateOffscreenPlainSurface(surfaceDesc.Width,// RWIDTH,
+												surfaceDesc.Height,//RHEIGHT,
 												surfaceDesc.Format,
 												//D3DFMT_X8R8G8B8, //Seems to work best. Using the target surface's doesn't always work
 												D3DPOOL_SYSTEMMEM,
@@ -863,8 +863,9 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 		}
 		
 	}
-	
+
 	device->GetRenderTargetData(pBackBuffer, pSurfLocal);
+	
 	D3DLOCKED_RECT lockedRect;
 	if(FAILED(pSurfLocal->LockRect(&lockedRect, NULL, D3DLOCK_READONLY)))
 	{
@@ -872,25 +873,9 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 			SafeRelease(pBackBuffer);
 			return hRes;
 	}
+	 
 	//================BPP ADJUSTMENT=====================
 	int bpp=4;
-	
-	switch(surfaceDesc.Format)
-	{
-		case D3DFMT_R8G8B8:
-			bpp = 3;
-			break;
-		case D3DFMT_R5G6B5:
-		case D3DFMT_X1R5G5B5:
-			bpp = 2;
-			break;
-		case D3DFMT_A8R8G8B8:
-		case D3DFMT_X8R8G8B8:
-			bpp = 4;
-			break;
-		default:
-			bpp = 4; //Most cards are gonna support A8R8G8B8/X8R8G8B8 anyway
-	}
 	int copySize=surfaceDesc.Width*surfaceDesc.Height*bpp;
 	int surfaceHeight=surfaceDesc.Height;
 	int surfaceWidth=surfaceDesc.Width;

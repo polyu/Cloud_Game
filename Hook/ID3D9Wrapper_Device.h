@@ -7,8 +7,10 @@
 #include "Log.h"
 #include "Utils.h"
 #define RESERVEDMEMORY 256
+#define RHEIGHT 720
+#define RWIDTH 1280
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
-#define MAXFPS 30
+#define MAXFPS 40
 
 //-----------------------------------------------------------------------------------
 //	class:	Direct3DDevice9Wrapper

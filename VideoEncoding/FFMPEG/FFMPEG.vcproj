@@ -133,7 +133,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="avcodec.lib avutil.lib"
+				AdditionalDependencies="avcodec.lib avutil.lib swscale.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"

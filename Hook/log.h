@@ -21,5 +21,6 @@ using namespace std;
 							log.close();}
 #else
 #define LOGFILE(text)
+#define DXLOG(text)	
 #endif
 //===========Log========================
