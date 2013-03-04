@@ -896,7 +896,7 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,(void *)&copySize,sizeof(int));
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height),(void *)&surfaceDesc.Height,sizeof(surfaceDesc.Height));
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height)*2,(void *)&surfaceDesc.Width,sizeof(surfaceDesc.Width));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height)*3,(void *)&surfaceDesc.Format,sizeof(surfaceDesc.Format));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height)*3,(void *)&bpp,sizeof(bpp));
 	memcpy(lpvMem, lockedRect.pBits,copySize);
 	setMemoryReadable();
 	//===================================================

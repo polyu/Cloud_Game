@@ -217,7 +217,13 @@ int _tmain(int argc, _TCHAR* argv[])
 		if(isMemoryReadable())
 		{
 			int copySize=0;
+			int height=0;
+			int width=0;
+			int bpp=0;
 			memcpy((void *)&copySize,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,sizeof(int));
+			memcpy((void *)&height,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height),sizeof(height));
+			memcpy((void *)&width,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*2,sizeof(width));
+			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
 			printf("%d bytes\n",copySize);
 			setMemoryWritable();
 		}
