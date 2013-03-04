@@ -892,11 +892,13 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 			bpp = 4; //Most cards are gonna support A8R8G8B8/X8R8G8B8 anyway
 	}
 	int copySize=surfaceDesc.Width*surfaceDesc.Height*bpp;
+	int surfaceHeight=surfaceDesc.Height;
+	int surfaceWidth=surfaceDesc.Width;
 	//======================Memory Copy=============================
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,(void *)&copySize,sizeof(int));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height),(void *)&surfaceDesc.Height,sizeof(surfaceDesc.Height));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height)*2,(void *)&surfaceDesc.Width,sizeof(surfaceDesc.Width));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(surfaceDesc.Height)*3,(void *)&bpp,sizeof(bpp));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int),(void *)&surfaceHeight,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*2,(void *)&surfaceWidth,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*3,(void *)&bpp,sizeof(int));
 	memcpy(lpvMem, lockedRect.pBits,copySize);
 	setMemoryReadable();
 	//===================================================
