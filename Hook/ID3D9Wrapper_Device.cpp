@@ -793,7 +793,7 @@ void Direct3DDevice9Wrapper::uninstallSharedMemory()
 }
 HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 {
-
+	performanceDebugClock=clock();
 	//===============Memory Check=======================
 	HRESULT hRes = S_FALSE;
 	if(badMemory)
@@ -889,6 +889,7 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 	//===================================================
 	pSurfLocal->UnlockRect();
 	SafeRelease(pBackBuffer);
+	LOGFILE(clock()-performanceDebugClock);
 	return hRes;
 }
 

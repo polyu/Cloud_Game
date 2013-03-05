@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
   videoSink = H264VideoRTPSink::createNew(*env, &rtpGroupsock, 96);
 
   // Create (and start) a 'RTCP instance' for this RTP sink:
-  const unsigned estimatedSessionBandwidth = 500; // in kbps; for RTCP b/w share
+  const unsigned estimatedSessionBandwidth = 5000; // in kbps; for RTCP b/w share
   const unsigned maxCNAMElen = 100;
   unsigned char CNAME[maxCNAMElen+1];
   gethostname((char*)CNAME, maxCNAMElen);

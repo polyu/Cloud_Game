@@ -4,9 +4,10 @@
 #include <windows.h>
 #include <string.h>
 #include <time.h>
+#include "StreamServer.h"
 #define RESERVEDMEMORY 256
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
-#define MAXFPS 60
+#define MAXFPS 200
 #define RHEIGHT 480
 #define RWIDTH 640
 extern "C"
@@ -27,6 +28,7 @@ public:
 	bool initEncoder();
 	void encodeFrameLoop();
 	void stopEncode();
+	void setStreamServer(StreamServer * streamServer);
 	void debugEncoder(const char *filename);
 private:
 BYTE* lpvMem;      // pointer to shared memory
@@ -35,6 +37,7 @@ AVCodec *codec;
 AVCodecContext *c;
 AVFrame *picture;
 AVDictionary* opt;
+StreamServer * streamServer;
 SwsContext *img_convert_ctx; 
 uint8_t *outbuf, *picture_buf;
 int frameCounter;
@@ -48,7 +51,9 @@ bool setupSharedMemory();
 bool isMemoryReadable();
 void setMemoryWritable();
 bool initVideoCodec();
-long lastGetFrameTime;
+void removeVideoCodec();
+
 long encodingPerformanceTime;
 FILE *f;
+
 };

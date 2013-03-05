@@ -133,7 +133,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="avcodec.lib avutil.lib swscale.lib"
+				AdditionalDependencies="avcodec.lib avutil.lib swscale.lib Ws2_32.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -173,7 +173,15 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\main.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StreamServer.cpp"
 				>
 			</File>
 			<File
@@ -188,6 +196,10 @@
 			>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\StreamServer.h"
 				>
 			</File>
 			<File

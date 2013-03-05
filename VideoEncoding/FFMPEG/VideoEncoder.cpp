@@ -3,11 +3,15 @@
 
 VideoEncoder::VideoEncoder()
 {
-
-	
+	/*
+	f = fopen("c:/record.avi", "wb");
+    if (!f) {
+        fprintf(stderr, "could not open /n");
+       
+    }*/
 	frameCounter=0;
 	encodingPerformanceTime=0;
-	lastGetFrameTime=0;
+	
 	lastWidth=0;
 	lastHeight=0;
 	lpvMem=NULL;
@@ -17,11 +21,11 @@ VideoEncoder::VideoEncoder()
     c= NULL;
 	picture=NULL;
 	outbuf=NULL;
-	
 	picture_buf=NULL;
 	img_convert_ctx=NULL;
 	//=================================
 	opt = NULL;
+	streamServer=NULL;
 	workingThread=false;
 }
 VideoEncoder::~VideoEncoder()
@@ -50,6 +54,10 @@ VideoEncoder::~VideoEncoder()
 	
 	removeSwscale();
 	uninstallSharedMemory();
+}
+void VideoEncoder::setStreamServer(StreamServer * streamServer)
+{
+	this->streamServer=streamServer;
 }
 bool VideoEncoder::isMemoryReadable()
 {
@@ -106,20 +114,22 @@ bool VideoEncoder::initVideoCodec()
     }
 	
 	av_dict_set(&opt, "tune", "zerolatency", 0);
-	av_dict_set(&opt, "preset","ultrafast",0);
-	av_dict_set(&opt, "vprofile", "main", 0);
+	//av_dict_set(&opt, "vprofile", "main", 0);
+	av_dict_set(&opt, "preset","faster",0);
+	
 	av_dict_set(&opt,"intra-refresh","1",0);
     c= avcodec_alloc_context();
 	/* put sample parameters */
-    c->bit_rate = 300000;
+    c->bit_rate = 3000000;
     /* resolution must be a multiple of two */
     c->width = RWIDTH;
     c->height = RHEIGHT;
     /* frames per second */
-    //c->time_base.num = 1; 
-	//c->time_base.den = 25;
+    c->time_base.num = 1; 
+	c->time_base.den = 25;
 	c->gop_size=0;
-    c->max_b_frames=1;
+
+	c->max_b_frames=0;
     c->pix_fmt = PIX_FMT_YUV420P;
 	c->me_range = 16;
     c->max_qdiff = 4;
@@ -127,12 +137,16 @@ bool VideoEncoder::initVideoCodec()
     c->qmax = 51;
     c->qcompress = (0.6f);
 	c->refs=1;
-	c->dia_size=1;
-	c->keyint_min=20;
-	
-	c->thread_type=CODEC_CAP_SLICE_THREADS;
+	//c->dia_size=1;
+	c->keyint_min=46;
+	c->active_thread_type= FF_THREAD_SLICE;
+	c->thread_type=FF_THREAD_SLICE;
 	c->thread_count=4;
 	c->slices=4;
+	
+	c->rc_max_rate=8500000;
+	c->rc_buffer_size=350000;
+	
 	//c->slice_count=4;
     if (avcodec_open2(c, codec,&opt) < 0) 
 	{
@@ -225,10 +239,10 @@ void VideoEncoder::encodeFrameLoop()
 {
 	while(workingThread)
 	{
-		if(isMemoryReadable())
+		if(isMemoryReadable()&&streamServer!=NULL)
 		{
-			int fps=1000/(clock()-lastGetFrameTime);
-			lastGetFrameTime=clock();
+			encodingPerformanceTime=clock();
+			
 			int copySize=0;
 			int height=0;
 			int width=0;
@@ -237,13 +251,13 @@ void VideoEncoder::encodeFrameLoop()
 			memcpy((void *)&height,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height),sizeof(height));
 			memcpy((void *)&width,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*2,sizeof(width));
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
-			printf("%d bytes height:%d width:%d bpp:%d, FPS:%d\n",copySize,height,width,bpp,fps);
+			printf("%d bytes height:%d width:%d bpp:%d\n",copySize,height,width,bpp);
 			if(bpp!=4)
 			{
 				printf("Encoder cannot handle this format\n");
 				return;
 			}
-			encodingPerformanceTime=clock();
+			
 			//===============RGB32toYUV420P===================
 			if(lastWidth!=width||lastHeight!=height)
 			{
@@ -275,7 +289,25 @@ void VideoEncoder::encodeFrameLoop()
 				outbuf = (uint8_t *)malloc(outbuf_size);
 			}
 			out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
-			printf("Encoding perfomance:%d\n",1000/(clock()-encodingPerformanceTime));
+			/*
+			if(frameCounter<1000)
+			{
+				fwrite(outbuf, 1, out_size, f);
+				frameCounter++;
+				if(frameCounter==1000)
+				{
+					for(; out_size; frameCounter++) {
+					fflush(stdout);
+					out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
+					printf("write frame %3d (size=%5d)\n", frameCounter, out_size);
+					fwrite(outbuf, 1, out_size, f);
+					}
+					fclose(f);
+					return;
+				}
+			}*/
+			streamServer->sendPacket((char*)(outbuf),out_size);
+			printf("Encoding perfomance:%f\n",(float)1000/(clock()-encodingPerformanceTime));
 			
 			//==========================================
 			setMemoryWritable();
@@ -319,13 +351,5 @@ AVFrame *VideoEncoder::alloc_picture(enum PixelFormat pix_fmt, int width, int he
     return picture;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
-{
-	
-	VideoEncoder encoder;
-	encoder.initEncoder();
-	//encoder.encodeFrameLoop();
-	encoder.debugEncoder("c:/test.264");
-	return 0;
-}
+
 

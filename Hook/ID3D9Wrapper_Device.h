@@ -168,5 +168,5 @@ private:
 	long lastRecordTime;
 	bool isMemoryWritable();
 	void setMemoryReadable();
-	
+	long performanceDebugClock;
 };
