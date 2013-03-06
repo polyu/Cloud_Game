@@ -18,5 +18,6 @@ private:
 	int port;
 	SOCKET sock_fd;
 	sockaddr_in remote; 
+	int sendFrame;
 
 };

@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="avcodec.lib avutil.lib"
+				AdditionalDependencies="avcodec.lib avutil.lib Ws2_32.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -133,10 +133,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="avcodec.lib avutil.lib swscale.lib Ws2_32.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="1"
-				OptimizeReferences="2"
+				OptimizeReferences="1"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
 			/>
@@ -172,11 +173,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\ffmpegdecode.cpp"
+				RelativePath=".\main.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Player.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\stdafx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StreamClient.cpp"
 				>
 			</File>
 		</Filter>
@@ -186,7 +195,15 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Player.h"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\StreamClient.h"
 				>
 			</File>
 			<File

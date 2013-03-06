@@ -15,8 +15,13 @@ extern "C"
 #ifdef HAVE_AV_CONFIG_H
 #undef HAVE_AV_CONFIG_H
 #endif
+#include <libavutil/opt.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/common.h>
+#include <libavutil/imgutils.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/samplefmt.h>
 #include <libswscale/swscale.h>
 }
 
@@ -36,10 +41,10 @@ HANDLE hMapObject;
 AVCodec *codec;
 AVCodecContext *c;
 AVFrame *picture;
-AVDictionary* opt;
+AVPacket pkt;
 StreamServer * streamServer;
 SwsContext *img_convert_ctx; 
-uint8_t *outbuf, *picture_buf;
+uint8_t *picture_buf;
 int frameCounter;
 int lastWidth,lastHeight;
 bool workingThread;
@@ -52,7 +57,7 @@ bool isMemoryReadable();
 void setMemoryWritable();
 bool initVideoCodec();
 void removeVideoCodec();
-
+void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize, char *filename);
 long encodingPerformanceTime;
 FILE *f;
 

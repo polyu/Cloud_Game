@@ -3,9 +3,12 @@ StreamServer::StreamServer()
 {
 	this->port=DEFAULT_PORT;
 	sock_fd=-1;
+	sendFrame=0;
 }
 StreamServer::~StreamServer()
 {
+	if(sock_fd!=-1)
+		closesocket(sock_fd);
 	WSACleanup();
 }
 void StreamServer::setLocalPort(int port)
@@ -23,7 +26,8 @@ bool StreamServer::sendPacket(char* buf, int size)
 	int sendSize=sendto(sock_fd, buf, size, 0, (struct sockaddr *)&remote, sizeof(remote));
 	if( sendSize!= SOCKET_ERROR)
 	{
-		printf("Send packet in data %d:%d\n",sendSize,size);
+		sendFrame++;
+		printf("Send %d pieces packet in data %d\n",sendFrame,sendSize);
 		return true;
 	}
 	else
@@ -34,6 +38,7 @@ bool StreamServer::sendPacket(char* buf, int size)
 }
 bool StreamServer::startServer()
 {
+	
 	int iResult;
 	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (iResult != 0) 
