@@ -5,6 +5,7 @@
 #ifdef main
 #undef main
 #endif 
+#define GUISLEEPTIME 5
 #define DEFAULTPORT 1234
 
 int main(int argv,char **argc)
@@ -32,7 +33,7 @@ int main(int argv,char **argc)
                         SDL_GetError());
         exit(1);
     }
-	SDL_Overlay *screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_YV12_OVERLAY,screen);
+	SDL_Overlay *screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_IYUV_OVERLAY,screen);
 	bool quitFlag=false;
 	SDL_Event event;
 	SDL_Rect        rect;  
@@ -40,23 +41,32 @@ int main(int argv,char **argc)
 	AVFrame* frame;
 	while(!quitFlag)
 	{
-		 if(recvData(data))
-		 {
+		 Sleep(GUISLEEPTIME);
+		if(recvData(data))
+		{
 			if(decode_frame(data,&frame))
 			{
-				 SDL_LockYUVOverlay(screenOverlay);
-				 screenOverlay->pixels[0]=frame->data[0];
-				 screenOverlay->pixels[1]=frame->data[1];
-				 screenOverlay->pixels[2]=frame->data[2];
-				 screenOverlay->pitches[0]=frame->linesize[0];
-				 screenOverlay->pitches[1]=frame->linesize[1];
-				 screenOverlay->pitches[2]=frame->linesize[2];
-				 SDL_UnlockYUVOverlay(screenOverlay);
-				 rect.w = RWIDTH;  
-                 rect.h = RHEIGHT;  
-                 SDL_DisplayYUVOverlay(screenOverlay, &rect);
+				
+					SDL_LockYUVOverlay(screenOverlay);
+					
+					screenOverlay->pixels[0]=frame->data[0];
+					screenOverlay->pixels[1]=frame->data[1];
+					screenOverlay->pixels[2]=frame->data[2];
+					screenOverlay->pitches[0]=frame->linesize[0];
+					screenOverlay->pitches[1]=frame->linesize[1];
+					screenOverlay->pitches[2]=frame->linesize[2];
+					rect.w = RWIDTH;  
+					rect.h = RHEIGHT;  
+					rect.x=0;
+					rect.y=0;
+					SDL_DisplayYUVOverlay(screenOverlay, &rect);
+					SDL_UnlockYUVOverlay(screenOverlay);
+					
+					
 			}
-		 }
+			free(data.first);
+							
+		}
 		 while( SDL_PollEvent( &event ) )
 		 {
                 switch( event.type )
@@ -70,7 +80,8 @@ int main(int argv,char **argc)
                         quitFlag = true;
                         break;
                     default:
-                        break;
+                      
+						break;
 				 }
 		 }
 	}

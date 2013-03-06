@@ -64,9 +64,9 @@ static void recvWorker(void *)
 {
 	while(true)
 	{
-		recvFrame++;
-		int recvSize=recvfrom(sock_fd, recvBuf, RECVBUFSIZE, 0, (SOCKADDR *)&remoteAddr, &remoteAddrLen);
 		
+		int recvSize=recvfrom(sock_fd, recvBuf, RECVBUFSIZE, 0, (SOCKADDR *)&remoteAddr, &remoteAddrLen);
+		recvFrame++;
 		printf("Geting %d pieces %d bytes from server\n",recvFrame,recvSize);
 		if(recvSize==-1)
 		{

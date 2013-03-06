@@ -47,8 +47,6 @@ VideoEncoder::~VideoEncoder()
 		free(picture_buf);
 		picture_buf=NULL;
 	}
-
-	
 	removeSwscale();
 	uninstallSharedMemory();
 }
@@ -145,7 +143,7 @@ bool VideoEncoder::initVideoCodec()
 	c->rc_buffer_size=200000;
 	av_opt_set(c->priv_data, "tune", "zerolatency", 0);
 	//av_dict_set(c->priv_data, "vprofile", "main", 0);
-	av_opt_set(c->priv_data, "preset","ultrafast",0);
+	av_opt_set(c->priv_data, "preset","veryfast",0);
 	av_opt_set(c->priv_data,"intra-refresh","1",0);
 	//c->slice_count=4;
     if (avcodec_open2(c, codec,NULL) < 0) 
@@ -341,9 +339,7 @@ void VideoEncoder::encodeFrameLoop()
 				{
 					printf("Swscale failed\n");
 					return;
-				}
-				
-				
+				}	
 
 			}
 			if(picture==NULL)
@@ -362,23 +358,7 @@ void VideoEncoder::encodeFrameLoop()
 			pkt.size = 0;
 			
 			ret = avcodec_encode_video2(c, &pkt, picture,&getOutput);
-			/*
-			if(frameCounter<1000)
-			{
-				fwrite(outbuf, 1, out_size, f);
-				frameCounter++;
-				if(frameCounter==1000)
-				{
-					for(; out_size; frameCounter++) {
-					fflush(stdout);
-					out_size = avcodec_encode_video(c, outbuf, outbuf_size, NULL);
-					printf("write frame %3d (size=%5d)\n", frameCounter, out_size);
-					fwrite(outbuf, 1, out_size, f);
-					}
-					fclose(f);
-					return;
-				}
-			}*/
+		
 			if (ret < 0) 
 			{
 				printf("Error encoding frame!Found A way to deal!\n");
@@ -439,7 +419,6 @@ void VideoEncoder::pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
 {
     FILE *f;
     int i;
-
     f=fopen(filename,"w");
     fprintf(f,"P5\n%d %d\n%d\n",xsize,ysize,255);
     for(i=0;i<ysize;i++)
