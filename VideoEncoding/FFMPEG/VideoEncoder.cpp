@@ -115,9 +115,9 @@ bool VideoEncoder::initVideoCodec()
 	
 	av_dict_set(&opt, "tune", "zerolatency", 0);
 	//av_dict_set(&opt, "vprofile", "main", 0);
-	av_dict_set(&opt, "preset","faster",0);
-	
+	av_dict_set(&opt, "preset","ultrafast",0);
 	av_dict_set(&opt,"intra-refresh","1",0);
+	
     c= avcodec_alloc_context();
 	/* put sample parameters */
     c->bit_rate = 3000000;
@@ -125,20 +125,18 @@ bool VideoEncoder::initVideoCodec()
     c->width = RWIDTH;
     c->height = RHEIGHT;
     /* frames per second */
-    c->time_base.num = 1; 
-	c->time_base.den = 25;
+    
 	c->gop_size=0;
-
 	c->max_b_frames=0;
     c->pix_fmt = PIX_FMT_YUV420P;
 	c->me_range = 16;
     c->max_qdiff = 4;
     c->qmin = 10;
     c->qmax = 51;
-    c->qcompress = (0.6f);
+    c->qcompress = (0.7f);
 	c->refs=1;
 	//c->dia_size=1;
-	c->keyint_min=46;
+	//c->keyint_min=46;
 	c->active_thread_type= FF_THREAD_SLICE;
 	c->thread_type=FF_THREAD_SLICE;
 	c->thread_count=4;
@@ -237,12 +235,14 @@ bool VideoEncoder::initEncoder()
 }
 void VideoEncoder::encodeFrameLoop()
 {
+	
 	while(workingThread)
 	{
 		if(isMemoryReadable()&&streamServer!=NULL)
 		{
-			encodingPerformanceTime=clock();
 			
+			encodingPerformanceTime=clock();
+			int fps=1000/(clock()-encodingPerformanceTime);
 			int copySize=0;
 			int height=0;
 			int width=0;
@@ -251,7 +251,7 @@ void VideoEncoder::encodeFrameLoop()
 			memcpy((void *)&height,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height),sizeof(height));
 			memcpy((void *)&width,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*2,sizeof(width));
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
-			printf("%d bytes height:%d width:%d bpp:%d\n",copySize,height,width,bpp);
+			printf("%d bytes height:%d width:%d bpp:%d FPS:%d\n",copySize,height,width,bpp,fps);
 			if(bpp!=4)
 			{
 				printf("Encoder cannot handle this format\n");

@@ -17,162 +17,170 @@ extern "C"
 #endif
 #include <libavcodec/avcodec.h>
 #include <libavutil/mathematics.h>
+#include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
-static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
-                     char *filename)
-{
-    FILE *f;
-    int i;
+#include <stdlib.h>
+#include <time.h>
+#include <stdio.h>
 
-    f=fopen(filename,"w");
-    fprintf(f,"P5\n%d %d\n%d\n",xsize,ysize,255);
-    for(i=0;i<ysize;i++)
-        fwrite(buf + i * wrap,1,xsize,f);
-    fclose(f);
+static bool GetNextFrame(AVFormatContext *pFormatCtx, AVCodecContext *pCodecCtx,int videoStream, AVFrame *pFrame)
+{
+   static AVPacket packet;
+   static int      bytesRemaining=0;
+   static uint8_t  *rawData;
+   static bool     fFirstTime=true;
+   int             bytesDecoded;
+   int             frameFinished;
+   // First time we're called, set packet.data to NULL to indicate it
+   // doesn't have to be freed
+   if (fFirstTime){
+       fFirstTime = false;
+       packet.data = NULL;
+   }
+   // Decode packets until we have decoded a complete frame
+   while (true)
+   {
+	   av_read_frame();
+       // Work on the current packet until we have decoded all of it
+       while (bytesRemaining > 0)
+       {
+           // Decode the next chunk of data
+           bytesDecoded = avcodec_decode_video2(pCodecCtx, pFrame,
+               &frameFinished, rawData, bytesRemaining);
+           // Was there an error?
+           if (bytesDecoded < 0){
+               fprintf(stderr, "Error while decoding frame\n");
+               return false;
+           }
+           bytesRemaining -= bytesDecoded;
+           rawData += bytesDecoded;
+           // Did we finish the current frame? Then we can return
+           if (frameFinished)
+               return true;
+       }
+       // Read the next packet, skipping all packets that aren't for this
+       // stream
+       do{
+           // Free old packet
+           if(packet.data != NULL)
+               av_free_packet(&packet);
+           // Read new packet
+           if(av_read_packet(pFormatCtx, &packet) < 0)
+               goto loop_exit;
+       } while(packet.stream_index != videoStream);
+       bytesRemaining = packet.size;
+       rawData = packet.data;
+   }
+loop_exit:
+   // Decode the rest of the last frame
+   bytesDecoded = avcodec_decode_video(pCodecCtx, pFrame, &frameFinished, 
+               rawData, bytesRemaining);
+   // Free last packet
+   if(packet.data != NULL)
+       av_free_packet(&packet);
+   return frameFinished != 0;
 }
-
-static void video_decode_example(const char *outfilename, const char *filename)
+int main()
 {
-    AVCodec *codec;
-    AVCodecContext *c= NULL;
-    int frame, got_picture, len;
-    FILE *f;
-    AVFrame *picture;
-    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
-    char buf[1024];
-    AVPacket avpkt;
-
-    av_init_packet(&avpkt);
-
-    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
-    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-
-    printf("Video decoding\n");
-
-    /* find the mpeg1 video decoder */
-    codec = avcodec_find_decoder(CODEC_ID_H264);
-    if (!codec) {
-        fprintf(stderr, "codec not found\n");
-        exit(1);
+   AVFormatContext *pFormatCtx;
+   int             i, videoStream;
+   AVCodecContext  *pCodecCtx;
+   AVCodec         *pCodec;
+   AVFrame         *pFrame; 
+   AVFrame         *pFrameYUV;
+   clock_t         t;
+   double          fps;
+   int                y_size, i_frame=0;
+   int                numBytes;
+   uint8_t         *buffer;        
+   char* infile="test.264";
+   char* outfile="out.yuv";
+   FILE* fp=fopen(outfile, "wb");
+   if (fp==NULL){
+           fprintf(stderr, "\nCan't open file %s!", infile);
+           return -1;
     }
-
-    c= avcodec_alloc_context();
-	
-	c->bit_rate = 300000;
-	 c->pix_fmt = PIX_FMT_YUV420P;
-    /* resolution must be a multiple of two */
-    c->width = RWIDTH;
-    c->height = RHEIGHT;
-	c->coded_width=RWIDTH;
-	c->coded_height=RHEIGHT;
-	c->thread_count=4;
-	c->slices=4;
-	c->time_base.num = 1; 
-	c->time_base.den = 25;
-    picture= avcodec_alloc_frame();
-
-    
-
-    /* For some codecs, such as msmpeg4 and mpeg4, width and height
-       MUST be initialized there because this information is not
-       available in the bitstream. */
-
-    /* open it */
-    if (avcodec_open(c, codec) < 0) {
-        fprintf(stderr, "could not open codec\n");
-        exit(1);
-    }
-
-    /* the codec gives us the frame size, in samples */
-
-    f = fopen(filename, "rb");
-    if (!f) {
-        fprintf(stderr, "could not open %s\n", filename);
-        exit(1);
-    }
-
-    frame = 0;
-    for(;;) {
-        avpkt.size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (avpkt.size == 0)
-            break;
-		/*if (av_read_frame(c, &avpkt) < 0)
-		{
-			continue;
-		}*/
-        /* NOTE1: some codecs are stream based (mpegvideo, mpegaudio)
-           and this is the only method to use them because you cannot
-           know the compressed data size before analysing it.
-
-           BUT some other codecs (msmpeg4, mpeg4) are inherently frame
-           based, so you must call them with all the data for one
-           frame exactly. You must also initialize 'width' and
-           'height' before initializing them. */
-
-        /* NOTE2: some codecs allow the raw parameters (frame size,
-           sample rate) to be changed at any frame. We handle this, so
-           you should also take care of it */
-
-        /* here, we use a stream based decoder (mpeg1video), so we
-           feed decoder and see if it could decode a frame */
-        avpkt.data = inbuf;
-        while (avpkt.size > 0) {
-            len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
-            if (len < 0) {
-                fprintf(stderr, "Error while decoding frame %d\n", frame);
-                exit(1);
+   // Register all formats and codecs
+   av_register_all();
+   // Open video file
+   if (av_open_input_file(&pFormatCtx, infile, NULL, 0, NULL) != 0)
+       return -1; // Couldn't open file
+   // Retrieve stream information
+   if (av_find_stream_info(pFormatCtx) < 0)
+       return -1; // Couldn't find stream information
+   // Dump information about file onto standard error
+   dump_format(pFormatCtx, 0, infile, false);
+    t = clock();       
+   // Find the first video stream
+   videoStream = -1;
+   for (i=0; i<pFormatCtx->nb_streams; i++)
+       if(pFormatCtx->streams[/*此处不隔开，后面的字体全部是斜体*/i]->codec->codec_type == CODEC_TYPE_VIDEO){
+           videoStream=i;
+           break;
+       }
+   if (videoStream == -1)
+       return -1; // Didn't find a video stream
+   // Get a pointer to the codec context for the video stream
+   pCodecCtx = pFormatCtx->streams[videoStream]->codec;
+   // Find the decoder for the video stream
+   pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+   if (pCodec == NULL)
+       return -1; // Codec not found
+   // Inform the codec that we can handle truncated bitstreams -- i.e.,
+   // bitstreams where frame boundaries can fall in the middle of packets
+   if(pCodec->capabilities & CODEC_CAP_TRUNCATED)
+       pCodecCtx->flags|=CODEC_FLAG_TRUNCATED;
+   // Open codec
+   if (avcodec_open(pCodecCtx, pCodec) < 0)
+       return -1; // Could not open codec
+   // Allocate video frame
+   pFrame = avcodec_alloc_frame();
+  // Allocate an AVFrame structure
+   pFrameYUV=avcodec_alloc_frame();
+   if(pFrameYUV == NULL)
+       return -1;        
+   // Determine required buffer size and allocate buffer
+   numBytes=avpicture_get_size(PIX_FMT_YUV420P, pCodecCtx->width,
+       pCodecCtx->height);
+   buffer = (uint8_t*)malloc(numBytes);        
+   // Assign appropriate parts of buffer to image planes in pFrameRGB
+   avpicture_fill((AVPicture *)pFrameYUV, buffer, PIX_FMT_YUV420P,
+       pCodecCtx->width, pCodecCtx->height);
+   // Read frames
+   while(GetNextFrame(pFormatCtx, pCodecCtx, videoStream, pFrame))
+     {        
+           img_convert((AVPicture *)pFrameYUV, PIX_FMT_YUV420P, (AVPicture*)pFrame, 
+                               pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);                
+            i_frame++;
+            y_size = pCodecCtx->width * pCodecCtx->height;                
+#if 1
+           if (i_frame==1) //only output onr time
+           {
+       printf("\n:lolpFrame->linesize[0]=%d, pFrame->linesize[1]=%d, pFrame->linesize[2]=%d!\n",
+                pFrame->linesize[0], pFrame->linesize[1], pFrame->linesize[2]);
+       printf("\n:lolpFrameYUV->linesize[0]=%d, pFrameYUV->linesize[1]=%d, pFrameYUV->linesize[2]=%d!",
+               pFrameYUV->linesize[0], pFrameYUV->linesize[1], pFrameYUV->linesize[2]);
             }
-            if (got_picture) {
-                printf("saving frame %3d\n", frame);
-                fflush(stdout);
-
-                /* the picture is allocated by the decoder. no need to
-                   free it */
-                _snprintf(buf, sizeof(buf), outfilename, frame);
-                pgm_save(picture->data[0], picture->linesize[0],
-                         c->width, c->height, buf);
-                frame++;
-            }
-            avpkt.size -= len;
-            avpkt.data += len;
-        }
-    }
-
-    /* some codecs, such as MPEG, transmit the I and P frame with a
-       latency of one frame. You must do the following to have a
-       chance to get the last frame of the video */
-    avpkt.data = NULL;
-    avpkt.size = 0;
-    len = avcodec_decode_video2(c, picture, &got_picture, &avpkt);
-    if (got_picture) {
-        printf("saving last frame %3d\n", frame);
-        fflush(stdout);
-
-        /* the picture is allocated by the decoder. no need to
-           free it */
-        _snprintf(buf, sizeof(buf), outfilename, frame);
-        pgm_save(picture->data[0], picture->linesize[0],
-                 c->width, c->height, buf);
-        frame++;
-    }
-
-    fclose(f);
-
-    avcodec_close(c);
-    av_free(c);
-    av_free(picture);
-    printf("\n");
+#endif                
+            fwrite(pFrameYUV->data[0], 1, y_size, fp);
+            fwrite(pFrameYUV->data[1], 1, (y_size/4), fp);
+            fwrite(pFrameYUV->data[2], 1, (y_size/4), fp);
+      }
+    //calculate decode rate
+    fclose(fp);
+    t = clock() - t;
+    fps = (double)(t) / CLOCKS_PER_SEC;
+    fps = i_frame / fps;
+    printf("\n==>Decode rate %.4f fps!\n", fps);   
+   // Free the YUV image
+   free(buffer);
+   av_free(pFrameYUV);
+   // Free the YUV frame
+   av_free(pFrame);
+   // Close the codec
+   avcodec_close(pCodecCtx);
+   // Close the video file
+   av_close_input_file(pFormatCtx);
+   return 0;
 }
-
-int main(int argc, char **argv)
-{
-    
-    avcodec_register_all();
-
-    //    audio_decode_example("/tmp/test.sw", filename);
-	video_decode_example("c:/pgm/test%d.pgm", "c:/test.264");
-
-    return 0;
-}
-
