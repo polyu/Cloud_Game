@@ -38,7 +38,8 @@ VideoEncoder::~VideoEncoder()
 	}
 	if(picture!=NULL)
 	{
-		av_free(picture);
+		av_freep(&picture->data[0]);
+		avcodec_free_frame(&picture);
 		picture=NULL;
 	}
 	if(picture_buf!=NULL)
@@ -140,8 +141,8 @@ bool VideoEncoder::initVideoCodec()
 	c->thread_count=4;
 	c->slices=4;
 	
-	c->rc_max_rate=8500000;
-	c->rc_buffer_size=350000;
+	c->rc_max_rate=5000000;
+	c->rc_buffer_size=200000;
 	av_opt_set(c->priv_data, "tune", "zerolatency", 0);
 	//av_dict_set(c->priv_data, "vprofile", "main", 0);
 	av_opt_set(c->priv_data, "preset","ultrafast",0);
@@ -341,16 +342,14 @@ void VideoEncoder::encodeFrameLoop()
 					printf("Swscale failed\n");
 					return;
 				}
-				if(picture!=NULL)
-				{
-					  av_freep(&picture->data[0]);
-					 avcodec_free_frame(&picture);
-					
-				}
-				picture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
+				
+				
 
 			}
-			
+			if(picture==NULL)
+			{
+				picture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
+			}
 			uint8_t *rgb_src[3]={lpvMem,NULL,NULL};
 			int rgb_stride[3]={4*width, 0, 0};
 			sws_scale(img_convert_ctx, rgb_src, rgb_stride, 0, height, picture->data, picture->linesize);

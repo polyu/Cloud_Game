@@ -1,7 +1,7 @@
 #include "StreamClient.h"
 static WSADATA wsaData;
 static sockaddr_in localAddr;
-static int localPort=DEFAULT_PORT;
+static int localPort;
 static SOCKET sock_fd=-1;
 static sockaddr_in remoteAddr; 
 static int remoteAddrLen=sizeof(remoteAddr);
@@ -16,11 +16,7 @@ void cleanUpStreamClient()
 		closesocket(sock_fd);
 	WSACleanup();
 }
-void setLocalPort(int port)
-{
-	localPort=port;
-}
-bool setupStreamClient()
+bool setupStreamClient(int port)
 {
 	g_hMutex = CreateMutex(NULL, FALSE, L"Mutex");
 	if (!g_hMutex)  
@@ -35,6 +31,7 @@ bool setupStreamClient()
 		printf("WSAStartup failed: %d\n", iResult);
 		return false;
 	}
+	localPort=port;
 	int len = sizeof(struct sockaddr_in);  
 	localAddr.sin_family = AF_INET;  
 	localAddr.sin_port = htons(localPort); /* ¼àÌý¶Ë¿Ú */  
