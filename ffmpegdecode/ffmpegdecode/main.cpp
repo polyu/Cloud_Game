@@ -1,26 +1,20 @@
 #include "stdafx.h"
 #include "StreamClient.h"
-#include "Decoder.h"
 #include <SDL.h>
 #ifdef main
 #undef main
 #endif 
-#define GUISLEEPTIME 5
-#define DEFAULTPORT 1234
+
 
 int main(int argv,char **argc)
 {
-	if(!setupStreamClient(DEFAULTPORT))
+	StreamClient client;
+	client.startClient();
+	while(true)
 	{
-		printf("Could not initialize NETWORK!.\n");
-        exit(-1);
+		Sleep(1000);
 	}
-	if(!initDecoder())
-	{
-		printf("Could not initialize Decoder!.\n");
-        exit(-1);
-	}
-	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
+	/*if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
         printf("Could not initialize SDL: %s.\n", SDL_GetError());
         exit(-1);
@@ -42,7 +36,7 @@ int main(int argv,char **argc)
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
-		if(recvData(data))
+		/*if(recvData(data))
 		{
 			if(decode_frame(data,&frame))
 			{
@@ -66,8 +60,8 @@ int main(int argv,char **argc)
 			}
 			free(data.first);
 							
-		}
-		 while( SDL_PollEvent( &event ) )
+		}*/
+		 /*while( SDL_PollEvent( &event ) )
 		 {
                 switch( event.type )
 				{
@@ -85,5 +79,5 @@ int main(int argv,char **argc)
 				 }
 		 }
 	}
-	return 0;
+	return 0;*/
 }

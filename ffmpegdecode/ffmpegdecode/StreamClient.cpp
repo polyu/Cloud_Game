@@ -1,108 +1,127 @@
 #include "StreamClient.h"
-static WSADATA wsaData;
-static sockaddr_in localAddr;
-static int localPort;
-static SOCKET sock_fd=-1;
-static sockaddr_in remoteAddr; 
-static int remoteAddrLen=sizeof(remoteAddr);
-static HANDLE g_hMutex = INVALID_HANDLE_VALUE;  
-static void recvWorker(void *);
-static char recvBuf[RECVBUFSIZE];
-static queue< pair<char*,int> > bufQueue;
-int recvFrame=0;
-void cleanUpStreamClient()
+StreamClient::StreamClient()
 {
-	if(sock_fd!=-1)
-		closesocket(sock_fd);
-	WSACleanup();
+	this->localPort=DEFAULT_PORT;
+	this->fmt=0;
+	this->oc=0;
+	this->audio_st=0;
+	this->video_st=0;
+	this->audio_codec=0;
+	this->video_codec=0;
+	avformat_network_init();
+	av_register_all() ;
+	avcodec_register_all();
 }
-bool setupStreamClient(int port)
+StreamClient::~StreamClient()
 {
-	g_hMutex = CreateMutex(NULL, FALSE, L"Mutex");
-	if (!g_hMutex)  
-    {  
-        printf("Failed to create mutex\n");
-        return false;  
-    }  
-	int iResult;
-	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if (iResult != 0) 
-	{
-		printf("WSAStartup failed: %d\n", iResult);
-		return false;
-	}
-	localPort=port;
-	int len = sizeof(struct sockaddr_in);  
-	localAddr.sin_family = AF_INET;  
-	localAddr.sin_port = htons(localPort); /* ¼àÌý¶Ë¿Ú */  
-	localAddr.sin_addr.s_addr = INADDR_ANY;  /* ±¾»ú */  
-	sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
-	if(sock_fd== INVALID_SOCKET)
-	{
-		printf("Create socket failed\n");
-		return false;
-	}
-	iResult=bind(sock_fd, (sockaddr *)&localAddr, sizeof(localAddr)); 
-	if(iResult== SOCKET_ERROR)
-	{
-		printf("Bind failed\n");
-		return false;
-	}
-	int buff_size=65536;
-	int tmp_len = sizeof(buff_size);
-	iResult=setsockopt(sock_fd,SOL_SOCKET,SO_RCVBUF,(char*)&buff_size,tmp_len);
-	if(iResult!=0) 
-	{
-		printf("Set Buffer Failed\n");
-		return false;
-	}
-	printf("Network Buffer Size for UDP is %d\n",buff_size);
-	_beginthread( recvWorker, 0, NULL );
+
+}
+void StreamClient::setLocalPort(int port)
+{
+	this->localPort=port;
+}
+
+
+bool StreamClient::addAudioStream()
+{
 	return true;
 }
-static void recvWorker(void *)
+bool StreamClient::addVideoStream()
 {
-	while(true)
+	AVCodecContext *c;
+	this->video_codec = avcodec_find_decoder(CODEC_ID_H264);
+	if (!this->video_codec) 
 	{
-		
-		int recvSize=recvfrom(sock_fd, recvBuf, RECVBUFSIZE, 0, (SOCKADDR *)&remoteAddr, &remoteAddrLen);
-		recvFrame++;
-		printf("Geting %d pieces %d bytes from server\n",recvFrame,recvSize);
-		if(recvSize==-1)
-		{
-			printf("Get an error %d\n",GetLastError());
-			break;
-		}
-		WaitForSingleObject(g_hMutex, INFINITE);
-		if(bufQueue.size()==MAXQUEUENUM)
-		{
-			printf("Queue is full!Empty the queue now\n");
-			for(int i=0;i<MAXQUEUENUM;i++)
-			{
-				free(bufQueue.front().first);
-				bufQueue.pop();
-			}
-		}
-		char *data=(char*)malloc(recvSize);
-		memcpy(data,recvBuf,recvSize);
-		bufQueue.push(pair<char*,int>(data,recvSize));
-		ReleaseMutex(g_hMutex); 
-	}
+		printf( "video codec not found/n");
+		return false;
+    }
+	this->video_st = avformat_new_stream(this->oc, this->video_codec);
+	if (!this->video_st) 
+	{
+        printf( "Could not allocate stream\n");
+        return false;
+    }
+	this->video_st->id=this->oc->nb_streams-1;
+	c=this->video_st->codec;
+	avcodec_get_context_defaults3(c, this->video_codec);
+	c->codec_id=CODEC_ID_H264;
+	c->bit_rate = 3000000;
+    c->width = RWIDTH;
+    c->height = RHEIGHT;
+	c->gop_size=0;
+	c->max_b_frames=0;
+    c->pix_fmt = PIX_FMT_YUV420P;
+	c->me_range = 16;
+    c->max_qdiff = 4;
+    c->qmin = 10;
+    c->qmax = 51;
+	c->rc_max_rate=5000000;
+	c->rc_buffer_size=200000;
+	c->time_base.den = 25;
+    c->time_base.num = 1;
+	if (avcodec_open2(c, this->video_codec,NULL) < 0) 
+	{
+        printf( "could not open codec\n");
+        return false;
+    }
+	
+	return true;
 }
-bool recvData(pair<char*,int> &data)
+bool StreamClient::startClient()
 {
-	WaitForSingleObject(g_hMutex, INFINITE);
-	if(bufQueue.size()==0)
+	
+	this->oc=avformat_alloc_context();
+	if(oc==NULL)
 	{
-		ReleaseMutex(g_hMutex); 
+		printf("Try init avformat failed\n");
 		return false;
 	}
-	else
+	this->fmt = av_guess_format("rtp", NULL, NULL);
+	if (!this->fmt)
+    {
+        printf("Try init RTP format failed\n");
+		return false;
+    }
+	oc->oformat=this->fmt;
+	if(!this->addVideoStream())
 	{
-		data=bufQueue.front();
-		bufQueue.pop();
-		ReleaseMutex(g_hMutex); 
-		return true;
+		printf("Can open add video stream@!\n");
+	    return false;
 	}
-
+	_snprintf_s(this->oc->filename, sizeof(this->oc->filename), "rtp://%s:%d", LOCALADDRESS, this->localPort);
+	if(avformat_open_input(&oc, this->oc->filename,NULL,NULL) != 0)
+	{
+		printf("Try init network failed\n");
+        return false;
+    }
+	
+	AVPacket pkt;
+	av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+	while(true)
+	{
+		Sleep(10);
+		if (av_read_frame(this->oc, &pkt) >= 0) 
+		{
+			printf("Got a packet\n");
+			av_free_packet(&pkt);
+		}
+		else
+		{
+			printf("Got nothing\n");
+		}
+		
+	}
+	/**/
+	/*
+	if(!this->addAudioStream())
+	{
+		printf("Can open add audio stream@!\n");
+	    return false;
+	}
+	av_dump_format(this->oc, 0,this->oc->filename,0);
+	
+	*/
+	return true;
 }

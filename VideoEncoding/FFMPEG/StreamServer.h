@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string>
+#include "UDPStreamServer.h"
 using namespace std;
 extern "C"
 {
@@ -33,21 +34,18 @@ public:
 	bool write_audio_frame(AVFrame *frame);
 	
 private:
-	AVOutputFormat *fmt;
-    AVFormatContext *oc;
+	AVOutputFormat *vfmt,*afmt;
+    AVFormatContext *voc,*aoc;
     AVStream *audio_st,*video_st;
     AVCodec *audio_codec, *video_codec;
     double audio_pts, video_pts;
 	string remoteAddr;
 	int remotePort;
 	HANDLE g_hMutex;
-private://VIDEO FUNCTION
+	char sdpBuf[1024];//For SDP Saving;
 	bool addVideoStream();
-	bool openVideoContext();
-	
-
-private://AUDIO FUNCTION
 	bool addAudioStream();
-	bool openAudioContext();
+	bool generateSDP();
+	
 	
 };

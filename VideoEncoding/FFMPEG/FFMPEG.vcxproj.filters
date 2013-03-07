@@ -38,13 +38,13 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StreamServer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="IVideoCapturer.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ISoundCapturer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="StreamServer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

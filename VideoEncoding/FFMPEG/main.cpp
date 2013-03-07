@@ -10,6 +10,7 @@ int main(int argc, char* argv[])
 	if(!server.startStreamServer())
 	{
 		printf("Stream Server Failed\n");
+		system("pause");
 		return -1;	
 	}
 	printf("Stream Server Start\n");

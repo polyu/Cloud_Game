@@ -1,7 +1,7 @@
 #include "UDPStreamServer.h"
 UDPStreamServer::UDPStreamServer()
 {
-	this->port=1234;
+	this->port=5678;
 	sock_fd=-1;
 	sendFrame=0;
 }

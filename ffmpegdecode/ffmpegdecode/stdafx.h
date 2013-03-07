@@ -8,7 +8,11 @@
 #include "targetver.h"
 #include <stdio.h>
 #include <tchar.h>
-
-
+#define RHEIGHT 480
+#define RWIDTH 640
+#define INBUF_SIZE 100000
+#define DEFAULT_PORT 1234
+#define GUISLEEPTIME 5
+#define LOCALADDRESS "127.0.0.1"
 
 // TODO: 在此处引用程序需要的其他头文件
