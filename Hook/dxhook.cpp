@@ -24,7 +24,6 @@
 
 //	-------------------------------	Forward Decelerations -------------------------
 
-void StyleSettings(DWORD &dwExStyle, DWORD &dwStyle);
 
 
 //	-------------------------------	Global Variables ------------------------------

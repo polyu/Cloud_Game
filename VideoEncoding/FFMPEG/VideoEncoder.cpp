@@ -305,9 +305,9 @@ bool VideoEncoder::initEncoder()
 	workingThread=true;
 	return true;
 }
-void VideoEncoder::encodeFrameLoop()
+void VideoEncoder::startFrameLoop()
 {
-	
+	workingThread=true;
 	while(workingThread)
 	{
 		if(isMemoryReadable()&&streamServer!=NULL)
@@ -325,6 +325,7 @@ void VideoEncoder::encodeFrameLoop()
 			if(bpp!=4)
 			{
 				printf("Encoder cannot handle this format\n");
+				workingThread=false;
 				return;
 			}
 			encodingPerformanceTime=clock();
@@ -338,6 +339,7 @@ void VideoEncoder::encodeFrameLoop()
 				if(!this->setupSwscale(width,height))
 				{
 					printf("Swscale failed\n");
+					workingThread=false;
 					return;
 				}	
 
@@ -362,6 +364,7 @@ void VideoEncoder::encodeFrameLoop()
 			if (ret < 0) 
 			{
 				printf("Error encoding frame!Found A way to deal!\n");
+				workingThread=false;
 				return;
 			}
 			if(getOutput)

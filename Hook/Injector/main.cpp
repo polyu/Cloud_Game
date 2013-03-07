@@ -13,8 +13,12 @@
 using namespace std;
 #include <detours.h>
 
-int main()
+int main(int argc,char **argv)
 {
+	if(argc!=3)
+	{
+		exit(-1);
+	}
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 	ZeroMemory(&si, sizeof(STARTUPINFO));
@@ -25,11 +29,12 @@ int main()
 	char applicationName[MAX_PATH];
 	GetCurrentDirectoryA(MAX_PATH, applicationPath);
 	GetCurrentDirectoryA(MAX_PATH, applicationName);
-	strcat_s(applicationName,MAX_PATH/2,"//AntiAlias.exe");
+	strcat_s(applicationName,MAX_PATH/2,"//");
+	strcat_s(applicationName,MAX_PATH/2,argv[1]);
 	printf("%s\n",applicationPath);
 	BOOL bResult = DetourCreateProcessWithDllA(applicationName, NULL, 0, 0, TRUE,
 		CREATE_DEFAULT_ERROR_MODE , NULL,
-		applicationPath,(LPSTARTUPINFOA)&si, &pi, "dxhook.dll" ,NULL);
+		applicationPath,(LPSTARTUPINFOA)&si, &pi, argv[2] ,NULL);
 
 	printf("Attached is %s.\n", (bResult)?"successful":"unsuccessful");
 	

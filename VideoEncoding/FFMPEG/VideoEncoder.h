@@ -31,7 +31,7 @@ public:
 	VideoEncoder();
 	~VideoEncoder();
 	bool initEncoder();
-	void encodeFrameLoop();
+	void startFrameLoop();
 	void stopEncode();
 	void setStreamServer(StreamServer * streamServer);
 	void debugEncoder(const char *filename);
