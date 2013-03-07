@@ -18,33 +18,33 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SoundEncoder.cpp">
+    <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="IVideoCapturer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ISoundCapturer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="StreamServer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="VideoEncoder.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="SoundEncoder.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="StreamServer.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="VideoEncoder.h">
+    <ClInclude Include="StreamServer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IVideoCapturer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ISoundCapturer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

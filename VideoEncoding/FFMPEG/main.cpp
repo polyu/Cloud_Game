@@ -1,23 +1,24 @@
 #include <windows.h>
-#include "VideoEncoder.h"
+#include "ISoundCapturer.h"
+#include "IVideoCapturer.h"
 #include "StreamServer.h"
-#include "SoundEncoder.h"
 int main(int argc, char* argv[])
 {
-	/*StreamServer server;
-	server.setDestAddress("127.0.0.1",1234);
-	server.startServer();
-	VideoEncoder encoder;
-	encoder.setStreamServer(&server);
-	encoder.initEncoder();
-	encoder.encodeFrameLoop();
-	//encoder.debugEncoder("c:/test.264");*/
-	SoundEncoder encoder;
-	if(encoder.initSoundCapture())
+	StreamServer server;
+	IVideoCapturer vcapturer;
+	server.setRemoteAddress("127.0.0.1",1234);
+	if(!server.startStreamServer())
 	{
-		printf("Init OK");
+		printf("Stream Server Failed\n");
+		return -1;	
 	}
-	else
-		return 1;
-	return 0;
+	printf("Stream Server Start\n");
+	if(!vcapturer.initVideoCapture())
+	{
+		printf("Video Capture Server Failed\n");
+		return -1;	
+	}
+	vcapturer.setStreamServer(&server);
+	vcapturer.startFrameLoop();
+
 }

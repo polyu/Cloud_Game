@@ -9,7 +9,10 @@
 
 #include <stdio.h>
 #include <tchar.h>
-
+#define DEFAULT_ADDRESS "127.0.0.1"
+#define DEFAULT_PORT 1234
+#define RHEIGHT 480
+#define RWIDTH 640
 
 
 // TODO: 在此处引用程序需要的其他头文件
