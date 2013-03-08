@@ -133,6 +133,7 @@ void IVideoCapturer::startFrameLoop()
 			uint8_t *rgb_src[3]={lpvMem,NULL,NULL};
 			int rgb_stride[3]={4*width, 0, 0};
 			sws_scale(img_convert_ctx, rgb_src, rgb_stride, 0, height, rawFrame->data, rawFrame->linesize);
+			
 			//=============Write encoded frame and send=============================
 			this->streamServer->write_video_frame(rawFrame);
 			//==========================================

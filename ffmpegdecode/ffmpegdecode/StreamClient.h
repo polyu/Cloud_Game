@@ -30,6 +30,8 @@ extern "C"
 #include <libswscale/swscale.h>
 #include <libavformat/avformat.h>
 }
+
+
 class StreamClient
 {
 public:

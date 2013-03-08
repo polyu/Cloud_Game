@@ -70,6 +70,12 @@ bool StreamServer::addAudioStream()
 }
 bool StreamServer::write_video_frame(AVFrame *frame)
 {
+	static bool debugLag=false;
+	if(debugLag)
+	{
+		return false;
+	}
+	debugLag=true;
 	long encodeVideoPerformanceClock=clock();
 	AVCodecContext *c = this->video_st->codec;
 
@@ -90,6 +96,10 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 			pkt.flags |= AV_PKT_FLAG_KEY;
 		pkt.stream_index = this->video_st->index;
 		printf("Try sending %d\n",pkt.size);
+		FILE *f;
+		f=fopen("C:/1.dump","w");
+		fwrite(pkt.data,pkt.size,1,f);
+		fclose(f);
 		ret = av_write_frame(voc, &pkt);
 		av_free_packet(&pkt);
 		if(ret<0)
@@ -107,6 +117,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 }
 bool StreamServer::write_audio_frame(AVFrame *frame)
 {
+	
 	long encodeAudioPerformanceClock=clock();
 	AVCodecContext *c = this->video_st->codec;
 	AVPacket pkt;
@@ -184,8 +195,8 @@ bool StreamServer::addVideoStream()
 	av_opt_set(c->priv_data, "preset","veryfast",0);
 	av_opt_set(c->priv_data,"intra-refresh","1",0);
 	//======================================
-	if (voc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+	/*if (voc->oformat->flags & AVFMT_GLOBALHEADER)
+        c->flags |= CODEC_FLAG_GLOBAL_HEADER;*/
 	//======================================
 	if (avcodec_open2(c, this->video_codec,NULL) < 0) 
 	{

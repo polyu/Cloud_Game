@@ -35,8 +35,16 @@
     <ClInclude Include="StreamClient.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="H264NalUtils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xsd Include="H264NalUtils1.xsd">
+      <Filter>源文件</Filter>
+    </Xsd>
   </ItemGroup>
 </Project>

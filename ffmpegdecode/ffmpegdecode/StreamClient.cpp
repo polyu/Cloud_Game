@@ -27,38 +27,56 @@ void StreamClient::setLocalPort(int port)
 }
 bool StreamClient::poolVideoFrame()
 {
-	if(videoRTPSession.Poll()<0)
+	bool markerFound=false;
+	int retryTime=0;
+
+	while(!markerFound && retryTime++<MAXRETRYTIME )
 	{
-		printf("POLL DATA ERROR\n");
-		return false;
-	}
-	bool getData=false;
-	videoRTPSession.BeginDataAccess();
-	if (videoRTPSession.GotoFirstSource())
-	{
-			do
+			if(videoRTPSession.Poll()<0)
 			{
-				
-			    RTPPacket *packet;
-                while ((packet = videoRTPSession.GetNextPacket()) != 0)
-                {
-					//printf("Got packet with extended sequence number %d from Source %d Length %d\n",packet->GetExtendedSequenceNumber() ,packet->GetSSRC(),packet->GetPacketLength());
-					if(bufSize+packet->GetPayloadLength()>MAXBUFSIZE)
-					{
-						printf("BUF FULL\n");
-						bufSize=0;
-					}
-					memcpy(this->intBuf+bufSize,packet->GetPayloadData(),packet->GetPayloadLength());
-					this->bufSize+=packet->GetPayloadLength();
-					videoRTPSession.DeletePacket(packet);
-					getData=true;
-					
-                }
-			} 
-			while (videoRTPSession.GotoNextSource());
+				printf("POLL DATA ERROR\n");
+				return false;
+			}
+			videoRTPSession.BeginDataAccess();
+			if (videoRTPSession.GotoFirstSource())
+			{
+				if(videoRTPSession.GotoNextSource())
+				{
+						RTPPacket *packet;
+						while ((packet = videoRTPSession.GetNextPacket()) != 0)
+						{
+							if(packet->HasMarker())
+							{
+								markerFound=true;
+								printf("This is frame is marker\n");
+							}
+							else
+							{
+								printf("No Marker\n");
+								
+							}
+							
+							printf("Got sequence number %d from Source %d Length %d\n",packet->GetExtendedSequenceNumber() ,packet->GetSSRC(),packet->GetPayloadLength());
+							if(bufSize+packet->GetPayloadLength()>MAXBUFSIZE)
+							{
+								printf("BUF FULL\n");
+								bufSize=0;
+							}
+							memcpy(this->intBuf+bufSize,packet->GetPayloadData(),packet->GetPayloadLength());
+							this->bufSize+=packet->GetPayloadLength();
+							videoRTPSession.DeletePacket(packet);
+							if(markerFound) 
+							{
+								printf("BUF SIZE:%d\n",this->bufSize);
+									break;
+							}
+						}
+				}
+						
+			}
+			videoRTPSession.EndDataAccess();
 	}
-	videoRTPSession.EndDataAccess();
-	return getData;
+	return markerFound;
 }
 bool StreamClient::decodeVideoFrame(AVFrame **getframe)
 {
@@ -68,7 +86,12 @@ bool StreamClient::decodeVideoFrame(AVFrame **getframe)
 		int len, got_frame;
 		avpkt.data = (uint8_t*)this->intBuf;
 		avpkt.size=this->bufSize;
+		FILE *f;
+		f=fopen("c:/2.dump","w");
+		fwrite(intBuf,bufSize,1,f);
+		fclose(f);
 		len = avcodec_decode_video2(this->video_codec_context, frame, &got_frame, &avpkt);
+		this->bufSize=0;
 		if(len<0)
 		{
 			printf("Error happen when decoding\n");
@@ -108,29 +131,19 @@ bool StreamClient::openAudioStream()
 }
 bool StreamClient::openVideoStream()
 {
-	AVCodecContext *c;
-	this->video_codec = avcodec_find_decoder(CODEC_ID_H264);
+
+	this->video_codec = avcodec_find_decoder(AV_CODEC_ID_H264);
 	if (!this->video_codec) 
 	{
 		printf( "video codec not found/n");
 		return false;
     }
-	this->video_codec_context = avcodec_alloc_context();
-	c=this->video_codec_context;
+	this->video_codec_context = avcodec_alloc_context3(this->video_codec);
+	av_opt_set(video_codec_context->priv_data, "tune", "zerolatency", 0);
+	av_opt_set(video_codec_context->priv_data, "preset","veryfast",0);
+	av_opt_set(video_codec_context->priv_data,"intra-refresh","1",0);
 	
-	c->bit_rate = 3000000;
-    c->width = RWIDTH;
-    c->height = RHEIGHT;
-    c->pix_fmt = PIX_FMT_YUV420P;
-	c->me_range = 16;
-    c->max_qdiff = 4;
-    c->qmin = 10;
-    c->qmax = 51;
-	c->rc_max_rate=5000000;
-	c->rc_buffer_size=200000;
-	c->time_base.den = 25;
-    c->time_base.num = 1;
-	if (avcodec_open2(c, this->video_codec,NULL) < 0) 
+	if (avcodec_open2(this->video_codec_context, this->video_codec,NULL) < 0) 
 	{
         printf( "could not open codec\n");
         return false;
