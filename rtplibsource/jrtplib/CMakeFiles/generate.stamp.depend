@@ -1,0 +1,37 @@
+# CMake generation dependency list for this directory.
+E:/150w/rtplib/jrtplib/CMakeLists.txt
+E:/150w/rtplib/jrtplib/CMakeFiles/2.8.10.2/CMakeSystem.cmake
+E:/150w/rtplib/jrtplib/CMakeFiles/2.8.10.2/CMakeCCompiler.cmake
+E:/150w/rtplib/jrtplib/CMakeFiles/2.8.10.2/CMakeCXXCompiler.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeSystemSpecificInformation.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeGenericSystem.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/Platform/Windows.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/Platform/WindowsPaths.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeCInformation.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/Platform/Windows-MSVC-C.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/Platform/Windows-MSVC.cmake
+E:/150w/rtplib/jrtplib/CMakeFiles/2.8.10.2/CMakeRCCompiler.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeRCInformation.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeCommonLanguageInclude.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeCXXInformation.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/Platform/Windows-MSVC-CXX.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/Platform/Windows-MSVC.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeCommonLanguageInclude.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CheckCXXCompilerFlag.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CheckCXXSourceCompiles.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeExpandImportedTargets.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeParseArguments.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CheckIncludeFile.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CheckIncludeFileCXX.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CheckCXXSourceCompiles.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeExpandImportedTargets.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeParseArguments.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/TestBigEndian.cmake
+E:/150w/rtplib/jrtplib/cmake/Macros.cmake
+E:/150w/rtplib/jrtplib/cmake/FindJThread.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake 2.8/share/cmake-2.8/Modules/CMakeParseArguments.cmake
+E:/150w/rtplib/jrtplib/src/rtptypes.h.in
+E:/150w/rtplib/jrtplib/src/rtpconfig.h.in
+E:/150w/rtplib/jrtplib/cmake/JRTPLIBConfig.cmake.in

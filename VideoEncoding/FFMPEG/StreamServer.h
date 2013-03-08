@@ -1,10 +1,19 @@
 #pragma once
 #include "stdafx.h"
-#include <windows.h>
 #include <stdio.h>
 #include <string>
-#include "UDPStreamServer.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
+#include <string>
+#include "rtpsession.h"
+#include "rtpudpv4transmitter.h"
+#include "rtpipv4address.h"
+#include "rtpsessionparams.h"
+#include "rtperrors.h"
+
 using namespace std;
+using namespace jrtplib;
 extern "C"
 {
 #ifdef HAVE_AV_CONFIG_H
@@ -28,24 +37,23 @@ public:
 	StreamServer();
 	~StreamServer();
 	void setRemoteAddress(string address,int port);
-	bool startStreamServer();
+	void setLocalPort(int port);
+	bool initStreamServer();
 	void cleanup();
 	bool write_video_frame(AVFrame *frame);
 	bool write_audio_frame(AVFrame *frame);
 	
 private:
-	AVOutputFormat *vfmt,*afmt;
-    AVFormatContext *voc,*aoc;
-    AVStream *audio_st,*video_st;
     AVCodec *audio_codec, *video_codec;
-    double audio_pts, video_pts;
+	AVCodecContext *audio_codec_context,*video_codec_context;
 	string remoteAddr;
 	int remotePort;
+	int localPort;
 	HANDLE g_hMutex;
-	char sdpBuf[1024];//For SDP Saving;
-	bool addVideoStream();
-	bool addAudioStream();
-	bool generateSDP();
-	
+	bool openVideoStream();
+	bool openAudioStream();
+	bool openRTPServer();
+	RTPSession RTPSess;
+	WSADATA wsaData;
 	
 };

@@ -1,13 +1,14 @@
-#include <windows.h>
+#include "StreamServer.h"
 #include "ISoundCapturer.h"
 #include "IVideoCapturer.h"
-#include "StreamServer.h"
+
+
 int main(int argc, char* argv[])
 {
 	StreamServer server;
 	IVideoCapturer vcapturer;
 	server.setRemoteAddress("127.0.0.1",1234);
-	if(!server.startStreamServer())
+	if(!server.initStreamServer())
 	{
 		printf("Stream Server Failed\n");
 		system("pause");

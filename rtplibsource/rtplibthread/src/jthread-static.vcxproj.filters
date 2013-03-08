@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\jrtplib\jrtthread\src\win32\jmutex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\jrtplib\jrtthread\src\win32\jthread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\jrtplib\jrtthread\src\jmutex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\jrtplib\jrtthread\src\jthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\jrtplib\jrtthread\src\jmutexautolock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="jthreadconfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\jrtplib\jrtthread\src\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{6A2C0435-9B7A-4EED-A7F6-96E7619A42C2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{12CCAE88-C4AB-49EB-B22D-D4B3B48AA9CC}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

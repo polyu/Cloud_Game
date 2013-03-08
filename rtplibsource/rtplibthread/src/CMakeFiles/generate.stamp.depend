@@ -1,0 +1,4 @@
+# CMake generation dependency list for this directory.
+E:/150w/jrtplib/jrtthread/src/CMakeLists.txt
+E:/150w/jrtplib/jrtthread/src/jthreadconfig.h.in
+E:/150w/jrtplib/jrtthread/cmake/JThreadConfig.cmake.in

@@ -9,10 +9,12 @@
 
 #include <stdio.h>
 #include <tchar.h>
-#define DEFAULT_ADDRESS "127.0.0.1"
-#define DEFAULT_PORT 1234
+#define DEFAULT_REMOTEADDRESS "127.0.0.1"
+#define DEFAULT_REMOTEPORT 1234
+#define DEFAULT_LOCALPORT 10240
 #define RHEIGHT 480
 #define RWIDTH 640
+
 
 
 // TODO: 在此处引用程序需要的其他头文件
