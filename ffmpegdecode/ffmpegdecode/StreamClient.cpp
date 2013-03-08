@@ -76,6 +76,7 @@ bool StreamClient::startClient()
 		printf("Try init avformat failed\n");
 		return false;
 	}
+	ff_rtsp_open_transport_ctx(this->oc,"rtsp://");
 	this->fmt = av_guess_format("rtp", NULL, NULL);
 	if (!this->fmt)
     {
