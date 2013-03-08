@@ -14,7 +14,7 @@
 #define DEFAULT_LOCALPORT 10240
 #define RHEIGHT 480
 #define RWIDTH 640
-
+#define VIDEOAUDIOPORTGAP 1000
 
 
 // TODO: 在此处引用程序需要的其他头文件

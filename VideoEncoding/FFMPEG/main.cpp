@@ -7,7 +7,6 @@ int main(int argc, char* argv[])
 {
 	StreamServer server;
 	IVideoCapturer vcapturer;
-	server.setRemoteAddress("127.0.0.1",1234);
 	if(!server.initStreamServer())
 	{
 		printf("Stream Server Failed\n");

@@ -84,7 +84,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>jrtplib.lib;jthread.lib;avformat.lib;avcodec.lib;avutil.lib;swscale.lib;Ws2_32.lib;sdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>jrtplib.lib;jthread.lib;avcodec.lib;avutil.lib;swscale.lib;Ws2_32.lib;sdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>false</OptimizeReferences>
@@ -93,7 +93,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="jrtp.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="StreamClient.cpp" />

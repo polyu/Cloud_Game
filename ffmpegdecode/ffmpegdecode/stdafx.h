@@ -14,5 +14,6 @@
 #define DEFAULT_PORT 1234
 #define GUISLEEPTIME 5
 #define LOCALADDRESS "127.0.0.1"
-
+#define VIDEOAUDIOPORTGAP 1000
+#define MAXBUFSIZE 1024000
 // TODO: 在此处引用程序需要的其他头文件

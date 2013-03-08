@@ -5,15 +5,12 @@
 #undef main
 #endif 
 
-/*
+
 int main(int argv,char **argc)
 {
 	StreamClient client;
-	client.startClient();
-	while(true)
-	{
-		Sleep(1000);
-	}
+	client.initClient();
+
 	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
         printf("Could not initialize SDL: %s.\n", SDL_GetError());
@@ -31,12 +28,16 @@ int main(int argv,char **argc)
 	bool quitFlag=false;
 	SDL_Event event;
 	SDL_Rect        rect;  
-	pair<char*,int> data;
+	
 	AVFrame* frame;
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
-		if(recvData(data))
+		 if(client.decodeVideoFrame(&frame))
+		 {
+
+		 }
+		/*if(recvData(data))
 		{
 			if(decode_frame(data,&frame))
 			{
@@ -60,7 +61,7 @@ int main(int argv,char **argc)
 			}
 			free(data.first);
 							
-		}
+		}*/
 		 while( SDL_PollEvent( &event ) )
 		 {
                 switch( event.type )
@@ -80,4 +81,4 @@ int main(int argv,char **argc)
 		 }
 	}
 	return 0;
-}*/
+}

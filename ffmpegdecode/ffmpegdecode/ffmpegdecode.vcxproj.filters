@@ -24,9 +24,6 @@
     <ClCompile Include="StreamClient.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="jrtp.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">

@@ -2,31 +2,111 @@
 StreamClient::StreamClient()
 {
 	this->localPort=DEFAULT_PORT;
-	this->fmt=0;
-	this->oc=0;
-	this->audio_st=0;
-	this->video_st=0;
 	this->audio_codec=0;
 	this->video_codec=0;
-	avformat_network_init();
-	av_register_all() ;
+	this->frame=0;
+	this->intBuf=(char*)malloc(MAXBUFSIZE);
+	this->bufSize=0;
+	this->lastWidth=0;
+	this->lastHeight=0;
+	this->img_convert_ctx=0;
 	avcodec_register_all();
 }
 StreamClient::~StreamClient()
 {
-
+	if(intBuf!=0)
+	{
+		free(intBuf);
+		intBuf=0;
+	}
+	WSACleanup();
 }
 void StreamClient::setLocalPort(int port)
 {
 	this->localPort=port;
 }
-
-
-bool StreamClient::addAudioStream()
+bool StreamClient::poolVideoFrame()
+{
+	if(videoRTPSession.Poll()<0)
+	{
+		printf("POLL DATA ERROR\n");
+		return false;
+	}
+	bool getData=false;
+	videoRTPSession.BeginDataAccess();
+	if (videoRTPSession.GotoFirstSource())
+	{
+			do
+			{
+				
+			    RTPPacket *packet;
+                while ((packet = videoRTPSession.GetNextPacket()) != 0)
+                {
+					//printf("Got packet with extended sequence number %d from Source %d Length %d\n",packet->GetExtendedSequenceNumber() ,packet->GetSSRC(),packet->GetPacketLength());
+					if(bufSize+packet->GetPayloadLength()>MAXBUFSIZE)
+					{
+						printf("BUF FULL\n");
+						bufSize=0;
+					}
+					memcpy(this->intBuf+bufSize,packet->GetPayloadData(),packet->GetPayloadLength());
+					this->bufSize+=packet->GetPayloadLength();
+					videoRTPSession.DeletePacket(packet);
+					getData=true;
+					
+                }
+			} 
+			while (videoRTPSession.GotoNextSource());
+	}
+	videoRTPSession.EndDataAccess();
+	return getData;
+}
+bool StreamClient::decodeVideoFrame(AVFrame **getframe)
+{
+	
+	if(poolVideoFrame())
+	{
+		int len, got_frame;
+		avpkt.data = (uint8_t*)this->intBuf;
+		avpkt.size=this->bufSize;
+		len = avcodec_decode_video2(this->video_codec_context, frame, &got_frame, &avpkt);
+		if(len<0)
+		{
+			printf("Error happen when decoding\n");
+			return false;
+		}
+		if (got_frame) 
+		{
+			if(lastHeight!=frame->height || lastWidth!=frame->width)
+			{
+				removeSwscale();
+				if(!setupSwscale())
+				{
+					printf("Error happen when setting up swscale!\n");
+					return false;
+				}
+			}
+			sws_scale(img_convert_ctx, frame->data, frame->linesize,0, RHEIGHT, picture->data, picture->linesize);  
+			printf("Got one picture\n");
+			*getframe=picture;
+			return true;
+		}
+		else
+		{
+			//printf("Bad packet! OOP! Maybe next will be good!\n");
+			return false;
+		}
+	}
+	else
+	{
+		//printf("Try to decode frame But no data availabie\n");
+		return false;
+	}
+}
+bool StreamClient::openAudioStream()
 {
 	return true;
 }
-bool StreamClient::addVideoStream()
+bool StreamClient::openVideoStream()
 {
 	AVCodecContext *c;
 	this->video_codec = avcodec_find_decoder(CODEC_ID_H264);
@@ -35,21 +115,12 @@ bool StreamClient::addVideoStream()
 		printf( "video codec not found/n");
 		return false;
     }
-	this->video_st = avformat_new_stream(this->oc, this->video_codec);
-	if (!this->video_st) 
-	{
-        printf( "Could not allocate stream\n");
-        return false;
-    }
-	this->video_st->id=this->oc->nb_streams-1;
-	c=this->video_st->codec;
-	avcodec_get_context_defaults3(c, this->video_codec);
-	c->codec_id=CODEC_ID_H264;
+	this->video_codec_context = avcodec_alloc_context();
+	c=this->video_codec_context;
+	
 	c->bit_rate = 3000000;
     c->width = RWIDTH;
     c->height = RHEIGHT;
-	c->gop_size=0;
-	c->max_b_frames=0;
     c->pix_fmt = PIX_FMT_YUV420P;
 	c->me_range = 16;
     c->max_qdiff = 4;
@@ -64,65 +135,104 @@ bool StreamClient::addVideoStream()
         printf( "could not open codec\n");
         return false;
     }
-	
 	return true;
 }
-bool StreamClient::startClient()
+bool StreamClient::openVideoRTPClient()
 {
-	
-	this->oc=avformat_alloc_context();
-	if(oc==NULL)
+	RTPSessionParams sessionparams;
+	sessionparams.SetUsePollThread(false);
+	sessionparams.SetOwnTimestampUnit(1.0/25.0);
+	RTPUDPv4TransmissionParams transparams;
+	transparams.SetPortbase(this->localPort);
+	int status = videoRTPSession.Create(sessionparams,&transparams);
+	if (status < 0)
 	{
-		printf("Try init avformat failed\n");
+		printf("Error when create session:%s\n",RTPGetErrorString(status));
 		return false;
 	}
+	printf("RTP video client Init\n");
+	return true;
+}
+bool StreamClient::openAudioRTPClient()
+{
 	
-	this->fmt = av_guess_format("rtp", NULL, NULL);
-	if (!this->fmt)
-    {
-        printf("Try init RTP format failed\n");
+	RTPSessionParams sessionparams;
+	sessionparams.SetUsePollThread(false);
+	sessionparams.SetOwnTimestampUnit(1.0/8000.0);
+	RTPUDPv4TransmissionParams transparams;
+	transparams.SetPortbase(this->localPort+VIDEOAUDIOPORTGAP);
+	int status = audioRTPSession.Create(sessionparams,&transparams);
+	if (status < 0)
+	{
+		printf("Error when create audio session:%s\n",RTPGetErrorString(status));
 		return false;
-    }
-	oc->oformat=this->fmt;
-	if(!this->addVideoStream())
+	}
+	printf("RTP audio client Init\n");
+	return true;
+}
+bool StreamClient::initClient()
+{
+	
+	if(WSAStartup(MAKEWORD(2,2),&dat)!=0)
+	{
+		printf("Fail init socket\n");
+		return false;
+	}
+	if(!this->openVideoStream())
 	{
 		printf("Can open add video stream@!\n");
 	    return false;
 	}
-	_snprintf_s(this->oc->filename, sizeof(this->oc->filename), "rtp://%s:%d", LOCALADDRESS, this->localPort);
-	if(avformat_open_input(&oc, this->oc->filename,NULL,NULL) != 0)
+	if(!this->openAudioStream())
 	{
-		printf("Try init network failed\n");
-        return false;
-    }
-	
-	AVPacket pkt;
-	av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
-	while(true)
-	{
-		Sleep(10);
-		if (av_read_frame(this->oc, &pkt) >= 0) 
-		{
-			printf("Got a packet\n");
-			av_free_packet(&pkt);
-		}
-		else
-		{
-			printf("Got nothing\n");
-		}
-		
-	}
-	/**/
-	/*
-	if(!this->addAudioStream())
-	{
-		printf("Can open add audio stream@!\n");
+		printf("Can open add video stream@!\n");
 	    return false;
 	}
-	av_dump_format(this->oc, 0,this->oc->filename,0);
+	if(!this->openVideoRTPClient())
+	{
+		printf("Can't open video rtp stream@!\n");
+	    return false;
+	}
+	if(!this->openAudioRTPClient())
+	{
+		printf("Can't open audio rtp stream@!\n");
+	    return false;
+	}
+		frame = avcodec_alloc_frame();
 	
-	*/
+    if (!frame ) {
+        printf("Could not allocate video frame\n");
+        return false;
+    }
+	av_init_packet(&avpkt);
+	picture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
 	return true;
+}
+
+bool StreamClient::setupSwscale()
+{
+	img_convert_ctx = sws_getContext(frame->width, frame->height, this->video_codec_context->pix_fmt, 
+	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_POINT, 
+	NULL, NULL, NULL);
+	if(img_convert_ctx == NULL) { 
+	printf( "Cannot initialize the conversion context!\n"); 
+	return false; 
+	}
+	return true;
+}
+void StreamClient::removeSwscale()
+{
+	if(img_convert_ctx!=NULL)
+	{
+		sws_freeContext(img_convert_ctx);
+		img_convert_ctx=NULL;
+	}
+	
+}
+AVFrame *StreamClient::alloc_picture(enum PixelFormat pix_fmt, int width, int height)
+{
+	AVFrame *picture = avcodec_alloc_frame();
+    if (!picture || avpicture_alloc((AVPicture *)picture, pix_fmt, width, height) < 0)
+        av_freep(&picture);
+    return picture;
 }

@@ -1,4 +1,11 @@
 #pragma once
+#include "rtpsession.h"
+#include "rtppacket.h"
+#include "rtpudpv4transmitter.h"
+#include "rtpipv4address.h"
+#include "rtpsessionparams.h"
+#include "rtperrors.h"
+#include "rtpmemorymanager.h"
 #include <stdlib.h>
 #include "stdafx.h"
 #include <stdio.h>
@@ -7,7 +14,7 @@
 #include <time.h>
 #include <queue>
 using namespace std;
-
+using namespace jrtplib;
 extern "C"
 {
 #ifdef HAVE_AV_CONFIG_H
@@ -29,14 +36,30 @@ public:
 	StreamClient();
 	~StreamClient();
 	void setLocalPort(int port);
-	bool startClient();
+	bool initClient();
+	bool decodeVideoFrame(AVFrame **frame);
+	
 private:
 	int localPort;
-	AVOutputFormat *fmt;
-    AVFormatContext *oc;
-	AVStream *audio_st,*video_st;
     AVCodec *audio_codec, *video_codec;
-
-	bool addVideoStream();
-	bool addAudioStream();
+	AVCodecContext *audio_codec_context,*video_codec_context;
+	bool openVideoStream();
+	bool openAudioStream();
+	bool openVideoRTPClient();
+	bool openAudioRTPClient();
+	bool poolVideoFrame();
+	bool setupSwscale();
+	void removeSwscale();
+	WSADATA dat;
+	RTPSession videoRTPSession;
+	RTPSession audioRTPSession;
+	char *intBuf;
+	int bufSize;
+	AVPacket avpkt;
+	AVFrame* frame;
+	AVFrame* picture;
+	int lastWidth;
+	int lastHeight;
+	SwsContext *img_convert_ctx;
+	AVFrame* alloc_picture(enum PixelFormat pix_fmt, int width, int height);
 };
