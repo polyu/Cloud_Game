@@ -31,7 +31,7 @@ public:
 	~StreamDecoder();
 	void setLocalPort(int port);
 	bool initDecorder();
-	bool decodeVideoFrame(AVFrame **frame);
+	bool decodeVideoFrame(char *data,int size,AVFrame **frame);
 	
 private:
 	int localPort;

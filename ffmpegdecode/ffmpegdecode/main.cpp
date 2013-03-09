@@ -7,48 +7,80 @@
 #ifdef main
 #undef main
 #endif 
+static HANDLE g_hMutex_video = INVALID_HANDLE_VALUE;  
+static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE; 
+static unsigned char videotempBuf[MAXTEMPBUF];
+static unsigned char videoframeBuf[MAXFRAMEBUF];
+static unsigned char videoframeCopyBuf[MAXFRAMEBUF];
+static bool videoCanDecode=false;
+static int videoframeCursor=0;
+static int videocopyframeCursor=0;
+static unsigned char audiotempBuf[MAXTEMPBUF];
+static unsigned char audioframeBuf[MAXFRAMEBUF];
+static unsigned char audioframeCopyBuf[MAXFRAMEBUF];
+static bool audioCanDecode=false;
+static int audioframeCursor=0;
+static int audiocopyframeCursor=0;
+static H264VideoRTPSource *videoSource;
+static H264VideoRTPSource *audioSource;
+static TaskScheduler* scheduler;
+static UsageEnvironment* env ;
+static Groupsock *localVideoSock;
+static Groupsock *localAudioSock;
+static StreamDecoder decoder;
+static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
+static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
+static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
+{
 
-unsigned char tempBuf[MAXTEMPBUF];
-unsigned char frameBuf[MAXFRAMEBUF];
-unsigned char frameCopyBuf[MAXFRAMEBUF];
-bool canDecode=false;
-int frameCursor=0;
-H264VideoRTPSource *videoSource;
-TaskScheduler* scheduler;
-UsageEnvironment* env ;
-Groupsock *localVideoSock;
-StreamDecoder decoder;
-void afterGetUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
-void afterGetUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
+	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
+}
+static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
 	//printf("Got a NAL Unit Length:%d\n",frameSize);
-	if(frameCursor+frameSize>MAXFRAMEBUF)
+	if(videoframeCursor+frameSize>MAXFRAMEBUF)
 	{
 		printf("BUF has been full\n");
-		frameCursor=0;
+		videoframeCursor=0;
 	}
-	memcpy(frameBuf+frameCursor,tempBuf,frameSize);
-	frameCursor+=frameSize;
+	char header[4]={0x00,0x00,0x00,0x01};
+	memcpy(videoframeBuf+videoframeCursor,header,4);
+	videoframeCursor+=4;
+	memcpy(videoframeBuf+videoframeCursor,videotempBuf,frameSize);
+	videoframeCursor+=frameSize;
 	if(videoSource->curPacketMarkerBit())
 	{
-		//Can decode here
-		//==============
-		frameCursor=0;
+		if(WaitForSingleObject(g_hMutex_video, 1)==WAIT_OBJECT_0)
+		{
+			memcpy(videoframeCopyBuf,videoframeBuf,videoframeCursor);
+			videocopyframeCursor=videoframeCursor;
+			videoCanDecode=true;
+			ReleaseMutex(g_hMutex_video); 
+		}
+		videoframeCursor=0;
 	}
 	else
 	{
 		
 	}
-	videoSource->getNextFrame(tempBuf,102400,afterGetUnit,NULL,NULL,NULL);
+	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
 }
 void networkThread(void *)
 {
-	videoSource->getNextFrame(tempBuf,102400,afterGetUnit,NULL,NULL,NULL);
+	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
+	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
 	printf("Network EventLoop Start\n");
 	env->taskScheduler().doEventLoop();
 }
 int main(int argv,char **argc)
 {
+	g_hMutex_video = CreateMutex(NULL, FALSE, L"Mutex");
+	g_hMutex_audio = CreateMutex(NULL, FALSE, L"Mutex2");
+	if (!g_hMutex_video || !g_hMutex_audio)  
+    {  
+        printf("Failed to create mutex\n");
+        return false;  
+    }  
 	if(!decoder.initDecorder())
 	{
 		printf("Failed Init Decorder\n");
@@ -60,19 +92,31 @@ int main(int argv,char **argc)
 	in_addr listenAddress;
 	listenAddress.s_addr=htonl(INADDR_ANY);
 	Port rtpVideoPort(DEFAULT_PORT);
+	Port rtpAudioPort(DEFAULT_PORT+VIDEOAUDIOPORTGAP);
 	localVideoSock=new Groupsock(*env, listenAddress,rtpVideoPort , 255);
+	localAudioSock=new Groupsock(*env, listenAddress,rtpAudioPort , 255);
 	if(localVideoSock==NULL)
 	{
-		printf("Init LOCAL SOCK FAILED\n");
+		printf("Init LOCAL VIDEO SOCK FAILED\n");
+		return -1;
+	}
+	if(localAudioSock==NULL)
+	{
+		printf("Init LOCAL AUDIO SOCK FAILED\n");
 		return -1;
 	}
 	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96);
+	audioSource=H264VideoRTPSource::createNew(*env,localAudioSock,96);
 	if(videoSource==NULL)
 	{
 		printf("INIT Video Source Failed\n");
 		return -1;
 	}
-
+	if(audioSource==NULL)
+	{
+		printf("INIT Video Source Failed\n");
+		return -1;
+	}
 	//==========================================================
 	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
@@ -96,14 +140,15 @@ int main(int argv,char **argc)
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
-		 
-		/*if(recvData(data))
-		{
-			if(decode_frame(data,&frame))
-			{
-				
+		 if(WaitForSingleObject(g_hMutex_video, 10)==WAIT_OBJECT_0)
+		 {
+			 if(videoCanDecode==true)
+			 {
+				 //printf("Try send this thing to decode length %d\n",videocopyframeCursor);
+				 
+				 if(decoder.decodeVideoFrame((char*)videoframeCopyBuf,videocopyframeCursor,&frame))
+				 {
 					SDL_LockYUVOverlay(screenOverlay);
-					
 					screenOverlay->pixels[0]=frame->data[0];
 					screenOverlay->pixels[1]=frame->data[1];
 					screenOverlay->pixels[2]=frame->data[2];
@@ -116,12 +161,11 @@ int main(int argv,char **argc)
 					rect.y=0;
 					SDL_DisplayYUVOverlay(screenOverlay, &rect);
 					SDL_UnlockYUVOverlay(screenOverlay);
-					
-					
-			}
-			free(data.first);
-							
-		}*/
+				 }
+				 videoCanDecode=false;
+			 }
+			 ReleaseMutex(g_hMutex_video); 
+		 }
 		 while( SDL_PollEvent( &event ) )
 		 {
                 switch( event.type )

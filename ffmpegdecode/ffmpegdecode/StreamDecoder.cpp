@@ -16,6 +16,18 @@ StreamDecoder::StreamDecoder()
 }
 StreamDecoder::~StreamDecoder()
 {
+	if(this->video_codec_context!=0)
+	{
+		avcodec_close(video_codec_context);
+		video_codec=0;
+		
+	}
+	if(this->audio_codec_context!=0)
+	{
+		avcodec_close(audio_codec_context);
+		this->audio_codec=0;
+		
+	}
 	if(this->audio_codec!=0)
 	{
 		av_freep(this->audio_codec);
@@ -33,8 +45,37 @@ void StreamDecoder::setLocalPort(int port)
 	this->localPort=port;
 }
 
-bool StreamDecoder::decodeVideoFrame(AVFrame **getframe)
+bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
 {
+	int len, got_frame;
+	avpkt.data = (uint8_t*)data;
+	avpkt.size=size;
+	len = avcodec_decode_video2(this->video_codec_context, frame, &got_frame, &avpkt);
+	if(len<0)
+	{
+		printf("Error happen when decoding\n");
+		return false;
+	}
+	if (got_frame) 
+	{
+		if(lastHeight!=frame->height || lastWidth!=frame->width)
+		{
+			removeSwscale();
+			if(!setupSwscale())
+			{
+				printf("Error happen when setting up swscale!\n");
+				return false;
+			}
+		}
+		sws_scale(img_convert_ctx, frame->data, frame->linesize,0, RHEIGHT, picture->data, picture->linesize);  
+		*getframe=picture;
+		return true;
+	}
+	else
+	{
+		printf("Bad packet! OOP! Maybe next will be good!\n");
+		return false;
+	}
 	return true;
 }
 bool StreamDecoder::openAudioCodec()

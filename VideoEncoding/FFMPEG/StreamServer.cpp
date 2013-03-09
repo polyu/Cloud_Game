@@ -89,7 +89,8 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 		if (c->coded_frame->key_frame)
 			pkt.flags |= AV_PKT_FLAG_KEY;
 		pkt.stream_index = this->video_st->index;
-		printf("Try sending %d\n",pkt.size);
+		
+
 		ret = av_write_frame(voc, &pkt);
 		av_free_packet(&pkt);
 		if(ret<0)
@@ -125,6 +126,7 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 	{
 		pkt.stream_index = this->audio_st->index;
 		printf("Try sending audio %d\n",pkt.size);
+		
 		ret = av_write_frame(aoc, &pkt);
 		av_free_packet(&pkt);
 		if(ret<0)
@@ -182,11 +184,11 @@ bool StreamServer::addVideoStream()
 	c->time_base.den = 25;
     c->time_base.num = 1;
 	av_opt_set(c->priv_data, "tune", "zerolatency", 0);
-	av_opt_set(c->priv_data, "preset","veryfast",0);
+	av_opt_set(c->priv_data, "preset","faster",0);
 	av_opt_set(c->priv_data,"intra-refresh","1",0);
 	//======================================
-	if (voc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+	/*if (voc->oformat->flags & AVFMT_GLOBALHEADER)
+        c->flags |= CODEC_FLAG_GLOBAL_HEADER;*/
 	//======================================
 	if (avcodec_open2(c, this->video_codec,NULL) < 0) 
 	{
@@ -243,6 +245,7 @@ bool StreamServer::initStreamServer()
 		printf("SDP Failed\n");
 		return false;
 	}
+	
 	if(avformat_write_header(aoc, NULL)<0)
 	{
 		printf("Can not send audio header\n");
