@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #define DEFAULT_REMOTEADDRESS "127.0.0.1"
+#define DEFAULT_RTSPPORT 554
 #define DEFAULT_REMOTEPORT 1234
 #define DEFAULT_LOCALPORT 10240
 #define RHEIGHT 480
