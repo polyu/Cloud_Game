@@ -21,7 +21,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="StreamClient.cpp">
+    <ClCompile Include="StreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,19 +32,11 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StreamClient.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="H264NalUtils.h">
+    <ClInclude Include="StreamDecoder.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xsd Include="H264NalUtils1.xsd">
-      <Filter>源文件</Filter>
-    </Xsd>
   </ItemGroup>
 </Project>
