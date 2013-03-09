@@ -17,7 +17,8 @@
 int _tmain(int argc, _TCHAR* argv[]) {
   IMMDeviceEnumerator *enumerator = 0;
   IMMDevice *device = 0;
-
+  FILE *f;
+	f=fopen("c:/1.wav","w");
   CoInitialize(0);
   CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), 
     (void**) &enumerator);
@@ -200,7 +201,10 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
     LONG bytesToWrite = frameCount * blockAlign;
     DWORD bytesWritten;
-	printf("Recording");
+	printf("Recording:%d\n",bytesToWrite);
+	
+		fwrite(data,bytesToWrite,1,f);
+		
     /*WriteFile(processInWrite,reinterpret_cast<PCHAR>(data), bytesToWrite, &bytesWritten, NULL);
     if (bytesWritten != bytesToWrite) {
       printf("WriteFile: tried to write %d bytes, but %d bytes written\n", bytesToWrite, bytesWritten);            
@@ -230,7 +234,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
   audioClient->Stop();
   audioCaptureClient->Release();
   audioClient->Release();
-
+  fclose(f);
   return 0;
 }
 

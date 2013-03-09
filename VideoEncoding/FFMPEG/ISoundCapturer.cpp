@@ -6,11 +6,16 @@ ISoundCapturer::ISoundCapturer()
 	this->audioClient=0;
 	this->waveFormat=0;
 	this->audioCaptureClient=0;
+	this->streamServer=0;
+	this->frame=0;
 	runFlag=false;
 }
 ISoundCapturer::~ISoundCapturer()
 {
-	
+	if(waveFormat!=0)
+	{
+		CoTaskMemFree(waveFormat);
+	}
 }
 void ISoundCapturer::startFrameLoop()
 {
@@ -19,6 +24,7 @@ void ISoundCapturer::startFrameLoop()
 	long frameCounter=0;
 	while(runFlag)
 	{
+		Sleep(ANTISPIN);
 		frameCounter++;
 		UINT32 nextPacketSize;
 		hr = audioCaptureClient->GetNextPacketSize(&nextPacketSize);
@@ -36,7 +42,7 @@ void ISoundCapturer::startFrameLoop()
 		{ // no data yet
 		  continue;
 		}
-
+		//printf("Next packet Size %d\n",nextPacketSize);
     // get the captured data
 		BYTE *data;
 		UINT32 frameCount;
@@ -73,10 +79,13 @@ void ISoundCapturer::startFrameLoop()
 		}
 
 		LONG bytesToWrite = frameCount * waveFormat->nBlockAlign;
-		printf("Recording\n");
+		//printf("Recording %d size, frameCount %d, Align:%d\n",bytesToWrite,frameCount,waveFormat->nBlockAlign);
 		//===========Encode data and byteToWrite===========
+		avcodec_fill_audio_frame(frame,waveFormat->nChannels,AV_SAMPLE_FMT_S16,data,bytesToWrite,0);
+		this->streamServer->write_audio_frame(frame);
+		
 		//======================
-		  hr = audioCaptureClient->ReleaseBuffer(frameCount);
+		 hr = audioCaptureClient->ReleaseBuffer(frameCount);
 		if (FAILED(hr))	
 		{
 		  printf("IAudioCaptureClient::ReleaseBuffer failed on pass %u: hr = 0x%08x\n", frameCounter, hr);
@@ -95,9 +104,18 @@ void ISoundCapturer::stopFrameLoop()
 {
 	runFlag=false;
 }
-
+void ISoundCapturer::setStreamServer(StreamServer * streamServer)
+{
+	this->streamServer=streamServer;
+}
 bool ISoundCapturer::initISoundCapturer()
 {
+	frame=avcodec_alloc_frame();
+	if(frame==NULL)
+	{
+		printf("AUDIO FRAME ALLOCATE\n");
+		return false;
+	}
 	CoInitialize(0);
 	CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), 
     (void**) &enumerator);
@@ -120,6 +138,7 @@ bool ISoundCapturer::initISoundCapturer()
 	switch (waveFormat->wFormatTag) 
 	{
 	  case WAVE_FORMAT_IEEE_FLOAT:
+		printf("Using IEEE:Channel:%d,SamplePerSec:%d\n",waveFormat->nChannels,waveFormat->nSamplesPerSec);
 		waveFormat->wFormatTag = WAVE_FORMAT_PCM;
 		waveFormat->wBitsPerSample = 16;
 		waveFormat->nBlockAlign = waveFormat->nChannels * waveFormat->wBitsPerSample / 8;
@@ -131,12 +150,15 @@ bool ISoundCapturer::initISoundCapturer()
 		  PWAVEFORMATEXTENSIBLE waveFormatEx = reinterpret_cast<PWAVEFORMATEXTENSIBLE>(waveFormat);
 		  if (IsEqualGUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, waveFormatEx->SubFormat)) 
 		  {
+			
 			waveFormatEx->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
 			waveFormatEx->Samples.wValidBitsPerSample = 16;
 			waveFormat->wBitsPerSample = 16;
 			waveFormat->nBlockAlign = waveFormat->nChannels * waveFormat->wBitsPerSample / 8;
 			waveFormat->nAvgBytesPerSec = waveFormat->nBlockAlign * waveFormat->nSamplesPerSec;
-		  } else 
+			printf("Using IEEE_FLOAT_EXTENSIVE:Channel:%d,SamplePerSec:%d,BlockAlign:%d\n",waveFormat->nChannels,waveFormat->nSamplesPerSec,waveFormat->nBlockAlign);
+		  } 
+		  else 
 		  {
 			printf("Don't know how to coerce mix format to int-16\n");
 			CoTaskMemFree(waveFormat);
@@ -152,7 +174,7 @@ bool ISoundCapturer::initISoundCapturer()
 		return false;
 	}
 	
-
+	
 	  // call IAudioClient::Initialize
 	  // note that AUDCLNT_STREAMFLAGS_LOOPBACK and AUDCLNT_STREAMFLAGS_EVENTCALLBACK do not work together...
 	  // the "data ready" event never gets set, so we're going to do a timer-driven loop
@@ -161,15 +183,16 @@ bool ISoundCapturer::initISoundCapturer()
 		AUDCLNT_STREAMFLAGS_LOOPBACK,
 		10000000, 0, waveFormat, 0
 		);
+	   
 	  if (FAILED(hr)) {
 		printf("IAudioClient::Initialize failed: hr = 0x%08x\n", hr);
 		audioClient->Release();
 		return false;
 	  }
-	  CoTaskMemFree(waveFormat);
-
+	  //CoTaskMemFree(waveFormat);
+	  //printf("This is for debug test:%d\n",waveFormat->nBlockAlign);
 	  // activate an IAudioCaptureClient
-	  
+	 
 	  hr = audioClient->GetService(__uuidof(IAudioCaptureClient), (void**) &audioCaptureClient);
 	  if (FAILED(hr)) {
 		printf("IAudioClient::GetService(IAudioCaptureClient) failed: hr 0x%08x\n", hr);

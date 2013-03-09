@@ -22,7 +22,7 @@ static bool audioCanDecode=false;
 static int audioframeCursor=0;
 static int audiocopyframeCursor=0;
 static H264VideoRTPSource *videoSource;
-static H264VideoRTPSource *audioSource;
+static RTPSource *audioSource;
 static TaskScheduler* scheduler;
 static UsageEnvironment* env ;
 static Groupsock *localVideoSock;
@@ -32,7 +32,7 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-
+	printf("Get Audio Size:%d\n",frameSize);
 	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
 }
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
@@ -106,7 +106,7 @@ int main(int argv,char **argc)
 		return -1;
 	}
 	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96);
-	audioSource=H264VideoRTPSource::createNew(*env,localAudioSock,96);
+	audioSource=RTPSource::create
 	if(videoSource==NULL)
 	{
 		printf("INIT Video Source Failed\n");

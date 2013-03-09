@@ -31,7 +31,7 @@ void StreamServer::setRemoteAddress(string address,int videoport,int audioport)
 bool StreamServer::addAudioStream()
 {
 	AVCodecContext *c;
-	this->audio_codec = avcodec_find_encoder(CODEC_ID_SPEEX);
+	this->audio_codec = avcodec_find_encoder(CODEC_ID_AAC);
 	if (!this->audio_codec) 
 	{
 		printf( "aideo codec not found/n");
@@ -47,12 +47,12 @@ bool StreamServer::addAudioStream()
 	c=this->audio_st->codec;
 	c->sample_fmt  = AV_SAMPLE_FMT_S16;
     c->bit_rate    = 64000;
-    c->sample_rate = 32000;
-    c->channels    = 1;
+    c->sample_rate = 44100;
+    c->channels    = 2;
 	//c->channel_layout=av_get_channel_layout("DL");
 	//======================================
-	if (aoc->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+	/*if (aoc->oformat->flags & AVFMT_GLOBALHEADER)
+        c->flags |= CODEC_FLAG_GLOBAL_HEADER;*/
 	//======================================
 	if( avcodec_open2(c, this->audio_codec, NULL)<0)
 	{
@@ -110,7 +110,7 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 {
 	
 	long encodeAudioPerformanceClock=clock();
-	AVCodecContext *c = this->video_st->codec;
+	AVCodecContext *c = this->audio_st->codec;
 	AVPacket pkt;
     int got_output,ret;
     av_init_packet(&pkt);
@@ -126,7 +126,6 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 	{
 		pkt.stream_index = this->audio_st->index;
 		printf("Try sending audio %d\n",pkt.size);
-		
 		ret = av_write_frame(aoc, &pkt);
 		av_free_packet(&pkt);
 		if(ret<0)
@@ -240,11 +239,11 @@ bool StreamServer::initStreamServer()
 		return false;
 	}
 
-	if(!generateSDP())
+	/*if(!generateSDP())
 	{
 		printf("SDP Failed\n");
 		return false;
-	}
+	}*/
 	
 	if(avformat_write_header(aoc, NULL)<0)
 	{

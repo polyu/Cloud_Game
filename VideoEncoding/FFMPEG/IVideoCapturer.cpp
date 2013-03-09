@@ -103,7 +103,7 @@ void IVideoCapturer::startFrameLoop()
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
 			int fps=1000/((clock()-fpsClock)+1);//avoid divide 0
 			fpsClock=clock();
-			printf("%d bytes height:%d width:%d bpp:%d FPS:%d \n",copySize,height,width,bpp,fps);
+			//printf("%d bytes height:%d width:%d bpp:%d FPS:%d \n",copySize,height,width,bpp,fps);
 			if(bpp!=4)
 			{
 				printf("Encoder cannot handle this format\n");

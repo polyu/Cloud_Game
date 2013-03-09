@@ -9,14 +9,14 @@
 #include <iterator>
 #include <mmsystem.h>
 #include <mmdeviceapi.h>
-
+#include "StreamServer.h"
 
 class ISoundCapturer
 {
 public:
 	ISoundCapturer();
 	~ISoundCapturer();
-	
+	void setStreamServer(StreamServer * streamServer);
 	bool initISoundCapturer();
 	void startFrameLoop();
 	void stopFrameLoop();
@@ -26,5 +26,7 @@ private:
 	IAudioClient *audioClient;
 	WAVEFORMATEX *waveFormat;
 	IAudioCaptureClient *audioCaptureClient;
+	StreamServer * streamServer;
+	AVFrame *frame;
 	bool runFlag;
 };

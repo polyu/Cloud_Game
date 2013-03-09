@@ -8,13 +8,14 @@
 #include "targetver.h"
 #include <stdio.h>
 #include <tchar.h>
-#define RHEIGHT 480
-#define RWIDTH 640
+#define RHEIGHT 720
+#define RWIDTH 1280
 #define INBUF_SIZE 100000
 #define DEFAULT_PORT 1234
+#define VIDEOAUDIOPORTGAP 1000
 #define GUISLEEPTIME 5
 #define LOCALADDRESS "127.0.0.1"
-#define VIDEOAUDIOPORTGAP 1000
+
 #define MAXBUFSIZE 1024000
 #define MAXRETRYTIME 50
 #define MAXTEMPBUF 102400

@@ -13,9 +13,10 @@
 #define DEFAULT_RTSPPORT 554
 #define DEFAULT_REMOTEPORT 1234
 #define DEFAULT_LOCALPORT 10240
-#define RHEIGHT 480
-#define RWIDTH 640
+#define RHEIGHT 720
+#define RWIDTH 1280
 #define VIDEOAUDIOPORTGAP 1000
+#define ANTISPIN 3
 
 
 // TODO: 在此处引用程序需要的其他头文件
