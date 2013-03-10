@@ -6,8 +6,10 @@ StreamDecoder::StreamDecoder()
 
 	this->audio_codec=0;
 	this->video_codec=0;
-	this->frame=0;
+	this->videoframe=0;
+	this->videopicture=0;
 
+	this->audioframe=0;
 	this->lastWidth=0;
 	this->lastHeight=0;
 	this->img_convert_ctx=0;
@@ -39,18 +41,34 @@ StreamDecoder::~StreamDecoder()
 		this->video_codec=0;
 	}
 	this->removeSwscale();
+	if(this->videoframe!=0)
+	{
+		avcodec_free_frame(&videoframe);
+		videoframe=0;
+	}
+	if(this->audioframe!=0)
+	{
+		avcodec_free_frame(&videoframe);
+		videoframe=0;
+	}
+	if(this->videopicture!=0)
+	{
+		avcodec_free_frame(&videopicture);
+		videopicture=0;
+	}
+	av_free_packet(&videoavpkt);
+	av_free_packet(&audioavpkt);
 }
 void StreamDecoder::setLocalPort(int port)
 {
 	this->localPort=port;
 }
-
-bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
+bool StreamDecoder::decodeAudioFrame(char*data,int size,AVFrame **getframe)
 {
 	int len, got_frame;
-	avpkt.data = (uint8_t*)data;
-	avpkt.size=size;
-	len = avcodec_decode_video2(this->video_codec_context, frame, &got_frame, &avpkt);
+	audioavpkt.data = (uint8_t*)data;
+	audioavpkt.size=size;
+	len = avcodec_decode_audio4(this->audio_codec_context, audioframe, &got_frame, &audioavpkt);
 	if(len<0)
 	{
 		printf("Error happen when decoding\n");
@@ -58,7 +76,28 @@ bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
 	}
 	if (got_frame) 
 	{
-		if(lastHeight!=frame->height || lastWidth!=frame->width)
+		printf("Decode audio ok\n");
+		return true;
+	}
+	else
+	{
+	}
+	return true;
+}
+bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
+{
+	int len, got_frame;
+	videoavpkt.data = (uint8_t*)data;
+	videoavpkt.size=size;
+	len = avcodec_decode_video2(this->video_codec_context, videoframe, &got_frame, &videoavpkt);
+	if(len<0)
+	{
+		printf("Error happen when decoding\n");
+		return false;
+	}
+	if (got_frame) 
+	{
+		if(lastHeight!=videoframe->height || lastWidth!=videoframe->width)
 		{
 			removeSwscale();
 			if(!setupSwscale())
@@ -67,8 +106,8 @@ bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
 				return false;
 			}
 		}
-		sws_scale(img_convert_ctx, frame->data, frame->linesize,0, RHEIGHT, picture->data, picture->linesize);  
-		*getframe=picture;
+		sws_scale(img_convert_ctx, videoframe->data, videoframe->linesize,0, RHEIGHT, videopicture->data, videopicture->linesize);  
+		*getframe=videopicture;
 		return true;
 	}
 	else
@@ -80,6 +119,18 @@ bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
 }
 bool StreamDecoder::openAudioCodec()
 {
+	this->audio_codec=avcodec_find_decoder(AV_CODEC_ID_AAC);
+	if (!this->audio_codec) 
+	{
+		printf( "audio codec not found/n");
+		return false;
+    }
+	this->audio_codec_context = avcodec_alloc_context3(this->audio_codec);
+	if (avcodec_open2(this->audio_codec_context, this->audio_codec,NULL) < 0) 
+	{
+        printf( "could not open audio codec\n");
+        return false;
+    }
 	return true;
 }
 bool StreamDecoder::openVideoCodec()
@@ -94,7 +145,7 @@ bool StreamDecoder::openVideoCodec()
 	this->video_codec_context = avcodec_alloc_context3(this->video_codec);
 	if (avcodec_open2(this->video_codec_context, this->video_codec,NULL) < 0) 
 	{
-        printf( "could not open codec\n");
+        printf( "could not open video codec\n");
         return false;
     }
 	return true;
@@ -114,20 +165,21 @@ bool StreamDecoder::initDecorder()
 	    return false;
 	}
 	
-		frame = avcodec_alloc_frame();
-	
-    if (!frame ) {
+		videoframe = avcodec_alloc_frame();
+	audioframe = avcodec_alloc_frame();
+    if (!videoframe || !audioframe) {
         printf("Could not allocate video frame\n");
         return false;
     }
-	av_init_packet(&avpkt);
-	picture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
+	av_init_packet(&videoavpkt);
+	av_init_packet(&audioavpkt);
+	videopicture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
 	return true;
 }
 
 bool StreamDecoder::setupSwscale()
 {
-	img_convert_ctx = sws_getContext(frame->width, frame->height, this->video_codec_context->pix_fmt, 
+	img_convert_ctx = sws_getContext(videoframe->width, videoframe->height, this->video_codec_context->pix_fmt, 
 	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_POINT, 
 	NULL, NULL, NULL);
 	if(img_convert_ctx == NULL) { 

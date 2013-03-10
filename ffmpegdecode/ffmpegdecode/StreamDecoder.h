@@ -32,7 +32,7 @@ public:
 	void setLocalPort(int port);
 	bool initDecorder();
 	bool decodeVideoFrame(char *data,int size,AVFrame **frame);
-	
+	bool decodeAudioFrame(char *data,int size,AVFrame **frame);
 private:
 	int localPort;
     AVCodec *audio_codec, *video_codec;
@@ -41,9 +41,12 @@ private:
 	bool openAudioCodec();
 	bool setupSwscale();
 	void removeSwscale();
-	AVPacket avpkt;
-	AVFrame* frame;
-	AVFrame* picture;
+	AVPacket videoavpkt;
+	AVFrame* videoframe;
+	AVFrame* videopicture;
+	AVPacket audioavpkt;
+	AVFrame* audioframe;
+	
 	int lastWidth;
 	int lastHeight;
 	SwsContext *img_convert_ctx;

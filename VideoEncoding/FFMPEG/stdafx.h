@@ -16,7 +16,7 @@
 #define RHEIGHT 720
 #define RWIDTH 1280
 #define VIDEOAUDIOPORTGAP 1000
-#define ANTISPIN 3
+#define ANTISPIN 1
 
 
 // TODO: 在此处引用程序需要的其他头文件

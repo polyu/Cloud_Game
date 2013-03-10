@@ -1,7 +1,7 @@
 
 //参数：1.RTP包缓冲地址 2.RTP包数据大小 3.H264输出地址 4.输出数据大小
 //返回：true:表示一帧结束  false:帧未结束 一般AAC音频包比较小，没有分片。
-bool UnpackRTPAAC(void * bufIn, int recvLen, void** pBufOut,  int* pOutLen)
+bool unpackRTPAAC(void * bufIn, int recvLen, void** pBufOut,  int* pOutLen)
 {
     unsigned char*  bufRecv = (unsigned char*)bufIn;
     //char strFileName[20];
@@ -20,15 +20,5 @@ bool UnpackRTPAAC(void * bufIn, int recvLen, void** pBufOut,  int* pOutLen)
     memcpy(*pBufOut, ADTS, sizeof(ADTS));
     *pOutLen = recvLen - 16 + 7;
     unsigned char* bufTmp = (unsigned char*)bufIn;
-    bool bFinishFrame = false;
-    if (bufTmp[1] & 0x80)
-    {
-        //DebugTrace::D("Marker");
-        bFinishFrame = true;
-    }
-    else
-    {
-        bFinishFrame = false;
-    }
     return true;
 }

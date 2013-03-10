@@ -117,6 +117,7 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
 	ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
+	
 	if (ret < 0) 
 	{
         printf( "Error encoding audio frame\n");
@@ -126,6 +127,9 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 	{
 		pkt.stream_index = this->audio_st->index;
 		printf("Try sending audio %d\n",pkt.size);
+		FILE *f=fopen("c:/1.dump","w");
+		fwrite(pkt.data,pkt.size,1,f);
+		fclose(f);
 		ret = av_write_frame(aoc, &pkt);
 		av_free_packet(&pkt);
 		if(ret<0)
