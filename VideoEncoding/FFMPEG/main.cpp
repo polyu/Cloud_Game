@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 	vcapturer.setStreamServer(&server);
 	if(!acapturer.initISoundCapturer())
 	{
-		printf("Video Capture Server Failed\n");
+		printf("Audio Capture Server Failed\n");
 		return -1;	
 	}
 	acapturer.setStreamServer(&server);

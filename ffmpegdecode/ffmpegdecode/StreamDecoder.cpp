@@ -180,7 +180,7 @@ bool StreamDecoder::initDecorder()
 bool StreamDecoder::setupSwscale()
 {
 	img_convert_ctx = sws_getContext(videoframe->width, videoframe->height, this->video_codec_context->pix_fmt, 
-	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_POINT, 
+	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, 
 	NULL, NULL, NULL);
 	if(img_convert_ctx == NULL) { 
 	printf( "Cannot initialize the conversion context!\n"); 

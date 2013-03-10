@@ -38,7 +38,7 @@ bool ISoundCapturer::setupSwscale()
 	av_opt_set_int(swr_ctx, "in_sample_rate",       waveFormat->nSamplesPerSec, 0);
     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt",  AV_SAMPLE_FMT_S16, 0);
 	av_opt_set_int(swr_ctx, "out_channel_count",    2, 0);
-    av_opt_set_int(swr_ctx, "out_sample_rate",       44100, 0);
+    av_opt_set_int(swr_ctx, "out_sample_rate",       OUTPUTSAMPLERATE, 0);
     av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
 	if (( swr_init(swr_ctx)) < 0) {
        printf( "Failed to initialize the resampling context\n");
@@ -90,12 +90,18 @@ void ISoundCapturer::startFrameLoop()
 
 		if (bufferFlags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY) {
 		  printf("IAudioCaptureClient::GetBuffer reports 'data discontinuity' on pass %u\n", debugFrameCounter);
+		  audioCaptureClient->ReleaseBuffer(frameCount);
+		  continue;
 		}
 		if (bufferFlags & AUDCLNT_BUFFERFLAGS_SILENT) {
 		  printf("IAudioCaptureClient::GetBuffer reports 'silent' on pass %u\n", debugFrameCounter);
+		  audioCaptureClient->ReleaseBuffer(frameCount);
+		  continue;
 		}
 		if (bufferFlags & AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR) {
 		  printf("IAudioCaptureClient::GetBuffer reports 'timestamp error' on pass %u\n", debugFrameCounter);
+		  audioCaptureClient->ReleaseBuffer(frameCount);
+		  continue;
 		}
 
 		if (frameCount == 0) {
@@ -114,28 +120,30 @@ void ISoundCapturer::startFrameLoop()
 		int src_linesize;
 		uint8_t **dst_data=0 ;
 		int dst_linesize;
-		int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, waveFormat->nSamplesPerSec)+frameCount, 44100, waveFormat->nSamplesPerSec, AV_ROUND_UP);
+		int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, waveFormat->nSamplesPerSec)+frameCount, OUTPUTSAMPLERATE, waveFormat->nSamplesPerSec, AV_ROUND_UP);
 		alloc_samples_array_and_data(&src_data, &src_linesize, 2,frameCount, AV_SAMPLE_FMT_S16, 0);
 		alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 0);
 		memcpy(src_data[0],data,bytesToWrite);
-		ret=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data, frameCount);
-		if(ret<0)
+		int retFrameCount=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data, frameCount);
+		if(retFrameCount<0)
 		{
 			printf("resample failed\n");
 			continue;
 		}
-		printf("Convert frame %d\n",ret);
+		int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
+		printf("Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
+		frame->nb_samples=retFrameCount;
+		ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,0);
+		if(ret<0)
+		{
+			printf("Fill audio frame failed!\n");
+		}
+		
+		this->streamServer->write_audio_frame(frame);
 		av_freep(&src_data[0]);
 		av_freep(&dst_data[0]);
 		av_freep(&src_data);
 		av_freep(&dst_data);
-		frame->nb_samples=frameCount;
-		ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,data,bytesToWrite,0);
-		this->streamServer->write_audio_frame(frame);
-		if(ret<0)
-		{
-			printf("Fuck dog\n");
-		}
 		//======================
 		 hr = audioCaptureClient->ReleaseBuffer(frameCount);
 		if (FAILED(hr))	

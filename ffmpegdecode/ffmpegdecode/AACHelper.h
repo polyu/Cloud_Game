@@ -5,7 +5,7 @@ bool unpackRTPAAC(void * bufIn, int recvLen, void** pBufOut,  int* pOutLen)
 {
     unsigned char*  bufRecv = (unsigned char*)bufIn;
     //char strFileName[20];
-    unsigned char ADTS[] = {0xFF, 0xF1, 0x00, 0x00, 0x00, 0x00, 0xFC}; 
+    unsigned char ADTS[] = {0xFF, 0xF1, 0x50, 0x80, 0x00, 0x00, 0xFC}; 
     int audioSamprate = 44100;//音频采样率
     int audioChannel = 2;//音频声道 1或2
     int audioBit = 16;//16位 固定

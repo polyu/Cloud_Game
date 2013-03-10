@@ -1,21 +1,15 @@
 #include "stdafx.h"
-#include <rtpsession.h>
-#include <rtppacket.h>
-#include <rtpudpv4transmitter.h>
-#include <rtpipv4address.h>
-#include <rtpsessionparams.h>
-#include <rtperrors.h>
 #include <BasicUsageEnvironment.hh>
 #include <liveMedia.hh>
 #include "StreamDecoder.h"
 #include <SDL.h>
 #include <process.h>
 
-using namespace jrtplib;
 #ifdef main
 #undef main
 #endif 
 //====================VIDEO================
+
 static HANDLE g_hMutex_video = INVALID_HANDLE_VALUE;  
 static H264VideoRTPSource *videoSource;
 static unsigned char videotempBuf[MAXTEMPBUF];
@@ -28,6 +22,7 @@ static void refreshVideo();
 static Groupsock *localVideoSock;
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 //===================AUDIO======================
+static void refreshAudio();
 static unsigned char audiotempBuf[MAXTEMPBUF];
 static unsigned char audioframeBuf[MAXFRAMEBUF];
 static unsigned char audioframeCopyBuf[MAXFRAMEBUF];
@@ -35,15 +30,36 @@ static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE;
 static bool audioCanDecode=false;
 static int audioframeCursor=0;
 static int audiocopyframeCursor=0;
-static RTPSession audioSession;
-static RTPUDPv4TransmissionParams audioTransparams;
-static RTPSessionParams audioSessparams;
+static MPEG4GenericRTPSource *audioSource;
+static Groupsock *localAudioSock;
+static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 //=====================AUDIO=========================
 static TaskScheduler* scheduler;
 static UsageEnvironment* env ;
-void VideoNetworkThread(void *);
-void AudioNetworkThread(void *);
+void NetworkThread(void *);
 static StreamDecoder decoder;
+
+
+
+static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
+{
+	printf("%d\n",frameSize);
+	/*FILE *f=fopen("C:/t1.dump","aw");
+	fwrite(audiotempBuf,frameSize,1,f);
+	fclose(f);
+	printf("STILL\n");*/
+	AVFrame *frame;
+	unsigned char ADTS[] = {0xFF, 0xF9, 0x50, 0x80, 0x00, 0x00, 0xFC}; 
+	int aacLen=frameSize - 4 + 7;
+	aacLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
+    aacLen |= 0x1F;//5 bit    1            
+    ADTS[4] = aacLen>>8;
+    ADTS[5] = aacLen & 0xFF;
+	memcpy(audioframeBuf, ADTS, sizeof(ADTS));
+	memcpy(audioframeBuf+7,audiotempBuf+4,frameSize-4);
+	decoder.decodeAudioFrame((char *)audioframeBuf,frameSize,&frame);
+	refreshAudio();
+}
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
 	//printf("Got a NAL Unit Length:%d\n",frameSize);
@@ -70,75 +86,32 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 	}
 	else
 	{
-		
+
 	}
+
+
 	refreshVideo();
+
 }
 void refreshVideo(void )
 {
 	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
 }
-void VideoNetworkThread(void *)
+void refreshAudio(void )
 {
+	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
+}
+void NetworkThread(void *)
+{
+	refreshAudio();
 	refreshVideo();
+	
 	printf("Network  EventLoop Start\n");
 	env->taskScheduler().doEventLoop();
 }
-void AudioNetworkThread(void *)
-{
-	while(true)
-	{
-		Sleep(1);
-		if(audioSession.Poll()<0)
-		{
-			printf("Poll Audio Failed");
-			return;
-		}
-		audioSession.BeginDataAccess();
-		
-		// check incoming packets
-		if (audioSession.GotoFirstSourceWithData())
-		{
-			
-				RTPPacket *pack;
-				do
-				{
-					while ((pack = audioSession.GetNextPacket()) != NULL)
-					{
-						// You can examine the data here
-						//printf("Got packet !\n");
-						FILE *f=fopen("c:/2.dump","w");
-						fwrite(pack->GetPayloadData(),pack->GetPacketLength(),1,f);
-						fclose(f);
-						AVFrame *audioframe;
-						BYTE ADTS[7] = {0xFF, 0xF1, 0x50, 0x80, 0x00, 0x00, 0xFC};
-						int aaclen=pack->GetPacketLength()-9;
-						aaclen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
-						aaclen |= 0x1F;//5 bit    1            
-						ADTS[4] = aaclen>>8;
-						ADTS[5] = aaclen & 0xFF;
-						memcpy(audiotempBuf,ADTS,sizeof(ADTS));
-						memcpy(audiotempBuf,(char *)pack->GetPayloadData()+4,pack->GetPayloadLength()-4);
-						decoder.decodeAudioFrame((char*)audiotempBuf,pack->GetPacketLength()-9,&audioframe);
-						// we don't longer need the packet, so
-						// we'll delete it
-						audioSession.DeletePacket(pack);
-					}
-				}
-				while (audioSession.GotoNextSourceWithData());
-			 
-		}
-		
-		audioSession.EndDataAccess();
-
-	}
-}
-
 
 int main(int argv,char **argc)
 {
-	WSADATA dat;
-	WSAStartup(MAKEWORD(2,2),&dat);
 	g_hMutex_video = CreateMutex(NULL, FALSE, L"Mutex");
 	g_hMutex_audio = CreateMutex(NULL, FALSE, L"Mutex2");
 	if (!g_hMutex_video || !g_hMutex_audio)  
@@ -151,35 +124,40 @@ int main(int argv,char **argc)
 		printf("Failed Init Decorder\n");
 		return -1;
 	}
-	//==============Video Source======================
 	in_addr listenAddress;
 	listenAddress.s_addr=htonl(INADDR_ANY);
+	//==============Video And Audio Source======================
 	scheduler = BasicTaskScheduler::createNew();
 	env = BasicUsageEnvironment::createNew(*scheduler);
 	Port rtpVideoPort(DEFAULT_PORT);
 	localVideoSock=new Groupsock(*env, listenAddress,rtpVideoPort , 255);
+	Port rtpAudioPort(DEFAULT_PORT+VIDEOAUDIOPORTGAP);
+	localAudioSock=new Groupsock(*env, listenAddress,rtpAudioPort , 255);
 	if(localVideoSock==NULL)
 	{
 		printf("Init LOCAL VIDEO SOCK FAILED\n");
 		return -1;
 	}
+	if(localAudioSock==NULL)
+	{
+		printf("Init LOCAL AUDIO SOCK FAILED\n");
+		return -1;
+	}
+
 	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96,30000);
+	audioSource= MPEG4GenericRTPSource::createNew(*env,localAudioSock,97,30000,"aac/hbr","aac/hbr",13,3,3);
+
 	if(videoSource==NULL)
 	{
 		printf("INIT Video Source Failed\n");
 		return -1;
 	}
-	//===================AUDIO JRTP=======================================
-	audioSessparams.SetOwnTimestampUnit(1.0/44100.0);
-	audioSessparams.SetUsePollThread(false);
-	audioTransparams.SetPortbase(DEFAULT_PORT+VIDEOAUDIOPORTGAP);
-	if(audioSession.Create(audioSessparams,&audioTransparams)<0)
+	if(audioSource==NULL)
 	{
-		printf("Fail init RTP\n");
+		printf("INIT Video Source Failed\n");
 		return -1;
 	}
-	
-	//==========================================================
+	//========================================================
 	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
         printf("Could not initialize SDL: %s.\n", SDL_GetError());
@@ -198,8 +176,7 @@ int main(int argv,char **argc)
 	SDL_Event event;
 	SDL_Rect rect;  
 	AVFrame* frame;
-	_beginthread(VideoNetworkThread,0,NULL);
-	_beginthread(AudioNetworkThread,0,NULL);
+	_beginthread(NetworkThread,0,NULL);
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
@@ -208,7 +185,7 @@ int main(int argv,char **argc)
 			 if(videoCanDecode==true)
 			 {
 				 //printf("Try send this thing to decode length %d\n",videocopyframeCursor);
-				 
+
 				 if(decoder.decodeVideoFrame((char*)videoframeCopyBuf,videocopyframeCursor,&frame))
 				 {
 					SDL_LockYUVOverlay(screenOverlay);
@@ -248,6 +225,6 @@ int main(int argv,char **argc)
 		 }
 	}
 	return 0;
-	
-	
+
+
 }

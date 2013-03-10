@@ -17,6 +17,7 @@
 #define RWIDTH 1280
 #define VIDEOAUDIOPORTGAP 1000
 #define ANTISPIN 1
+#define OUTPUTSAMPLERATE 44100
 
 
 // TODO: 在此处引用程序需要的其他头文件

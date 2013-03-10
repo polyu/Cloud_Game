@@ -47,7 +47,7 @@ bool StreamServer::addAudioStream()
 	c=this->audio_st->codec;
 	c->sample_fmt  = AV_SAMPLE_FMT_S16;
     c->bit_rate    = 64000;
-    c->sample_rate = 44100;
+    c->sample_rate = OUTPUTSAMPLERATE;
     c->channels    = 2;
 	//c->channel_layout=av_get_channel_layout("DL");
 	//======================================
@@ -127,10 +127,11 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 	{
 		pkt.stream_index = this->audio_st->index;
 		printf("Try sending audio %d\n",pkt.size);
-		FILE *f=fopen("c:/1.dump","w");
-		fwrite(pkt.data,pkt.size,1,f);
-		fclose(f);
+	
 		ret = av_write_frame(aoc, &pkt);
+		FILE *f=fopen("c:/t2.dump","w");
+	fwrite(pkt.data,pkt.size,1,f);
+	fclose(f);
 		av_free_packet(&pkt);
 		if(ret<0)
 		{
@@ -224,14 +225,16 @@ bool StreamServer::initStreamServer()
 	}
 	this->vfmt = av_guess_format("rtp", NULL, NULL);
 	this->afmt = av_guess_format("rtp", NULL, NULL);
+	
 	if (!this->vfmt || !this->afmt )
     {
         printf("Try init RTP format failed\n");
 		return false;
     }
-
+	
 	voc->oformat=this->vfmt;
 	aoc->oformat=this->afmt;
+	
 	if(!addVideoStream())
 	{
 		printf("Can' add video stream! \n");

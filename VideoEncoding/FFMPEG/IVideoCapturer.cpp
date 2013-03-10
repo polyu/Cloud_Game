@@ -154,7 +154,7 @@ void IVideoCapturer::stopCapture()
 bool IVideoCapturer::setupSwscale(int in_width,int in_height)
 {
 	img_convert_ctx = sws_getContext(in_width, in_height, PIX_FMT_RGB32, 
-	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_POINT, 
+	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, 
 	NULL, NULL, NULL);
 	if(img_convert_ctx == NULL) { 
 	printf( "Cannot initialize the conversion context!\n"); 
