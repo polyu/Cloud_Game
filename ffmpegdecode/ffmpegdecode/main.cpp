@@ -4,36 +4,47 @@
 #include "StreamDecoder.h"
 #include <SDL.h>
 #include <process.h>
+#include "AACHelper.h"
 #ifdef main
 #undef main
 #endif 
+//====================VIDEO================
+
 static HANDLE g_hMutex_video = INVALID_HANDLE_VALUE;  
-static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE; 
+static H264VideoRTPSource *videoSource;
 static unsigned char videotempBuf[MAXTEMPBUF];
 static unsigned char videoframeBuf[MAXFRAMEBUF];
 static unsigned char videoframeCopyBuf[MAXFRAMEBUF];
 static bool videoCanDecode=false;
 static int videoframeCursor=0;
 static int videocopyframeCursor=0;
+static void refreshVideo();
+static Groupsock *localVideoSock;
+static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
+//===================AUDIO======================
+static void refreshAudio();
 static unsigned char audiotempBuf[MAXTEMPBUF];
 static unsigned char audioframeBuf[MAXFRAMEBUF];
 static unsigned char audioframeCopyBuf[MAXFRAMEBUF];
+static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE; 
 static bool audioCanDecode=false;
 static int audioframeCursor=0;
 static int audiocopyframeCursor=0;
-static H264VideoRTPSource *videoSource;
-static RTPSource *audioSource;
+static SimpleRTPSource *audioSource;
+static Groupsock *localAudioSock;
+static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
+//=====================AUDIO=========================
 static TaskScheduler* scheduler;
 static UsageEnvironment* env ;
-static Groupsock *localVideoSock;
-static Groupsock *localAudioSock;
+void NetworkThread(void *);
 static StreamDecoder decoder;
-static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
-static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
+
+
+
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
 	printf("Get Audio Size:%d\n",frameSize);
-	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
+	refreshAudio();
 }
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
@@ -63,15 +74,27 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 	{
 		
 	}
-	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
+	
+	
+	refreshVideo();
+	
 }
-void networkThread(void *)
+void refreshVideo(void )
 {
 	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
+}
+void refreshAudio(void )
+{
 	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
-	printf("Network EventLoop Start\n");
+}
+void NetworkThread(void *)
+{
+	refreshVideo();
+	refreshAudio();
+	printf("Network  EventLoop Start\n");
 	env->taskScheduler().doEventLoop();
 }
+
 int main(int argv,char **argc)
 {
 	g_hMutex_video = CreateMutex(NULL, FALSE, L"Mutex");
@@ -86,14 +109,14 @@ int main(int argv,char **argc)
 		printf("Failed Init Decorder\n");
 		return -1;
 	}
+	in_addr listenAddress;
+	listenAddress.s_addr=htonl(INADDR_ANY);
 	//==============Video And Audio Source======================
 	scheduler = BasicTaskScheduler::createNew();
 	env = BasicUsageEnvironment::createNew(*scheduler);
-	in_addr listenAddress;
-	listenAddress.s_addr=htonl(INADDR_ANY);
 	Port rtpVideoPort(DEFAULT_PORT);
-	Port rtpAudioPort(DEFAULT_PORT+VIDEOAUDIOPORTGAP);
 	localVideoSock=new Groupsock(*env, listenAddress,rtpVideoPort , 255);
+	Port rtpAudioPort(DEFAULT_PORT+VIDEOAUDIOPORTGAP);
 	localAudioSock=new Groupsock(*env, listenAddress,rtpAudioPort , 255);
 	if(localVideoSock==NULL)
 	{
@@ -105,8 +128,10 @@ int main(int argv,char **argc)
 		printf("Init LOCAL AUDIO SOCK FAILED\n");
 		return -1;
 	}
-	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96);
-	audioSource=RTPSource::create
+	
+	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96,30000);
+	audioSource=SimpleRTPSource::createNew(*env,localAudioSock,96,25U,"audio/AAC");
+	
 	if(videoSource==NULL)
 	{
 		printf("INIT Video Source Failed\n");
@@ -136,7 +161,7 @@ int main(int argv,char **argc)
 	SDL_Event event;
 	SDL_Rect rect;  
 	AVFrame* frame;
-	_beginthread(networkThread,0,NULL);
+	_beginthread(NetworkThread,0,NULL);
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
