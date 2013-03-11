@@ -113,37 +113,50 @@ void ISoundCapturer::startFrameLoop()
 		  return;            
 		}
 		int bytesToWrite = frameCount * waveFormat->nBlockAlign;
+		int ret=-1;
 		
 		//===========Encode data and byteToWrite===========
-		int ret=-1;
-		uint8_t **src_data=0;
-		int src_linesize;
-		uint8_t **dst_data=0 ;
-		int dst_linesize;
-		int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, waveFormat->nSamplesPerSec)+frameCount, OUTPUTSAMPLERATE, waveFormat->nSamplesPerSec, AV_ROUND_UP);
-		alloc_samples_array_and_data(&src_data, &src_linesize, 2,frameCount, AV_SAMPLE_FMT_S16, 0);
-		alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 0);
-		memcpy(src_data[0],data,bytesToWrite);
-		int retFrameCount=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data, frameCount);
-		if(retFrameCount<0)
+		if(this->waveFormat->nChannels==2&&this->waveFormat->nSamplesPerSec==OUTPUTSAMPLERATE)//Not need to cumsom cpu
 		{
-			printf("resample failed\n");
-			continue;
+			frame->nb_samples=frameCount;
+			ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,data,bytesToWrite,1);
+			if(ret<0)
+			{
+				printf("Fill audio frame failed!\n");
+			}
+			this->streamServer->write_audio_frame(frame);
 		}
-		int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
-		printf("Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
-		frame->nb_samples=retFrameCount;
-		ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,0);
-		if(ret<0)
+		else
 		{
-			printf("Fill audio frame failed!\n");
-		}
+			uint8_t **src_data=0;
+			int src_linesize;
+			uint8_t **dst_data=0 ;
+			int dst_linesize;
+			int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, waveFormat->nSamplesPerSec)+frameCount, OUTPUTSAMPLERATE, waveFormat->nSamplesPerSec, AV_ROUND_UP);
+			alloc_samples_array_and_data(&src_data, &src_linesize, 2,frameCount, AV_SAMPLE_FMT_S16, 0);
+			alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 0);
+			memcpy(src_data[0],data,bytesToWrite);
+			int retFrameCount=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data, frameCount);
+			if(retFrameCount<0)
+			{
+				printf("resample failed\n");
+				continue;
+			}
+			int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
+			printf("Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
+			frame->nb_samples=retFrameCount;
+			ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,0);
+			if(ret<0)
+			{
+				printf("Fill audio frame failed!\n");
+			}
 		
-		this->streamServer->write_audio_frame(frame);
-		av_freep(&src_data[0]);
-		av_freep(&dst_data[0]);
-		av_freep(&src_data);
-		av_freep(&dst_data);
+			this->streamServer->write_audio_frame(frame);
+			av_freep(&src_data[0]);
+			av_freep(&dst_data[0]);
+			av_freep(&src_data);
+			av_freep(&dst_data);
+		}
 		//======================
 		 hr = audioCaptureClient->ReleaseBuffer(frameCount);
 		if (FAILED(hr))	

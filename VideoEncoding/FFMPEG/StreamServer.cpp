@@ -108,7 +108,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 }
 bool StreamServer::write_audio_frame(AVFrame *frame)
 {
-	
+
 	long encodeAudioPerformanceClock=clock();
 	AVCodecContext *c = this->audio_st->codec;
 	AVPacket pkt;
@@ -126,13 +126,9 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 	if(got_output)
 	{
 		pkt.stream_index = this->audio_st->index;
-		printf("Try sending audio %d\n",pkt.size);
-	
 		ret = av_write_frame(aoc, &pkt);
-		FILE *f=fopen("c:/t2.dump","w");
-	fwrite(pkt.data,pkt.size,1,f);
-	fclose(f);
 		av_free_packet(&pkt);
+		
 		if(ret<0)
 		{
 			printf( "Error writing audio frame\n");

@@ -39,15 +39,61 @@ static UsageEnvironment* env ;
 void NetworkThread(void *);
 static StreamDecoder decoder;
 
-
-
+#include <iostream>
+using namespace std;
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-	printf("%d\n",frameSize);
-	FILE *f=fopen("C:/t1.dump","a");
-	fwrite(audiotempBuf,frameSize,1,f);
-	fclose(f);
-	printf("STILL\n");
+	unsigned char *p;
+	unsigned char *p_content;
+	int headerLength;
+	int frameCount;
+	int frameSizeList[10];
+	int remainSize=0;
+	unsigned char adts[7]={0xFF, 0xF9, 0x50, 0x80, 0x00, 0x00, 0xFC};
+	if(frameSize>100)//UDP CHECK!
+	{
+		p=audiotempBuf+12;//SKIP RTP HEADER
+		if(*p==0)//CHECK RTP
+		{
+			p++;
+			headerLength=*p;
+			frameCount=headerLength/16;
+			p_content=audiotempBuf+12+2+frameCount*2;
+			remainSize=frameSize-12-2-frameCount*2;
+			for(int i=0;i<frameCount;i++)
+			{
+				p++;
+				int part1=*p;
+				part1=part1<<8;
+				p++;
+				int part2=*p;
+				frameSizeList[i]=(part1+part2)>>3;
+				cout<<"This is packet size "<<frameSizeList[i]<<endl;
+			}
+			for(int i=0;i<frameCount;i++)
+			{
+				if(remainSize>=frameSizeList[i])
+				{
+					int frameLen=frameSizeList[i]+7;
+					frameLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
+					frameLen |= 0x1F;//5 bit    1            
+					adts[4] = frameLen>>8;
+					adts[5] = frameLen & 0xFF;
+					memcpy(audioframeBuf,adts,sizeof(adts));
+					memcpy(audioframeBuf+sizeof(adts),p_content,frameSizeList[i]);
+					p_content+=frameSizeList[i];
+					remainSize-=frameSizeList[i];
+				}
+				else
+				{
+					printf("Bad packet found\n");
+					break;
+				}
+			}
+			
+		}
+		refreshAudio();
+	}
 	/*AVFrame *frame;
 	unsigned char ADTS[] = {0xFF, 0xF9, 0x50, 0x80, 0x00, 0x00, 0xFC}; 
 	int aacLen=frameSize - 4 + 7;
