@@ -42,10 +42,10 @@ private:
 	SwsContext *img_convert_ctx; 
 	uint8_t *picture_buf;
 	int frameCounter;
-	int lastWidth,lastHeight;
+	int lastWidth,lastHeight,lastBPPFormat;
 	bool workingThread;
 	void uninstallSharedMemory();
-	bool setupSwscale(int in_width,int in_height);
+	bool setupSwscale(int in_width,int in_height,int bppFormat);
 	void removeSwscale();
 	AVFrame* allocFrame(enum PixelFormat pix_fmt, int width, int height);
 	bool setupSharedMemory();

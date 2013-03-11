@@ -31,8 +31,8 @@ public:
 	~StreamDecoder();
 	void setLocalPort(int port);
 	bool initDecorder();
-	bool decodeVideoFrame(char *data,int size,AVFrame **frame);
-	bool decodeAudioFrame(char *data,int size,AVFrame **frame);
+	bool decodeVideoFrame(char *indata,int insize,AVFrame **frame);
+	bool decodeAudioFrame(char *indata,int insize,AVFrame **frame,int *outSize);
 private:
 	int localPort;
     AVCodec *audio_codec, *video_codec;

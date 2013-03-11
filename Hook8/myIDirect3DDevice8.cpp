@@ -3,7 +3,12 @@
 
 myIDirect3DDevice8::myIDirect3DDevice8(IDirect3DDevice8* pOriginal)
 {
-    m_pIDirect3DDevice8 = pOriginal; // store the pointer to original object
+    m_pIDirect3DDevice8 = pOriginal;
+	lpvMem = NULL;
+	hMapObject = NULL;
+	pSurfLocal=NULL;
+	badMemory=false;
+	lastRecordTime=0;// store the pointer to original object
 }
 
 myIDirect3DDevice8::~myIDirect3DDevice8()
@@ -37,7 +42,9 @@ ULONG   __stdcall myIDirect3DDevice8::Release(void)
 	// Release function	
 	
 	// global var
-	
+	this->resourceDeallocate();
+	this->uninstallSharedMemory();
+
 
     // release/delete own objects
     // ... here if any ...
@@ -88,15 +95,16 @@ HRESULT __stdcall myIDirect3DDevice8::CreateAdditionalSwapChain(D3DPRESENT_PARAM
 {  return (m_pIDirect3DDevice8->CreateAdditionalSwapChain( pPresentationParameters, pSwapChain)  );}
 
 HRESULT __stdcall myIDirect3DDevice8::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters)  
-{  return (m_pIDirect3DDevice8->Reset( pPresentationParameters)  ); }
+{  this->resourceDeallocate();
+	return (m_pIDirect3DDevice8->Reset( pPresentationParameters)  ); }
 
 HRESULT __stdcall myIDirect3DDevice8::Present(CONST RECT* pSourceRect,CONST RECT* pDestRect,HWND hDestWindowOverride,CONST RGNDATA* pDirtyRegion)  
 {  
 	// we may want to draw own things here before flipping surfaces
     // ... draw own stuff ...
-	this->ShowWeAreHere();
-    
+	
     // call original routine
+	copyDataToMemory(m_pIDirect3DDevice8);
 	HRESULT hres = m_pIDirect3DDevice8->Present( pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 
 	return (hres);
@@ -346,9 +354,259 @@ HRESULT __stdcall myIDirect3DDevice8::DeletePatch(  UINT Handle)
 {  return (m_pIDirect3DDevice8->DeletePatch(Handle)  );  }
 
 
-// This is our test function
-void myIDirect3DDevice8::ShowWeAreHere(void)
+bool myIDirect3DDevice8::setupSharedMemory()
 {
-	D3DRECT rec = {1,1,50,50};
-	m_pIDirect3DDevice8->Clear(1, &rec, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255,255,255,0),0 ,0);
+		hMapObject = CreateFileMapping( 
+                INVALID_HANDLE_VALUE,   // use paging file
+                NULL,                   // default security attributes
+                PAGE_READWRITE,         // read/write access
+                0,                      // size: high 32-bits
+                SHAREDMEMSIZE,              // size: low 32-bits
+                TEXT("ded9dllmemfilemap")); // name of map object
+        if (hMapObject == NULL) 
+            return FALSE; 
+		bool fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
+		lpvMem = (BYTE*)MapViewOfFile( 
+                hMapObject,     // object to map view of
+                FILE_MAP_WRITE, // read/write access
+                0,              // high offset:  map from
+                0,              // low offset:   beginning
+                0);             // default: map entire file
+		if (lpvMem == NULL) 
+           return FALSE; 
+		if (fInit) 
+           memset(lpvMem, '\0', SHAREDMEMSIZE);
+		
+		return TRUE;
+}
+void myIDirect3DDevice8::uninstallSharedMemory()
+{
+	if(lpvMem!=NULL)
+	UnmapViewOfFile(lpvMem);
+	lpvMem=NULL;
+	if(hMapObject!=NULL)
+	CloseHandle(hMapObject);
+	hMapObject=NULL;
+	badMemory=false;
+	
+}
+HRESULT	myIDirect3DDevice8::copyDataToMemory(IDirect3DDevice8* device)
+{
+	performanceDebugClock=clock();
+	//===============Memory Check=======================
+	HRESULT hRes = S_FALSE;
+	if(badMemory)
+	{
+		DXLOG("Sorry !Memory!");
+	
+		return S_FALSE;
+	}
+	if(lpvMem==NULL)//Memory INIT;
+	{
+		badMemory=!setupSharedMemory();
+		if(badMemory)
+		{
+			DXLOG("Sorry !Memory!");
+			return S_FALSE;
+		}
+	}
+	if(!isMemoryWritable())
+	{
+		DXLOG("Memory not writable");
+		return S_FALSE;
+	}
+	//================FPS CHECK========================
+	if(lastRecordTime==0)
+	{
+		lastRecordTime=clock();
+	}
+	else
+	{
+		long inteval=clock()-lastRecordTime;
+		if(inteval<1000/MAXFPS)
+		{
+			//DXLOG("FPS QUICK");
+			return S_FALSE;
+		}
+		else
+		{
+			//DXLOG("FPS OK");
+			lastRecordTime=clock();
+		}
+	}
+	//=================================================
+	IDirect3DSurface8 *pBackBuffer;
+	
+	if (FAILED(device->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer))) 
+	{
+		DXLOG("PBACKBUFEER");
+		return hRes;
+	}
+	D3DSURFACE_DESC surfaceDesc;
+	pBackBuffer->GetDesc(&surfaceDesc);
+	dumpSurfaceSettings(surfaceDesc);
+	if(pSurfLocal==NULL)
+	{
+		DXLOG("SURFLOCAL CREATING");
+		
+		hRes = device->CreateImageSurface(surfaceDesc.Width,// RWIDTH,
+												surfaceDesc.Height,//RHEIGHT,
+												surfaceDesc.Format,
+												&pSurfLocal);
+		if (FAILED(hRes))
+		{
+			DXLOG("SURFLOCAL CREATING FAILED");
+			SafeRelease(pBackBuffer);
+			return hRes;
+		}
+		
+	}
+	
+	hRes=device->CopyRects(pBackBuffer,NULL,0,pSurfLocal,NULL);
+	if (FAILED(hRes))
+	{
+		DXLOG("COPY RECT FAILED");
+		SafeRelease(pBackBuffer);
+		return hRes;
+	}
+	//device->GetRenderTargetData(pBackBuffer, pSurfLocal);
+	
+	D3DLOCKED_RECT lockedRect;
+	if(FAILED(pSurfLocal->LockRect(&lockedRect, NULL, D3DLOCK_READONLY)))
+	{
+			DXLOG("Lock FAILED");
+			SafeRelease(pBackBuffer);
+			return hRes;
+	}
+	
+	//================BPP ADJUSTMENT=====================
+	int bpp=4;
+	int bppformat=-1;
+	switch(surfaceDesc.Format)
+	{
+
+		case D3DFMT_R5G6B5:
+			bpp = 2;
+			bppformat=2;
+			break;
+		case D3DFMT_X1R5G5B5:
+			bpp = 2;
+			bppformat=3;
+			break;
+		case D3DFMT_A8R8G8B8:
+		case D3DFMT_X8R8G8B8:
+			bpp = 4;
+			bppformat=1;
+			break;
+		default:
+			bpp = 4;
+			bppformat=1;
+			break;//Most cards are gonna support A8R8G8B8/X8R8G8B8 anyway
+	}
+	int copySize=surfaceDesc.Width*surfaceDesc.Height*bpp;
+	int surfaceHeight=surfaceDesc.Height;
+	int surfaceWidth=surfaceDesc.Width;
+	//======================Memory Copy=============================
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,(void *)&copySize,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int),(void *)&surfaceHeight,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*2,(void *)&surfaceWidth,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*3,(void *)&bppformat,sizeof(int));
+	memcpy(lpvMem, lockedRect.pBits,copySize);
+	setMemoryReadable();
+	//===================================================
+	pSurfLocal->UnlockRect();
+	SafeRelease(pBackBuffer);
+	LOGFILE(clock()-performanceDebugClock);
+	return hRes;
+}
+
+void myIDirect3DDevice8::resourceDeallocate()
+{
+	
+	if(pSurfLocal!=NULL)
+	SafeRelease(pSurfLocal);
+	pSurfLocal=NULL;
+	
+}
+bool myIDirect3DDevice8::isMemoryWritable()
+{
+	return lpvMem[SHAREDMEMSIZE/8-1]==0;
+}
+void myIDirect3DDevice8::setMemoryReadable()
+{
+	lpvMem[SHAREDMEMSIZE/8-1]=1;
+}
+void myIDirect3DDevice8::dumpSurfaceSettings(D3DSURFACE_DESC desc)
+{
+	char buf[256];
+
+	sprintf(buf, "\tWidth: %d", desc.Width);
+	DXLOG(buf);
+	sprintf(buf, "\tHeight: %d", desc.Height);
+	DXLOG(buf);
+
+	switch(desc.Format)
+	{
+		case D3DFMT_R8G8B8:
+			DXLOG("\tD3DFMT_R8G8B8");
+			break;
+		case D3DFMT_A8R8G8B8:
+			DXLOG("\tD3DFMT_A8R8G8B8");
+			break;
+		case D3DFMT_X8R8G8B8:
+			DXLOG("\tD3DFMT_X8R8G8B8");
+			break;
+		case D3DFMT_R5G6B5:
+			DXLOG("\tD3DFMT_R5G6B5");
+			break;
+		case D3DFMT_X1R5G5B5:
+			DXLOG("\tD3DFMT_X1R5G5B5");
+			break;
+		case D3DFMT_A1R5G5B5:
+			DXLOG("\tD3DFMT_A1R5G5B5");
+			break;
+		case D3DFMT_A4R4G4B4:
+			DXLOG("\tD3DFMT_A4R4G4B4");
+			break;
+		case D3DFMT_R3G3B2:
+			DXLOG("\tD3DFMT_R3G3B2");
+			break;
+		case D3DFMT_A8R3G3B2:
+			DXLOG("\tD3DFMT_A8R3G3B2");
+			break;
+		case D3DFMT_X4R4G4B4:
+			DXLOG("\tD3DFMT_X4R4G4B4");
+			break;
+		
+		
+		
+		
+		case D3DFMT_UYVY:
+			DXLOG("\tD3DFMT_UYVY");
+			break;
+	
+		case D3DFMT_YUY2:
+			DXLOG("\tD3DFMT_YUY2");
+			break;
+	
+		case D3DFMT_DXT1:
+			DXLOG("\tD3DFMT_DXT1");
+			break;
+		case D3DFMT_DXT2:
+			DXLOG("\tD3DFMT_DXT2");
+			break;
+		case D3DFMT_DXT3:
+			DXLOG("\tD3DFMT_DXT3");
+			break;
+		case D3DFMT_DXT4:
+			DXLOG("\tD3DFMT_DXT4");
+			break;
+		case D3DFMT_DXT5:
+			DXLOG("\tD3DFMT_DXT5");
+			break;
+
+		default:
+			DXLOG("Unknown Format");
+			break;
+	}
 }

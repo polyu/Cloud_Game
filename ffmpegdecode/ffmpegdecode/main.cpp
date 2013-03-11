@@ -4,12 +4,15 @@
 #include "StreamDecoder.h"
 #include <SDL.h>
 #include <process.h>
-
+#include <queue>
+using namespace std;
 #ifdef main
 #undef main
 #endif 
-//====================VIDEO================
 
+
+
+//====================NETWORKVIDEO================
 static HANDLE g_hMutex_video = INVALID_HANDLE_VALUE;  
 static H264VideoRTPSource *videoSource;
 static unsigned char videotempBuf[MAXTEMPBUF];
@@ -21,28 +24,28 @@ static int videocopyframeCursor=0;
 static void refreshVideo();
 static Groupsock *localVideoSock;
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
-//===================AUDIO======================
+//===================NETWORKAUDIO======================
 static void refreshAudio();
+static queue< pair<int,char*> > audioPacketQueue;
 static unsigned char audiotempBuf[MAXTEMPBUF];
-static unsigned char audioframeBuf[MAXFRAMEBUF];
-static unsigned char audioframeCopyBuf[MAXFRAMEBUF];
 static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE; 
-static bool audioCanDecode=false;
-static int audioframeCursor=0;
-static int audiocopyframeCursor=0;
 static BasicUDPSource *audioSource;
 static Groupsock *localAudioSock;
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
-//=====================AUDIO=========================
+//=====================NETENV=========================
 static TaskScheduler* scheduler;
 static UsageEnvironment* env ;
 void NetworkThread(void *);
 static StreamDecoder decoder;
+//========================SDL===================================
+static SDL_Surface *screen;
+static SDL_Overlay *screenOverlay;
+static SDL_AudioSpec wanted;
 
-#include <iostream>
-using namespace std;
+//==============================================================
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
+	printf("I got audio %d\n",frameSize);
 	unsigned char *p;
 	unsigned char *p_content;
 	int headerLength;
@@ -68,19 +71,36 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 				p++;
 				int part2=*p;
 				frameSizeList[i]=(part1+part2)>>3;
-				cout<<"This is packet size "<<frameSizeList[i]<<endl;
+				
 			}
 			for(int i=0;i<frameCount;i++)
 			{
 				if(remainSize>=frameSizeList[i])
 				{
-					int frameLen=frameSizeList[i]+7;
-					frameLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
-					frameLen |= 0x1F;//5 bit    1            
-					adts[4] = frameLen>>8;
-					adts[5] = frameLen & 0xFF;
-					memcpy(audioframeBuf,adts,sizeof(adts));
-					memcpy(audioframeBuf+sizeof(adts),p_content,frameSizeList[i]);
+					
+					if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
+					{
+						
+						if(audioPacketQueue.size()>MAXAUDIOQUEUENUM)
+						{
+							int popnum=audioPacketQueue.size();
+							for(int j=0;j<popnum;j++)
+							{
+								free(audioPacketQueue.front().second);
+								audioPacketQueue.pop();
+							}
+						}
+						int frameLen=frameSizeList[i]+7;
+						frameLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
+						frameLen |= 0x1F;//5 bit    1            
+						adts[4] = frameLen>>8;
+						adts[5] = frameLen & 0xFF;
+						char *audioframeBuf=(char *)malloc(frameSizeList[i]+sizeof(adts));
+						memcpy(audioframeBuf,adts,sizeof(adts));
+						memcpy(audioframeBuf+sizeof(adts),p_content,frameSizeList[i]);
+						audioPacketQueue.push(pair<int,char*>(frameSizeList[i]+7,audioframeBuf));
+						ReleaseMutex(g_hMutex_audio); 
+					}
 					p_content+=frameSizeList[i];
 					remainSize-=frameSizeList[i];
 				}
@@ -92,19 +112,10 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 			}
 			
 		}
-		refreshAudio();
+		
 	}
-	/*AVFrame *frame;
-	unsigned char ADTS[] = {0xFF, 0xF9, 0x50, 0x80, 0x00, 0x00, 0xFC}; 
-	int aacLen=frameSize - 4 + 7;
-	aacLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
-    aacLen |= 0x1F;//5 bit    1            
-    ADTS[4] = aacLen>>8;
-    ADTS[5] = aacLen & 0xFF;
-	memcpy(audioframeBuf, ADTS, sizeof(ADTS));
-	memcpy(audioframeBuf+7,audiotempBuf+4,frameSize-4);
-	decoder.decodeAudioFrame((char *)audioframeBuf,frameSize,&frame);
-	refreshAudio();*/
+	refreshAudio();
+	
 }
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
@@ -139,15 +150,15 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 	refreshVideo();
 
 }
-void refreshVideo(void )
+static void refreshVideo(void )
 {
 	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
 }
-void refreshAudio(void )
+static void refreshAudio(void )
 {
 	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
 }
-void NetworkThread(void *)
+static void NetworkThread(void *)
 {
 	refreshAudio();
 	refreshVideo();
@@ -155,24 +166,83 @@ void NetworkThread(void *)
 	printf("Network  EventLoop Start\n");
 	env->taskScheduler().doEventLoop();
 }
+static void initDecoder();
+static void initNetwork();
+static void initSDL();
 
-int main(int argv,char **argc)
+static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len);
+static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
+{
+	int availLen=len;
+
+	if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
+	{
+		while(audioPacketQueue.size()>0)
+		{
+			pair<int,char*> packet=audioPacketQueue.front();
+			audioPacketQueue.pop();
+			AVFrame *frame;
+			int outSize;
+			decoder.decodeAudioFrame(packet.second,packet.first,&frame,&outSize);
+			SDL_MixAudio(stream,frame->data[0],outSize,SDL_MIX_MAXVOLUME);
+			free(packet.second);
+		}
+		ReleaseMutex(g_hMutex_audio); 
+	}
+	//printf("I am quit\n");
+}
+
+static void initSDL()
+{
+	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
+	{ 
+        printf("Could not initialize SDL: %s.\n", SDL_GetError());
+       exit(-3);
+    }
+	atexit(SDL_Quit);
+	//=============Video
+	screen = SDL_SetVideoMode(RWIDTH, RHEIGHT, 32, SDL_SWSURFACE);
+	if ( screen == NULL ) {
+        printf("Couldn't set 640x480x32 video mode: %s\n",
+                        SDL_GetError());
+        exit(-3);
+    }
+	screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_IYUV_OVERLAY,screen);
+	SDL_WM_SetCaption("Cloud Gaming",NULL);
+	//=============Sound
+	wanted.freq = 44100;//音频的频率 
+	wanted.format = AUDIO_S16;//数据格式为有符号16位		
+	wanted.channels = 2;//双声道 
+	wanted.samples = AUDIOBUFFERNUM;//采样数 
+	wanted.callback = decodeAudioFromQueue;//设置回调函数 
+	wanted.userdata = NULL; 
+	if(SDL_OpenAudio(&wanted, NULL) < 0) 
+	{  
+		printf( "SDL_OpenAudio: %s\n", SDL_GetError());  
+		exit(-3); 
+	}	  
+	SDL_PauseAudio(0);
+}
+static void initDecoder()
 {
 	g_hMutex_video = CreateMutex(NULL, FALSE, L"Mutex");
 	g_hMutex_audio = CreateMutex(NULL, FALSE, L"Mutex2");
 	if (!g_hMutex_video || !g_hMutex_audio)  
     {  
         printf("Failed to create mutex\n");
-        return false;  
+        exit(-1);
     }  
 	if(!decoder.initDecorder())
 	{
 		printf("Failed Init Decorder\n");
-		return -1;
+		exit(-1);
 	}
+	printf("Decorder Init OK\n");
+}
+static void initNetwork()
+{
 	in_addr listenAddress;
 	listenAddress.s_addr=htonl(INADDR_ANY);
-	//==============Video And Audio Source======================
 	scheduler = BasicTaskScheduler::createNew();
 	env = BasicUsageEnvironment::createNew(*scheduler);
 	Port rtpVideoPort(DEFAULT_PORT);
@@ -182,47 +252,40 @@ int main(int argv,char **argc)
 	if(localVideoSock==NULL)
 	{
 		printf("Init LOCAL VIDEO SOCK FAILED\n");
-		return -1;
+		exit(-2);
 	}
 	if(localAudioSock==NULL)
 	{
 		printf("Init LOCAL AUDIO SOCK FAILED\n");
-		return -1;
+		exit(-2);
 	}
-
 	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96,30000);
 	audioSource= BasicUDPSource::createNew(*env,localAudioSock);
-
 	if(videoSource==NULL)
 	{
 		printf("INIT Video Source Failed\n");
-		return -1;
+		exit(-2);
 	}
 	if(audioSource==NULL)
 	{
 		printf("INIT Video Source Failed\n");
-		return -1;
+		exit(-2);
 	}
-	//========================================================
-	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
-	{ 
-        printf("Could not initialize SDL: %s.\n", SDL_GetError());
-        return -1;
-    }
-	SDL_Surface *screen;
-	atexit(SDL_Quit);
-	screen = SDL_SetVideoMode(RWIDTH, RHEIGHT, 32, SDL_SWSURFACE);
-	if ( screen == NULL ) {
-        printf("Couldn't set 640x480x32 video mode: %s\n",
-                        SDL_GetError());
-        return -1;
-    }
-	SDL_Overlay *screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_IYUV_OVERLAY,screen);
+	printf("NETWORK INIT OK\n");
+	_beginthread(NetworkThread,0,NULL);
+	
+}
+int main(int argv,char **argc)
+{
+	
+	initDecoder();
+	initNetwork();
+	initSDL();
+
 	bool quitFlag=false;
 	SDL_Event event;
 	SDL_Rect rect;  
-	AVFrame* frame;
-	_beginthread(NetworkThread,0,NULL);
+	printf("SDL Ready\n");
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
@@ -231,7 +294,7 @@ int main(int argv,char **argc)
 			 if(videoCanDecode==true)
 			 {
 				 //printf("Try send this thing to decode length %d\n",videocopyframeCursor);
-
+				 AVFrame* frame;
 				 if(decoder.decodeVideoFrame((char*)videoframeCopyBuf,videocopyframeCursor,&frame))
 				 {
 					SDL_LockYUVOverlay(screenOverlay);
@@ -270,7 +333,9 @@ int main(int argv,char **argc)
 				 }
 		 }
 	}
+	
+	SDL_CloseAudio();
 	return 0;
-
+	
 
 }

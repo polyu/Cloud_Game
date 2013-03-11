@@ -63,11 +63,12 @@ void StreamDecoder::setLocalPort(int port)
 {
 	this->localPort=port;
 }
-bool StreamDecoder::decodeAudioFrame(char*data,int size,AVFrame **getframe)
+bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **getframe,int *outSize)
 {
 	int len, got_frame;
-	audioavpkt.data = (uint8_t*)data;
-	audioavpkt.size=size;
+	audioavpkt.data = (uint8_t*)indata;
+	audioavpkt.size=insize;
+	avcodec_get_frame_defaults(audioframe);
 	len = avcodec_decode_audio4(this->audio_codec_context, audioframe, &got_frame, &audioavpkt);
 	if(len<0)
 	{
@@ -76,13 +77,21 @@ bool StreamDecoder::decodeAudioFrame(char*data,int size,AVFrame **getframe)
 	}
 	if (got_frame) 
 	{
-		printf("Decode audio ok\n");
+		*getframe=audioframe;
+		
+		*outSize=av_samples_get_buffer_size(NULL, audio_codec_context->channels,
+                                                       audioframe->nb_samples,
+                                                      audio_codec_context->sample_fmt, 1);
+		//printf("This is packet:%d,%d %d\n",*outSize,audioframe->nb_samples,audio_codec_context->channels);
+		//printf("Decode audio ok\n");
 		return true;
 	}
 	else
 	{
+		printf("OOP!Unknown Error in decoding\n");
+		return false;
 	}
-	return true;
+	return false;
 }
 bool StreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
 {

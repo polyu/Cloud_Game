@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 	}
 	acapturer.setStreamServer(&server);
 	_beginthread(videoCaptureThread,0,NULL);
-	_beginthread(audioCaptureThread,0,NULL);
+	//_beginthread(audioCaptureThread,0,NULL);
 	while(true)
 	{
 		Sleep(1000);

@@ -31,7 +31,7 @@ void StreamServer::setRemoteAddress(string address,int videoport,int audioport)
 bool StreamServer::addAudioStream()
 {
 	AVCodecContext *c;
-	this->audio_codec = avcodec_find_encoder(CODEC_ID_AAC);
+	this->audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC);
 	if (!this->audio_codec) 
 	{
 		printf( "aideo codec not found/n");
@@ -59,6 +59,7 @@ bool StreamServer::addAudioStream()
 		printf( "could not open audio codec\n");
         return false;
 	}
+	
 	_snprintf_s(this->aoc->filename, sizeof(this->aoc->filename), "rtp://%s:%d", this->remoteAddr.c_str(), this->remoteAudioPort);
 	if (avio_open(&(this->aoc->pb), this->aoc->filename, AVIO_FLAG_WRITE ) < 0)
     {
@@ -108,7 +109,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 }
 bool StreamServer::write_audio_frame(AVFrame *frame)
 {
-
+	
 	long encodeAudioPerformanceClock=clock();
 	AVCodecContext *c = this->audio_st->codec;
 	AVPacket pkt;
@@ -117,7 +118,7 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
 	ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
-	
+	//printf("LineSize:%d\n",frame->linesize[0]);
 	if (ret < 0) 
 	{
         printf( "Error encoding audio frame\n");
@@ -125,6 +126,17 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     }
 	if(got_output)
 	{
+
+		//==========Debug
+		/*AVFrame *dframe=avcodec_alloc_frame();
+		avcodec_get_frame_defaults(dframe);
+		AVCodec *decoder=avcodec_find_decoder(AV_CODEC_ID_AAC);
+		AVCodecContext *decodecontext=avcodec_alloc_context3(decoder);
+		avcodec_open2(decodecontext, decoder,NULL);
+		int pic;
+		avcodec_decode_audio4(decodecontext,dframe,&pic,&pkt);
+		printf("LINE SIZE:%d<->%d\n",dframe->linesize[0],dframe->nb_samples);*/
+		//==========Debug
 		pkt.stream_index = this->audio_st->index;
 		ret = av_write_frame(aoc, &pkt);
 		av_free_packet(&pkt);

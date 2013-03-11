@@ -1,6 +1,13 @@
 // myIDirect3DDevice8.h
 #pragma once
-
+#include <time.h>
+#include "Log.h"
+#include "Utils.h"
+#define RESERVEDMEMORY 256
+#define RHEIGHT 720
+#define RWIDTH 1280
+#define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
+#define MAXFPS 40
 class myIDirect3DDevice8 : public IDirect3DDevice8   
 {
 public:
@@ -111,9 +118,19 @@ public:
 private:
 
     IDirect3DDevice8 *m_pIDirect3DDevice8;
-
-	// This is our test function
-	void ShowWeAreHere(void);
+	bool setupSharedMemory();
+	void uninstallSharedMemory();
+	HRESULT copyDataToMemory(IDirect3DDevice8* device);
+	BYTE* lpvMem;      // pointer to shared memory
+	HANDLE hMapObject; 
+	IDirect3DSurface8* pSurfLocal;
+	void resourceDeallocate();
+	bool badMemory;
+	long lastRecordTime;
+	bool isMemoryWritable();
+	void setMemoryReadable();
+	long performanceDebugClock;
+	void dumpSurfaceSettings(D3DSURFACE_DESC desc);
 
 };
 

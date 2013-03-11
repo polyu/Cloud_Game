@@ -239,6 +239,10 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
+			<File
+				RelativePath=".\Utils.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Ressourcendateien"

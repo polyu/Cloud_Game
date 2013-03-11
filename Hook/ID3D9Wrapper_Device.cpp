@@ -837,6 +837,7 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 	}
 	//=================================================
 	IDirect3DSurface9 *pBackBuffer;
+	
 	if (FAILED(device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer))) 
 	{
 		DXLOG("PBACKBUFEER");
@@ -876,6 +877,28 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 	 
 	//================BPP ADJUSTMENT=====================
 	int bpp=4;
+	int bppformat=-1;
+	switch(surfaceDesc.Format)
+	{
+
+		case D3DFMT_R5G6B5:
+			bpp = 2;
+			bppformat=2;
+			break;
+		case D3DFMT_X1R5G5B5:
+			bpp = 2;
+			bppformat=3;
+			break;
+		case D3DFMT_A8R8G8B8:
+		case D3DFMT_X8R8G8B8:
+			bpp = 4;
+			bppformat=1;
+			break;
+		default:
+			bpp = 4;
+			bppformat=1;
+			break;//Most cards are gonna support A8R8G8B8/X8R8G8B8 anyway
+	}
 	int copySize=surfaceDesc.Width*surfaceDesc.Height*bpp;
 	int surfaceHeight=surfaceDesc.Height;
 	int surfaceWidth=surfaceDesc.Width;
@@ -883,7 +906,7 @@ HRESULT	Direct3DDevice9Wrapper::copyDataToMemory(IDirect3DDevice9* device)
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,(void *)&copySize,sizeof(int));
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int),(void *)&surfaceHeight,sizeof(int));
 	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*2,(void *)&surfaceWidth,sizeof(int));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*3,(void *)&bpp,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*3,(void *)&bppformat,sizeof(int));
 	memcpy(lpvMem, lockedRect.pBits,copySize);
 	setMemoryReadable();
 	//===================================================

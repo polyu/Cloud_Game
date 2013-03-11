@@ -10,6 +10,7 @@ IVideoCapturer::IVideoCapturer()
 	hMapObject=NULL;
 	rawFrame=NULL;
 	img_convert_ctx=NULL;
+	this->lastBPPFormat=-1;
 	streamServer=NULL;
 	workingThread=false;
 }
@@ -103,22 +104,16 @@ void IVideoCapturer::startFrameLoop()
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
 			int fps=1000/((clock()-fpsClock)+1);//avoid divide 0
 			fpsClock=clock();
-			//printf("%d bytes height:%d width:%d bpp:%d FPS:%d \n",copySize,height,width,bpp,fps);
-			if(bpp!=4)
-			{
-				printf("Encoder cannot handle this format\n");
-				workingThread=false;
-				return;
-			}
-			
+			printf("%d bytes height:%d width:%d bppformat:%d FPS:%d \n",copySize,height,width,bpp,fps);
 			//===============RGB32toYUV420P===================
-			if(lastWidth!=width||lastHeight!=height)
+			if(lastWidth!=width||lastHeight!=height||lastBPPFormat!=bpp)
 			{
 				printf("Swscale Rebuilt\n");
 				lastWidth=width;
 				lastHeight=height;
+				lastBPPFormat=bpp;
 				this->removeSwscale();
-				if(!this->setupSwscale(width,height))
+				if(!this->setupSwscale(width,height,bpp))
 				{
 					printf("Swscale failed\n");
 					workingThread=false;
@@ -151,9 +146,22 @@ void IVideoCapturer::stopCapture()
 {
 	workingThread=false;
 }
-bool IVideoCapturer::setupSwscale(int in_width,int in_height)
+bool IVideoCapturer::setupSwscale(int in_width,int in_height,int bpp)
 {
-	img_convert_ctx = sws_getContext(in_width, in_height, PIX_FMT_RGB32, 
+	AVPixelFormat originFormat=PIX_FMT_RGB32;
+	switch(bpp)
+	{
+		case 1:
+			originFormat=AV_PIX_FMT_RGB32;
+			break;
+		case 2:
+			originFormat=AV_PIX_FMT_RGB565;
+			break;
+		case 3:
+			originFormat=AV_PIX_FMT_RGB555;
+			break;
+	}
+	img_convert_ctx = sws_getContext(in_width, in_height, originFormat, 
 	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_FAST_BILINEAR, 
 	NULL, NULL, NULL);
 	if(img_convert_ctx == NULL) { 
