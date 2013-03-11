@@ -30,7 +30,7 @@ static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE;
 static bool audioCanDecode=false;
 static int audioframeCursor=0;
 static int audiocopyframeCursor=0;
-static MPEG4GenericRTPSource *audioSource;
+static BasicUDPSource *audioSource;
 static Groupsock *localAudioSock;
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 //=====================AUDIO=========================
@@ -44,11 +44,11 @@ static StreamDecoder decoder;
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
 	printf("%d\n",frameSize);
-	/*FILE *f=fopen("C:/t1.dump","aw");
+	FILE *f=fopen("C:/t1.dump","a");
 	fwrite(audiotempBuf,frameSize,1,f);
 	fclose(f);
-	printf("STILL\n");*/
-	AVFrame *frame;
+	printf("STILL\n");
+	/*AVFrame *frame;
 	unsigned char ADTS[] = {0xFF, 0xF9, 0x50, 0x80, 0x00, 0x00, 0xFC}; 
 	int aacLen=frameSize - 4 + 7;
 	aacLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
@@ -58,7 +58,7 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 	memcpy(audioframeBuf, ADTS, sizeof(ADTS));
 	memcpy(audioframeBuf+7,audiotempBuf+4,frameSize-4);
 	decoder.decodeAudioFrame((char *)audioframeBuf,frameSize,&frame);
-	refreshAudio();
+	refreshAudio();*/
 }
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
@@ -145,7 +145,7 @@ int main(int argv,char **argc)
 	}
 
 	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96,30000);
-	audioSource= MPEG4GenericRTPSource::createNew(*env,localAudioSock,97,30000,"aac/hbr","aac/hbr",13,3,3);
+	audioSource= BasicUDPSource::createNew(*env,localAudioSock);
 
 	if(videoSource==NULL)
 	{

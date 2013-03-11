@@ -234,7 +234,7 @@ bool StreamServer::initStreamServer()
 	
 	voc->oformat=this->vfmt;
 	aoc->oformat=this->afmt;
-	
+
 	if(!addVideoStream())
 	{
 		printf("Can' add video stream! \n");
