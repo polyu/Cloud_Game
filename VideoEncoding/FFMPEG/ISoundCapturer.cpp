@@ -1,4 +1,99 @@
 #include "ISoundCapturer.h"
+/*
+HRESULT WriteWaveHeader(HMMIO hFile, LPCWAVEFORMATEX pwfx, MMCKINFO *pckRIFF, MMCKINFO *pckData) {
+    MMRESULT result;
+
+    // make a RIFF/WAVE chunk
+    pckRIFF->ckid = MAKEFOURCC('R', 'I', 'F', 'F');
+    pckRIFF->fccType = MAKEFOURCC('W', 'A', 'V', 'E');
+
+    result = mmioCreateChunk(hFile, pckRIFF, MMIO_CREATERIFF);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioCreateChunk(\"RIFF/WAVE\") failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+    
+    // make a 'fmt ' chunk (within the RIFF/WAVE chunk)
+    MMCKINFO chunk;
+    chunk.ckid = MAKEFOURCC('f', 'm', 't', ' ');
+    result = mmioCreateChunk(hFile, &chunk, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioCreateChunk(\"fmt \") failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+
+    // write the WAVEFORMATEX data to it
+    LONG lBytesInWfx = sizeof(WAVEFORMATEX) + pwfx->cbSize;
+    LONG lBytesWritten =
+        mmioWrite(
+            hFile,
+            reinterpret_cast<PCHAR>(const_cast<LPWAVEFORMATEX>(pwfx)),
+            lBytesInWfx
+        );
+    if (lBytesWritten != lBytesInWfx) {
+        printf("mmioWrite(fmt data) wrote %u bytes; expected %u bytes\n", lBytesWritten, lBytesInWfx);
+        return E_FAIL;
+    }
+
+    // ascend from the 'fmt ' chunk
+    result = mmioAscend(hFile, &chunk, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioAscend(\"fmt \" failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+    
+    // make a 'fact' chunk whose data is (DWORD)0
+    chunk.ckid = MAKEFOURCC('f', 'a', 'c', 't');
+    result = mmioCreateChunk(hFile, &chunk, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioCreateChunk(\"fmt \") failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+
+    // write (DWORD)0 to it
+    // this is cleaned up later
+    DWORD frames = 0;
+    lBytesWritten = mmioWrite(hFile, reinterpret_cast<PCHAR>(&frames), sizeof(frames));
+    if (lBytesWritten != sizeof(frames)) {
+        printf("mmioWrite(fact data) wrote %u bytes; expected %u bytes\n", lBytesWritten, (UINT32)sizeof(frames));
+        return E_FAIL;
+    }
+
+    // ascend from the 'fact' chunk
+    result = mmioAscend(hFile, &chunk, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioAscend(\"fact\" failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+
+    // make a 'data' chunk and leave the data pointer there
+    pckData->ckid = MAKEFOURCC('d', 'a', 't', 'a');
+    result = mmioCreateChunk(hFile, pckData, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioCreateChunk(\"data\") failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+
+    return S_OK;
+}
+
+HRESULT FinishWaveFile(HMMIO hFile, MMCKINFO *pckRIFF, MMCKINFO *pckData) {
+    MMRESULT result;
+
+    result = mmioAscend(hFile, pckData, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioAscend(\"data\" failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+
+    result = mmioAscend(hFile, pckRIFF, 0);
+    if (MMSYSERR_NOERROR != result) {
+        printf("mmioAscend(\"RIFF/WAVE\" failed: MMRESULT = 0x%08x\n", result);
+        return E_FAIL;
+    }
+
+    return S_OK;    
+}Debug Function*/
 ISoundCapturer::ISoundCapturer()
 {
 	this->device=0;
@@ -48,11 +143,27 @@ bool ISoundCapturer::setupSwscale()
 }
 void ISoundCapturer::startFrameLoop()
 {
-	
+	/*
+	HMMIO hFile; 
+	if ((hFile = mmioOpenA("C:/1.wav", NULL, 
+    MMIO_WRITE)) != NULL) 
+    printf("file open ok");
+	else 
+	  printf("file open failed");
+    // File cannot be opened. 
+	 //MMCKINFO ckRIFF = {0};
+    //MMCKINFO ckData = {0};
+    //WriteWaveHeader(hFile, waveFormat, &ckRIFF, &ckData);*/
 	HRESULT hr;
 	long debugFrameCounter=0;
+	int frameBufferCursor=0;
+	int frameBufferCounter=0;
+	BYTE *frameBuffer=(BYTE *)malloc(SOUNDCAPTUREBUF);//2M
+	//int c=0;
 	while(runFlag)
 	{
+		//c++;
+		//printf("%d\n",c);
 		Sleep(ANTISPIN);
 		debugFrameCounter++;
 		UINT32 nextPacketSize;
@@ -69,8 +180,10 @@ void ISoundCapturer::startFrameLoop()
 
 		if (nextPacketSize == 0) 
 		{ // no data yet
+			//printf("Why");
 		  continue;
 		}
+		
 		//printf("Next packet Size %d\n",nextPacketSize);
     // get the captured data
 		BYTE *data;
@@ -95,6 +208,7 @@ void ISoundCapturer::startFrameLoop()
 		}
 		if (bufferFlags & AUDCLNT_BUFFERFLAGS_SILENT) {
 		  printf("IAudioCaptureClient::GetBuffer reports 'silent' on pass %u\n", debugFrameCounter);
+		  Sleep(1000);
 		  audioCaptureClient->ReleaseBuffer(frameCount);
 		  continue;
 		}
@@ -116,18 +230,31 @@ void ISoundCapturer::startFrameLoop()
 		int ret=-1;
 		
 		//===========Encode data and byteToWrite===========
-		if(this->waveFormat->nChannels==2&&this->waveFormat->nSamplesPerSec==OUTPUTSAMPLERATE)//Not need to cumsom cpu
+		if( this->waveFormat->nChannels==2&&this->waveFormat->nSamplesPerSec==OUTPUTSAMPLERATE)//Not need to cumsom cpu
 		{
-			frame->nb_samples=frameCount;
-			ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,data,bytesToWrite,1);
-			if(ret<0)
-			{
-				printf("Fill audio frame failed!\n");
-			}
-			this->streamServer->write_audio_frame(frame);
+			
+				frame->nb_samples=frameCount;
+				/*printf("FRAMECOUNT:%d\n",frame->nb_samples);
+				FILE *f=fopen("c:/o1.dump","w");
+				fwrite(data,bytesToWrite,1,f);
+				fclose(f);*/
+				ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,data,bytesToWrite,1);
+				if(ret<0)
+				{
+					printf("Fill audio frame failed!\n");
+				}
+				//mmioWrite(hFile, reinterpret_cast<PCHAR>(frame->data[0]), bytesToWrite);
+				/*FILE *f1=fopen("c:/o3.dump","w");
+				printf("Writing O3 %d\n",frame->linesize[0]);
+				fwrite(frame->data[0],bytesToWrite,1,f1);
+				fclose(f1);*/
+				//printf("Will write\n");
+				this->streamServer->write_audio_frame(frame);
+				
 		}
 		else
 		{
+			printf("Resample start\n");
 			uint8_t **src_data=0;
 			int src_linesize;
 			uint8_t **dst_data=0 ;
@@ -143,6 +270,7 @@ void ISoundCapturer::startFrameLoop()
 				continue;
 			}
 			int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
+			
 			printf("Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
 			frame->nb_samples=retFrameCount;
 			ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,0);
@@ -150,7 +278,7 @@ void ISoundCapturer::startFrameLoop()
 			{
 				printf("Fill audio frame failed!\n");
 			}
-		
+			
 			this->streamServer->write_audio_frame(frame);
 			av_freep(&src_data[0]);
 			av_freep(&dst_data[0]);
@@ -169,6 +297,8 @@ void ISoundCapturer::startFrameLoop()
 		  return;            
 		}
 	}
+	//FinishWaveFile(hFile, &ckData, &ckRIFF);
+	free(frameBuffer);
 	audioClient->Stop();
 	audioCaptureClient->Release();
 	audioClient->Release();

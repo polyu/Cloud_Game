@@ -3,12 +3,12 @@ StreamDecoder::StreamDecoder()
 {
 	
 	this->localPort=DEFAULT_PORT;
-
+	this->outputaudioFrame=0;
 	this->audio_codec=0;
 	this->video_codec=0;
 	this->videoframe=0;
 	this->videopicture=0;
-
+	this->swr_ctx=0;
 	this->audioframe=0;
 	this->lastWidth=0;
 	this->lastHeight=0;
@@ -40,6 +40,7 @@ StreamDecoder::~StreamDecoder()
 		av_freep(this->video_codec);
 		this->video_codec=0;
 	}
+	this->removeSwrcale();
 	this->removeSwscale();
 	if(this->videoframe!=0)
 	{
@@ -48,8 +49,13 @@ StreamDecoder::~StreamDecoder()
 	}
 	if(this->audioframe!=0)
 	{
-		avcodec_free_frame(&videoframe);
-		videoframe=0;
+		avcodec_free_frame(&audioframe);
+		audioframe=0;
+	}
+	if(this->outputaudioFrame!=0)
+	{
+		avcodec_free_frame(&outputaudioFrame);
+		outputaudioFrame=0;
 	}
 	if(this->videopicture!=0)
 	{
@@ -63,7 +69,7 @@ void StreamDecoder::setLocalPort(int port)
 {
 	this->localPort=port;
 }
-bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **getframe,int *outSize)
+bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outdata,int *outSize)
 {
 	int len, got_frame;
 	audioavpkt.data = (uint8_t*)indata;
@@ -77,13 +83,38 @@ bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **getframe,i
 	}
 	if (got_frame) 
 	{
-		*getframe=audioframe;
-		
-		*outSize=av_samples_get_buffer_size(NULL, audio_codec_context->channels,
+		//========DUE TO AAC FLTP========
+		uint8_t **src_data=0;
+		int src_linesize;
+		alloc_samples_array_and_data(&src_data, &src_linesize, 2,audioframe->nb_samples,AV_SAMPLE_FMT_FLTP , 0);
+		int audioFrameSize=av_samples_get_buffer_size(NULL, 2,
                                                        audioframe->nb_samples,
-                                                      audio_codec_context->sample_fmt, 1);
-		//printf("This is packet:%d,%d %d\n",*outSize,audioframe->nb_samples,audio_codec_context->channels);
-		//printf("Decode audio ok\n");
+                                                       AV_SAMPLE_FMT_FLTP, 1);
+		memcpy(src_data[0],audioframe->data[0],audioFrameSize);
+
+		uint8_t **dst_data=0 ;
+		int dst_linesize;
+		int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, 44100)+audioframe->nb_samples, OUTPUTSAMPLERATE, 44100, AV_ROUND_UP);
+		alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 0);
+		int retFrameCount=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data,audioframe->nb_samples );
+		if(retFrameCount<0)
+		{
+			printf("Failed to resample\n");
+			return false;
+		}
+		
+		int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
+		printf("%d\n",dst_outputsize);
+		
+		*outSize=dst_outputsize;
+		outputaudioFrame->nb_samples=retFrameCount;
+		int ret=avcodec_fill_audio_frame(outputaudioFrame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,1);
+		if(ret<0)
+		{
+				printf("Fill audio frame failed!\n");
+				return false;
+		}
+		*outdata=outputaudioFrame;
 		return true;
 	}
 	else
@@ -135,11 +166,17 @@ bool StreamDecoder::openAudioCodec()
 		return false;
     }
 	this->audio_codec_context = avcodec_alloc_context3(this->audio_codec);
+	
 	if (avcodec_open2(this->audio_codec_context, this->audio_codec,NULL) < 0) 
 	{
         printf( "could not open audio codec\n");
         return false;
     }
+	if(!this->setupSwrcale())
+	{
+		printf( "Resampling Scale init Failed\n");
+        return false;
+	}
 	return true;
 }
 bool StreamDecoder::openVideoCodec()
@@ -174,9 +211,10 @@ bool StreamDecoder::initDecorder()
 	    return false;
 	}
 	
-		videoframe = avcodec_alloc_frame();
+	videoframe = avcodec_alloc_frame();
 	audioframe = avcodec_alloc_frame();
-    if (!videoframe || !audioframe) {
+	outputaudioFrame=avcodec_alloc_frame();
+    if (!videoframe || !audioframe || !outputaudioFrame) {
         printf("Could not allocate video frame\n");
         return false;
     }
@@ -212,4 +250,45 @@ AVFrame *StreamDecoder::alloc_picture(enum PixelFormat pix_fmt, int width, int h
     if (!picture || avpicture_alloc((AVPicture *)picture, pix_fmt, width, height) < 0)
         av_freep(&picture);
     return picture;
+}
+
+void StreamDecoder::removeSwrcale()
+{
+	if(this->swr_ctx!=0)
+	{
+		swr_free(&swr_ctx);
+		this->swr_ctx=0;
+	}
+}
+bool StreamDecoder::setupSwrcale()
+{
+	swr_ctx = swr_alloc();
+    if (!swr_ctx) {
+        printf( "Could not allocate resampler context\n");
+        return false;
+    }
+	av_opt_set_int(swr_ctx, "in_channel_count",    2, 0);
+	av_opt_set_int(swr_ctx, "in_sample_rate",       44100, 0);
+    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt",  AV_SAMPLE_FMT_FLTP, 0);
+	av_opt_set_int(swr_ctx, "out_channel_count",    2, 0);
+    av_opt_set_int(swr_ctx, "out_sample_rate",       OUTPUTSAMPLERATE, 0);
+    av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
+	if (( swr_init(swr_ctx)) < 0) {
+       printf( "Failed to initialize the resampling context\n");
+	   return false;
+    }
+	return true;
+}
+int StreamDecoder::alloc_samples_array_and_data(uint8_t ***data, int *linesize, int nb_channels,
+                                    int nb_samples, enum AVSampleFormat sample_fmt, int align)
+{
+    int nb_planes = av_sample_fmt_is_planar(sample_fmt) ? nb_channels : 1;
+    *data = (uint8_t **)av_malloc(sizeof(*data) * nb_planes);
+    if (!*data)
+	{
+		printf("Failed alloca sample\n");
+        return AVERROR(ENOMEM);
+	}
+    return av_samples_alloc(*data, linesize, nb_channels,
+                            nb_samples, sample_fmt, align);
 }

@@ -45,7 +45,7 @@ static SDL_AudioSpec wanted;
 //==============================================================
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-	printf("I got audio %d\n",frameSize);
+	//printf("I got audio %d\n",frameSize);
 	unsigned char *p;
 	unsigned char *p_content;
 	int headerLength;
@@ -98,6 +98,7 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 						char *audioframeBuf=(char *)malloc(frameSizeList[i]+sizeof(adts));
 						memcpy(audioframeBuf,adts,sizeof(adts));
 						memcpy(audioframeBuf+sizeof(adts),p_content,frameSizeList[i]);
+						
 						audioPacketQueue.push(pair<int,char*>(frameSizeList[i]+7,audioframeBuf));
 						ReleaseMutex(g_hMutex_audio); 
 					}
@@ -174,18 +175,34 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len);
 static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 {
 	int availLen=len;
-
+	int requestLen=0;
+	int cursor=0;
 	if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
 	{
+		//printf("Size:%d,Buffer:%d\n",audioPacketQueue.size(),len);
 		while(audioPacketQueue.size()>0)
 		{
+			
 			pair<int,char*> packet=audioPacketQueue.front();
-			audioPacketQueue.pop();
 			AVFrame *frame;
 			int outSize;
 			decoder.decodeAudioFrame(packet.second,packet.first,&frame,&outSize);
-			SDL_MixAudio(stream,frame->data[0],outSize,SDL_MIX_MAXVOLUME);
-			free(packet.second);
+			requestLen+=outSize;;
+			printf("Now requeset cursor:%d len:%d,buffer:%d\n",cursor,requestLen,len);
+			if(requestLen<=len)
+			{
+				memcpy(stream+cursor,frame->data[0],outSize);
+				cursor+=outSize;
+				audioPacketQueue.pop();
+				free(packet.second);
+			}
+			else
+			{
+				printf("Buffer filled\n");
+				break;
+			}
+			
+			
 		}
 		ReleaseMutex(g_hMutex_audio); 
 	}

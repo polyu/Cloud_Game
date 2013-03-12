@@ -34,7 +34,7 @@ bool StreamServer::addAudioStream()
 	this->audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC);
 	if (!this->audio_codec) 
 	{
-		printf( "aideo codec not found/n");
+		printf( "aideo codec not found\n");
 		return false;
     }
 	this->audio_st = avformat_new_stream(this->aoc, this->audio_codec);
@@ -46,9 +46,12 @@ bool StreamServer::addAudioStream()
 	this->audio_st->id=this->aoc->nb_streams-1;
 	c=this->audio_st->codec;
 	c->sample_fmt  = AV_SAMPLE_FMT_S16;
-    c->bit_rate    = 64000;
+    c->bit_rate    = 128000;
     c->sample_rate = OUTPUTSAMPLERATE;
     c->channels    = 2;
+	c->time_base.num= 1;
+	c->time_base.den= OUTPUTSAMPLERATE;
+	c->channel_layout=3;
 	//c->channel_layout=av_get_channel_layout("DL");
 	//======================================
 	/*if (aoc->oformat->flags & AVFMT_GLOBALHEADER)
@@ -73,7 +76,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 {
 	long encodeVideoPerformanceClock=clock();
 	AVCodecContext *c = this->video_st->codec;
-
+	
 	AVPacket pkt;
     int got_output,ret;
     av_init_packet(&pkt);
@@ -118,6 +121,7 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
 	ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
+	
 	//printf("LineSize:%d\n",frame->linesize[0]);
 	if (ret < 0) 
 	{
@@ -126,7 +130,10 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     }
 	if(got_output)
 	{
-
+		/*FILE *f2=fopen("c:/12345.mp3","a");
+		printf("writng 04 %d\n",pkt.size,pkt);
+		fwrite(pkt.data,pkt.size,1,f2);
+		fclose(f2);*/
 		//==========Debug
 		/*AVFrame *dframe=avcodec_alloc_frame();
 		avcodec_get_frame_defaults(dframe);
@@ -134,8 +141,15 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
 		AVCodecContext *decodecontext=avcodec_alloc_context3(decoder);
 		avcodec_open2(decodecontext, decoder,NULL);
 		int pic;
-		avcodec_decode_audio4(decodecontext,dframe,&pic,&pkt);
-		printf("LINE SIZE:%d<->%d\n",dframe->linesize[0],dframe->nb_samples);*/
+		int ret=avcodec_decode_audio4(decodecontext,dframe,&pic,&pkt);
+		if(ret<0)
+		{
+			printf("Seem fuck\n");
+		}
+		printf("LINE SIZE:%d<->%d\n",dframe->linesize[0],dframe->nb_samples);
+		FILE *f=fopen("c:/o2.dump","w");
+		fwrite(dframe->data[0],dframe->linesize[0],1,f);
+				fclose(f);*/
 		//==========Debug
 		pkt.stream_index = this->audio_st->index;
 		ret = av_write_frame(aoc, &pkt);
