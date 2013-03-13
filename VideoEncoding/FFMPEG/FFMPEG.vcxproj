@@ -49,8 +49,8 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\live\include;E:\150w\ffmpeg\include;$(IncludePath)</IncludePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\live\lib;E:\150w\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\udt4\include;E:\150w\live\include;E:\150w\ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\udt4\lib;E:\150w\live\lib;E:\150w\ffmpeg\lib;$(LibraryPath)</LibraryPath>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\150w\ffmpeg\include;$(IncludePath)</IncludePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\150w\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
@@ -86,7 +86,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Winmm.lib;avformat.lib;avcodec.lib;avutil.lib;swscale.lib;swresample.lib;libBasicUsageEnvironment.lib;libUsageEnvironment.lib;libliveMedia.lib;libgroupsock.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>udt.lib;avformat.lib;avcodec.lib;avutil.lib;swscale.lib;swresample.lib;libBasicUsageEnvironment.lib;libUsageEnvironment.lib;libliveMedia.lib;libgroupsock.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>false</OptimizeReferences>

@@ -49,6 +49,7 @@ bool StreamServer::addAudioStream()
     c->bit_rate    = 64000;
     c->sample_rate = OUTPUTSAMPLERATE;
     c->channels    = 2;
+	c->profile= FF_PROFILE_AAC_LD;
 	//c->channel_layout=av_get_channel_layout("DL");
 	//======================================
 	/*if (aoc->oformat->flags & AVFMT_GLOBALHEADER)

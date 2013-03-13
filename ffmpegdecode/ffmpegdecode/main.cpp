@@ -10,8 +10,8 @@ using namespace std;
 #ifdef main
 #undef main
 #endif 
-
-
+//=====================Controller Network===================
+static Controller controller;
 
 //====================NETWORKVIDEO================
 static HANDLE g_hMutex_video = INVALID_HANDLE_VALUE;  
@@ -172,8 +172,15 @@ static void RTPNetworkThread(void *)
 static void initDecoder();
 static void initRTPNetwork();
 static void initSDL();
-
+static void initControllerNetwork();
 static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len);
+static void initControllerNetwork()
+{
+	if(!controller.initControllerClient())
+	{
+		exit(-4);
+	}
+}
 static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 {
 	int availLen=len;
@@ -302,7 +309,7 @@ static void initRTPNetwork()
 }
 int main(int argv,char **argc)
 {
-	
+	initControllerNetwork();
 	initDecoder();
 	initRTPNetwork();
 	initSDL();
@@ -350,25 +357,37 @@ int main(int argv,char **argc)
 						if(event.key.keysym.sym==SDLK_F2)
 						{
 							SDL_WM_GrabInput(SDL_GRAB_OFF);
+							break;
 						}
+						printf("%d%d\n",event.key.keysym.sym,event.key.keysym.mod);
+						controller.sendKeyEvent(event.key.keysym.sym,event.key.keysym.mod);
 				    break;
+
 					case SDL_MOUSEMOTION:
-						printf("Mouse moved by %d,%d to (%d,%d)\n", 
-						event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
+						printf("Mouse moved by %d,%d to (%d,%d)\n",event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
+						controller.sendMouseEvent(event.motion.xrel, event.motion.yrel,0,0);
 					break;
+
 					case SDL_MOUSEBUTTONDOWN:
 						if(SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF)
 						{
 							SDL_WM_GrabInput(SDL_GRAB_ON);
 							break;
 						}
-						printf("Mouse button %d pressed at (%d,%d)\n",event.button.button, event.button.x, event.button.y);
+						printf("Mouse button %d pressed at (%d,%d,%d,%d)\n",event.button.button, event.button.x, event.button.y,event.motion.xrel,event.motion.yrel);
+						controller.sendMouseEvent(0,0,event.button.button,PRESSDOWNDIRECTION);
 						break;
+
+					case SDL_MOUSEBUTTONUP:
+						controller.sendMouseEvent(0,0,event.button.button,PRESSUPDIRECTION);
+						break;
+
                     case SDL_QUIT:
                         quitFlag = true;
                         break;
+
                     default:
-                          
+                        
 						break;
 				 }
 		 }

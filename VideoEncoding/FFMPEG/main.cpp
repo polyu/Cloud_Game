@@ -1,25 +1,49 @@
 #include "StreamServer.h"
 #include "ISoundCapturer.h"
 #include "IVideoCapturer.h"
+#include "IController.h"
 #include <process.h>
 StreamServer server;
 IVideoCapturer vcapturer;
 ISoundCapturer acapturer;
-void videoCaptureThread(void*)
+IController controller;
+bool runFlag;
+static void shutdownServer();
+static void videoCaptureThread(void*);
+static void audioCaptureThread(void*);
+static void controllerThread(void *);
+static void shutdownServer()
+{
+	vcapturer.stopCapture();
+	acapturer.stopFrameLoop();
+	controller.stopControllerLoop();
+}
+static void videoCaptureThread(void*)
 {
 	vcapturer.startFrameLoop();
+	runFlag=false;
 }
-void audioCaptureThread(void*)
+static void audioCaptureThread(void*)
 {
 	acapturer.startFrameLoop();
+	runFlag=false;
+}
+
+static void controllerThread(void *)
+{
+	controller.startControllerLoop();
+	runFlag=false;
 }
 int main(int argc, char* argv[])
 {
-	
+	if(!controller.initIController())
+	{
+		printf("Init controller failed\n");
+		return -2;
+	}
 	if(!server.initStreamServer())
 	{
 		printf("Stream Server Failed\n");
-		system("pause");
 		return -1;	
 	}
 	printf("Stream Server Start\n");
@@ -36,9 +60,13 @@ int main(int argc, char* argv[])
 	}
 	acapturer.setStreamServer(&server);
 	_beginthread(videoCaptureThread,0,NULL);
-	_beginthread(audioCaptureThread,0,NULL);
-	while(true)
+	//_beginthread(audioCaptureThread,0,NULL);
+	_beginthread(controllerThread,0,NULL);
+	runFlag=true;
+	while(runFlag)
 	{
 		Sleep(1000);
 	}
+	shutdownServer();
+	system("pause");
 }
