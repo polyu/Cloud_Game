@@ -12,8 +12,8 @@ StreamServer::StreamServer()
 	this->audio_pts=0;
 	this->video_pts=0;
 	this->remoteAddr=DEFAULT_REMOTEADDRESS;
-	this->remoteVideoPort=DEFAULT_REMOTEPORT;
-	this->remoteAudioPort=DEFAULT_REMOTEPORT+VIDEOAUDIOPORTGAP;
+	this->remoteVideoPort=DEFAULT_RTPVIDEOPORT;
+	this->remoteAudioPort=DEFAULT_RTPAUDIOPORT;
 	avformat_network_init();
 	av_register_all() ;
 	avcodec_register_all();
@@ -31,10 +31,10 @@ void StreamServer::setRemoteAddress(string address,int videoport,int audioport)
 bool StreamServer::addAudioStream()
 {
 	AVCodecContext *c;
-	this->audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC);
+	this->audio_codec = avcodec_find_encoder(CODEC_ID_AAC);
 	if (!this->audio_codec) 
 	{
-		printf( "aideo codec not found\n");
+		printf( "aideo codec not found/n");
 		return false;
     }
 	this->audio_st = avformat_new_stream(this->aoc, this->audio_codec);
@@ -46,12 +46,9 @@ bool StreamServer::addAudioStream()
 	this->audio_st->id=this->aoc->nb_streams-1;
 	c=this->audio_st->codec;
 	c->sample_fmt  = AV_SAMPLE_FMT_S16;
-    c->bit_rate    = 128000;
+    c->bit_rate    = 64000;
     c->sample_rate = OUTPUTSAMPLERATE;
     c->channels    = 2;
-	c->time_base.num= 1;
-	c->time_base.den= OUTPUTSAMPLERATE;
-	c->channel_layout=3;
 	//c->channel_layout=av_get_channel_layout("DL");
 	//======================================
 	/*if (aoc->oformat->flags & AVFMT_GLOBALHEADER)
@@ -62,7 +59,6 @@ bool StreamServer::addAudioStream()
 		printf( "could not open audio codec\n");
         return false;
 	}
-	
 	_snprintf_s(this->aoc->filename, sizeof(this->aoc->filename), "rtp://%s:%d", this->remoteAddr.c_str(), this->remoteAudioPort);
 	if (avio_open(&(this->aoc->pb), this->aoc->filename, AVIO_FLAG_WRITE ) < 0)
     {
@@ -76,7 +72,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 {
 	long encodeVideoPerformanceClock=clock();
 	AVCodecContext *c = this->video_st->codec;
-	
+
 	AVPacket pkt;
     int got_output,ret;
     av_init_packet(&pkt);
@@ -93,7 +89,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 		if (c->coded_frame->key_frame)
 			pkt.flags |= AV_PKT_FLAG_KEY;
 		pkt.stream_index = this->video_st->index;
-		
+
 
 		ret = av_write_frame(voc, &pkt);
 		av_free_packet(&pkt);
@@ -112,7 +108,7 @@ bool StreamServer::write_video_frame(AVFrame *frame)
 }
 bool StreamServer::write_audio_frame(AVFrame *frame)
 {
-	
+
 	long encodeAudioPerformanceClock=clock();
 	AVCodecContext *c = this->audio_st->codec;
 	AVPacket pkt;
@@ -121,8 +117,7 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
 	ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
-	
-	//printf("LineSize:%d\n",frame->linesize[0]);
+
 	if (ret < 0) 
 	{
         printf( "Error encoding audio frame\n");
@@ -130,31 +125,10 @@ bool StreamServer::write_audio_frame(AVFrame *frame)
     }
 	if(got_output)
 	{
-		/*FILE *f2=fopen("c:/12345.mp3","a");
-		printf("writng 04 %d\n",pkt.size,pkt);
-		fwrite(pkt.data,pkt.size,1,f2);
-		fclose(f2);*/
-		//==========Debug
-		/*AVFrame *dframe=avcodec_alloc_frame();
-		avcodec_get_frame_defaults(dframe);
-		AVCodec *decoder=avcodec_find_decoder(AV_CODEC_ID_AAC);
-		AVCodecContext *decodecontext=avcodec_alloc_context3(decoder);
-		avcodec_open2(decodecontext, decoder,NULL);
-		int pic;
-		int ret=avcodec_decode_audio4(decodecontext,dframe,&pic,&pkt);
-		if(ret<0)
-		{
-			printf("Seem fuck\n");
-		}
-		printf("LINE SIZE:%d<->%d\n",dframe->linesize[0],dframe->nb_samples);
-		FILE *f=fopen("c:/o2.dump","w");
-		fwrite(dframe->data[0],dframe->linesize[0],1,f);
-				fclose(f);*/
-		//==========Debug
 		pkt.stream_index = this->audio_st->index;
 		ret = av_write_frame(aoc, &pkt);
 		av_free_packet(&pkt);
-		
+
 		if(ret<0)
 		{
 			printf( "Error writing audio frame\n");
@@ -232,12 +206,6 @@ bool StreamServer::addVideoStream()
 bool StreamServer::initStreamServer()
 {
 
-	g_hMutex = CreateMutex(NULL, FALSE, L"Mutex");
-	if (!g_hMutex)  
-    {  
-        printf("Failed to create mutex\n");
-        return false;  
-    }  
 	this->aoc=avformat_alloc_context();
 	this->voc=avformat_alloc_context();
 	if(voc==NULL || aoc==NULL )
@@ -247,13 +215,13 @@ bool StreamServer::initStreamServer()
 	}
 	this->vfmt = av_guess_format("rtp", NULL, NULL);
 	this->afmt = av_guess_format("rtp", NULL, NULL);
-	
+
 	if (!this->vfmt || !this->afmt )
     {
         printf("Try init RTP format failed\n");
 		return false;
     }
-	
+
 	voc->oformat=this->vfmt;
 	aoc->oformat=this->afmt;
 
@@ -273,7 +241,7 @@ bool StreamServer::initStreamServer()
 		printf("SDP Failed\n");
 		return false;
 	}*/
-	
+
 	if(avformat_write_header(aoc, NULL)<0)
 	{
 		printf("Can not send audio header\n");

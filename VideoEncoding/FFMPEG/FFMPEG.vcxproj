@@ -95,6 +95,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="IController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ISoundCapturer.cpp" />
     <ClCompile Include="stdafx.cpp" />
@@ -102,6 +103,7 @@
     <ClCompile Include="StreamServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IController.h" />
     <ClInclude Include="ISoundCapturer.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="StreamServer.h" />

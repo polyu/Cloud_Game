@@ -30,12 +30,12 @@ class StreamDecoder
 public:
 	StreamDecoder();
 	~StreamDecoder();
-	void setLocalPort(int port);
+	
 	bool initDecorder();
 	bool decodeVideoFrame(char *indata,int insize,AVFrame **frame);
 	bool decodeAudioFrame(char *indata,int insize,AVFrame **frame,int *outSize);
 private:
-	int localPort;
+	
     AVCodec *audio_codec, *video_codec;
 	AVCodecContext *audio_codec_context,*video_codec_context;
 	bool openVideoCodec();

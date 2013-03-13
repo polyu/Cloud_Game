@@ -102,6 +102,12 @@ void IVideoCapturer::startFrameLoop()
 			memcpy((void *)&height,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height),sizeof(height));
 			memcpy((void *)&width,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*2,sizeof(width));
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
+			if(copySize<0 || height<0 ||width<0 || height>900 ||width>1440)
+			{
+				printf("Bad Config! Waiting New Config\n");
+				setMemoryWritable();
+				continue;
+			}
 			int fps=1000/((clock()-fpsClock)+1);//avoid divide 0
 			fpsClock=clock();
 			printf("%d bytes height:%d width:%d bppformat:%d FPS:%d \n",copySize,height,width,bpp,fps);

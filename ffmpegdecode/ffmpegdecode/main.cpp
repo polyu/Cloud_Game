@@ -5,6 +5,7 @@
 #include <SDL.h>
 #include <process.h>
 #include <queue>
+#include "Controller.h"
 using namespace std;
 #ifdef main
 #undef main
@@ -41,7 +42,8 @@ static StreamDecoder decoder;
 static SDL_Surface *screen;
 static SDL_Overlay *screenOverlay;
 static SDL_AudioSpec wanted;
-
+static int SDL_WindowHeight=RHEIGHT;
+static int SDL_WindowWidth=RWIDTH;
 //==============================================================
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
@@ -80,7 +82,7 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 					
 					if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
 					{
-						
+						printf("QUEUE:report:%d\n",audioPacketQueue.size());
 						if(audioPacketQueue.size()>MAXAUDIOQUEUENUM)
 						{
 							int popnum=audioPacketQueue.size();
@@ -159,7 +161,7 @@ static void refreshAudio(void )
 {
 	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
 }
-static void NetworkThread(void *)
+static void RTPNetworkThread(void *)
 {
 	refreshAudio();
 	refreshVideo();
@@ -168,7 +170,7 @@ static void NetworkThread(void *)
 	env->taskScheduler().doEventLoop();
 }
 static void initDecoder();
-static void initNetwork();
+static void initRTPNetwork();
 static void initSDL();
 
 static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len);
@@ -177,28 +179,30 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 	int availLen=len;
 	int requestLen=0;
 	int cursor=0;
-	if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
+	if(WaitForSingleObject(g_hMutex_audio, 10)==WAIT_OBJECT_0)
 	{
-		//printf("Size:%d,Buffer:%d\n",audioPacketQueue.size(),len);
+		//printf("Size:%d,Request:%d\n",audioPacketQueue.size(),len);
 		while(audioPacketQueue.size()>0)
 		{
-			
 			pair<int,char*> packet=audioPacketQueue.front();
 			AVFrame *frame;
 			int outSize;
 			decoder.decodeAudioFrame(packet.second,packet.first,&frame,&outSize);
 			requestLen+=outSize;;
-			printf("Now requeset cursor:%d len:%d,buffer:%d\n",cursor,requestLen,len);
 			if(requestLen<=len)
 			{
 				memcpy(stream+cursor,frame->data[0],outSize);
 				cursor+=outSize;
 				audioPacketQueue.pop();
 				free(packet.second);
+				av_freep(&frame->data[0]);
+				av_freep(&frame->data);
 			}
 			else
 			{
 				printf("Buffer filled\n");
+				av_freep(&frame->data[0]);
+				av_freep(&frame->data);
 				break;
 			}
 			
@@ -211,6 +215,7 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 
 static void initSDL()
 {
+	
 	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
         printf("Could not initialize SDL: %s.\n", SDL_GetError());
@@ -226,9 +231,11 @@ static void initSDL()
     }
 	screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_IYUV_OVERLAY,screen);
 	SDL_WM_SetCaption("Cloud Gaming",NULL);
+	SDL_ShowCursor(0);
+	SDL_WM_GrabInput( SDL_GRAB_ON );
 	//=============Sound
 	wanted.freq = 44100;//音频的频率 
-	wanted.format = AUDIO_S16;//数据格式为有符号16位		
+	wanted.format = AUDIO_S16SYS;//数据格式为有符号16位		
 	wanted.channels = 2;//双声道 
 	wanted.samples = AUDIOBUFFERNUM;//采样数 
 	wanted.callback = decodeAudioFromQueue;//设置回调函数 
@@ -239,6 +246,7 @@ static void initSDL()
 		exit(-3); 
 	}	  
 	SDL_PauseAudio(0);
+
 }
 static void initDecoder()
 {
@@ -256,15 +264,15 @@ static void initDecoder()
 	}
 	printf("Decorder Init OK\n");
 }
-static void initNetwork()
+static void initRTPNetwork()
 {
 	in_addr listenAddress;
 	listenAddress.s_addr=htonl(INADDR_ANY);
 	scheduler = BasicTaskScheduler::createNew();
 	env = BasicUsageEnvironment::createNew(*scheduler);
-	Port rtpVideoPort(DEFAULT_PORT);
+	Port rtpVideoPort(DEFAULT_RTPVIDEOPORT);
 	localVideoSock=new Groupsock(*env, listenAddress,rtpVideoPort , 255);
-	Port rtpAudioPort(DEFAULT_PORT+VIDEOAUDIOPORTGAP);
+	Port rtpAudioPort(DEFAULT_RTPAUDIOPORT);
 	localAudioSock=new Groupsock(*env, listenAddress,rtpAudioPort , 255);
 	if(localVideoSock==NULL)
 	{
@@ -289,20 +297,21 @@ static void initNetwork()
 		exit(-2);
 	}
 	printf("NETWORK INIT OK\n");
-	_beginthread(NetworkThread,0,NULL);
+	_beginthread(RTPNetworkThread,0,NULL);
 	
 }
 int main(int argv,char **argc)
 {
 	
 	initDecoder();
-	initNetwork();
+	initRTPNetwork();
 	initSDL();
 
 	bool quitFlag=false;
 	SDL_Event event;
 	SDL_Rect rect;  
 	printf("SDL Ready\n");
+	
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);
@@ -336,16 +345,30 @@ int main(int argv,char **argc)
 		 {
                 switch( event.type )
 				{
-                   
+             
                     case SDL_KEYDOWN:
-                    case SDL_KEYUP:
-                       
-                        break;
+						if(event.key.keysym.sym==SDLK_F2)
+						{
+							SDL_WM_GrabInput(SDL_GRAB_OFF);
+						}
+				    break;
+					case SDL_MOUSEMOTION:
+						printf("Mouse moved by %d,%d to (%d,%d)\n", 
+						event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
+					break;
+					case SDL_MOUSEBUTTONDOWN:
+						if(SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF)
+						{
+							SDL_WM_GrabInput(SDL_GRAB_ON);
+							break;
+						}
+						printf("Mouse button %d pressed at (%d,%d)\n",event.button.button, event.button.x, event.button.y);
+						break;
                     case SDL_QUIT:
                         quitFlag = true;
                         break;
                     default:
-                      
+                          
 						break;
 				 }
 		 }

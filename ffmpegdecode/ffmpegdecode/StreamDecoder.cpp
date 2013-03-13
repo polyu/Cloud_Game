@@ -2,7 +2,6 @@
 StreamDecoder::StreamDecoder()
 {
 	
-	this->localPort=DEFAULT_PORT;
 	this->outputaudioFrame=0;
 	this->audio_codec=0;
 	this->video_codec=0;
@@ -65,10 +64,7 @@ StreamDecoder::~StreamDecoder()
 	av_free_packet(&videoavpkt);
 	av_free_packet(&audioavpkt);
 }
-void StreamDecoder::setLocalPort(int port)
-{
-	this->localPort=port;
-}
+
 bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outdata,int *outSize)
 {
 	int len, got_frame;
@@ -86,15 +82,13 @@ bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outdata,in
 		//========DUE TO AAC FLTP========
 		uint8_t **src_data=0;
 		int src_linesize;
+		int audioFrameSize=av_samples_get_buffer_size(NULL, 2,audioframe->nb_samples,AV_SAMPLE_FMT_FLTP, 1);
 		alloc_samples_array_and_data(&src_data, &src_linesize, 2,audioframe->nb_samples,AV_SAMPLE_FMT_FLTP , 0);
-		int audioFrameSize=av_samples_get_buffer_size(NULL, 2,
-                                                       audioframe->nb_samples,
-                                                       AV_SAMPLE_FMT_FLTP, 1);
 		memcpy(src_data[0],audioframe->data[0],audioFrameSize);
-
+		//===============================
 		uint8_t **dst_data=0 ;
 		int dst_linesize;
-		int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, 44100)+audioframe->nb_samples, OUTPUTSAMPLERATE, 44100, AV_ROUND_UP);
+		int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, OUTPUTSAMPLERATE)+audioframe->nb_samples, OUTPUTSAMPLERATE, OUTPUTSAMPLERATE, AV_ROUND_UP);
 		alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 0);
 		int retFrameCount=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data,audioframe->nb_samples );
 		if(retFrameCount<0)
@@ -102,11 +96,7 @@ bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outdata,in
 			printf("Failed to resample\n");
 			return false;
 		}
-		
-		int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
-		printf("%d\n",dst_outputsize);
-		
-		*outSize=dst_outputsize;
+		int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 1);
 		outputaudioFrame->nb_samples=retFrameCount;
 		int ret=avcodec_fill_audio_frame(outputaudioFrame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,1);
 		if(ret<0)
@@ -115,6 +105,10 @@ bool StreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outdata,in
 				return false;
 		}
 		*outdata=outputaudioFrame;
+		*outSize=dst_outputsize;
+		printf("%d\n",dst_outputsize);
+		av_freep(&src_data[0]);
+		av_freep(&src_data);
 		return true;
 	}
 	else
@@ -268,7 +262,7 @@ bool StreamDecoder::setupSwrcale()
         return false;
     }
 	av_opt_set_int(swr_ctx, "in_channel_count",    2, 0);
-	av_opt_set_int(swr_ctx, "in_sample_rate",       44100, 0);
+	av_opt_set_int(swr_ctx, "in_sample_rate",       OUTPUTSAMPLERATE, 0);
     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt",  AV_SAMPLE_FMT_FLTP, 0);
 	av_opt_set_int(swr_ctx, "out_channel_count",    2, 0);
     av_opt_set_int(swr_ctx, "out_sample_rate",       OUTPUTSAMPLERATE, 0);
