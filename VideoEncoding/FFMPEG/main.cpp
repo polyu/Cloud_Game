@@ -36,11 +36,11 @@ static void controllerThread(void *)
 }
 int main(int argc, char* argv[])
 {
-	if(!controller.initIController())
+	/*if(!controller.initIController())
 	{
 		printf("Init controller failed\n");
 		return -2;
-	}
+	}*/
 	if(!server.initStreamServer())
 	{
 		printf("Stream Server Failed\n");
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 	acapturer.setStreamServer(&server);
 	_beginthread(videoCaptureThread,0,NULL);
 	//_beginthread(audioCaptureThread,0,NULL);
-	_beginthread(controllerThread,0,NULL);
+	//_beginthread(controllerThread,0,NULL);
 	runFlag=true;
 	while(runFlag)
 	{

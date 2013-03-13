@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dxhook", "DXWrapper.vcxproj", "{7265D2A1-C4DF-4C59-A579-560B1711B8A4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|Win32 = Debug|Win32
+		Release|Any CPU = Release|Any CPU
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Debug|Win32.Build.0 = Debug|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Release|Any CPU.ActiveCfg = Release|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Release|Win32.ActiveCfg = Release|Win32
+		{7265D2A1-C4DF-4C59-A579-560B1711B8A4}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

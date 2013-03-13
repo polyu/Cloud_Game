@@ -1,0 +1,14 @@
+// Pixel shader output structure
+struct PS_OUTPUT
+{
+    float4 Color   : COLOR0;
+};
+
+PS_OUTPUT main()
+{
+    PS_OUTPUT Out;                             //create an output pixel
+
+    Out.Color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    return Out;                                //return output pixel
+}

@@ -1,1 +1,1 @@
-Injector Text3D.exe dxhook.dll
+InjectDLL Text3D.exe dxhook.dll
