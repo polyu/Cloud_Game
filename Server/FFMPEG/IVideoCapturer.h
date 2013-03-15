@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "StreamServer.h"
+#include "IVideoStreamServer.h"
 #define RESERVEDMEMORY 256
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
 #define MAXFPS 200
@@ -32,13 +32,13 @@ public:
 	bool initVideoCapture();
 	void startFrameLoop();
 	void stopCapture();
-	void setStreamServer(StreamServer * streamServer);
+	void setStreamServer(IVideoStreamServer * streamServer);
 
 private:
 	BYTE* lpvMem;      // pointer to shared memory
 	HANDLE hMapObject;
 	AVFrame *rawFrame;
-	StreamServer * streamServer;
+	IVideoStreamServer * streamServer;
 	SwsContext *img_convert_ctx; 
 	uint8_t *picture_buf;
 	int frameCounter;

@@ -37,7 +37,7 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 //=====================NETENV=========================
 static TaskScheduler* scheduler;
 static UsageEnvironment* env ;
-void NetworkThread(void *);
+
 static StreamDecoder decoder;
 //========================SDL===================================
 static SDL_Surface *screen;
@@ -64,7 +64,7 @@ static void SDL_VideoDisplayThread(void *)
 		 {
 			 if(videoCanDecode==true)
 			 {
-				 //printf("Try send this thing to decode length %d\n",videocopyframeCursor);
+				 ////printf("Try send this thing to decode length %d\n",videocopyframeCursor);
 				 AVFrame* frame;
 				 if(decoder.decodeVideoFrame((char*)videoframeCopyBuf,videocopyframeCursor,&frame))
 				 {
@@ -90,7 +90,7 @@ static void SDL_VideoDisplayThread(void *)
 }
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-	//printf("I got audio %d\n",frameSize);
+	////printf("I got audio %d\n",frameSize);
 	unsigned char *p;
 	unsigned char *p_content;
 	int headerLength;
@@ -125,7 +125,7 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 					
 					if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
 					{
-						printf("QUEUE:report:%d\n",audioPacketQueue.size());
+						//printf("QUEUE:report:%d\n",audioPacketQueue.size());
 						if(audioPacketQueue.size()>MAXAUDIOQUEUENUM)
 						{
 							int popnum=audioPacketQueue.size();
@@ -152,7 +152,7 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 				}
 				else
 				{
-					printf("Bad packet found\n");
+					//printf("Bad packet found\n");
 					break;
 				}
 			}
@@ -165,10 +165,10 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 }
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-	//printf("Got a NAL Unit Length:%d\n",frameSize);
+	////printf("Got a NAL Unit Length:%d\n",frameSize);
 	if(videoframeCursor+frameSize>MAXFRAMEBUF)
 	{
-		printf("BUF has been full\n");
+		//printf("BUF has been full\n");
 		videoframeCursor=0;
 	}
 	char header[4]={0x00,0x00,0x00,0x01};
@@ -198,10 +198,12 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 }
 static void refreshVideo(void )
 {
+	if(rtpThreadRunFlag)
 	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
 }
 static void refreshAudio(void )
 {
+	if(rtpThreadRunFlag)
 	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
 }
 static void RTPNetworkThread(void *)
@@ -209,7 +211,7 @@ static void RTPNetworkThread(void *)
 	refreshAudio();
 	refreshVideo();
 	
-	printf("Network  EventLoop Start\n");
+	//printf("Network  EventLoop Start\n");
 	env->taskScheduler().doEventLoop();
 }
 static void initDecoder();
@@ -231,7 +233,7 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 	int cursor=0;
 	if(WaitForSingleObject(g_hMutex_audio, 10)==WAIT_OBJECT_0)
 	{
-		//printf("Size:%d,Request:%d\n",audioPacketQueue.size(),len);
+		////printf("Size:%d,Request:%d\n",audioPacketQueue.size(),len);
 		while(audioPacketQueue.size()>0)
 		{
 			pair<int,char*> packet=audioPacketQueue.front();
@@ -250,7 +252,7 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 			}
 			else
 			{
-				printf("Buffer filled\n");
+				//printf("Buffer filled\n");
 				av_freep(&frame->data[0]);
 				av_freep(&frame->data);
 				break;
@@ -260,7 +262,7 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 		}
 		ReleaseMutex(g_hMutex_audio); 
 	}
-	//printf("I am quit\n");
+	////printf("I am quit\n");
 }
 
 static void initSDL()
@@ -268,15 +270,15 @@ static void initSDL()
 	
 	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
-        printf("Could not initialize SDL: %s.\n", SDL_GetError());
+        //printf("Could not initialize SDL: %s.\n", SDL_GetError());
        exit(-3);
     }
-	atexit(SafeCleanUp);atexit(SDL_Quit);
+	atexit(SafeCleanUp);
+	atexit(SDL_Quit);
 	//=============Video
 	screen = SDL_SetVideoMode(RWIDTH, RHEIGHT, 32, SDL_SWSURFACE);
 	if ( screen == NULL ) {
-        printf("Couldn't set 640x480x32 video mode: %s\n",
-                        SDL_GetError());
+        //printf("Couldn't set 640x480x32 video mode: %s\n",SDL_GetError());
         exit(-3);
     }
 	screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_IYUV_OVERLAY,screen);
@@ -292,7 +294,7 @@ static void initSDL()
 	wanted.userdata = NULL; 
 	if(SDL_OpenAudio(&wanted, NULL) < 0) 
 	{  
-		printf( "SDL_OpenAudio: %s\n", SDL_GetError());  
+		//printf( "SDL_OpenAudio: %s\n", SDL_GetError());  
 		exit(-3); 
 	}	  
 	SDL_PauseAudio(0);
@@ -304,15 +306,15 @@ static void initDecoder()
 	g_hMutex_audio = CreateMutex(NULL, FALSE, L"Mutex2");
 	if (!g_hMutex_video || !g_hMutex_audio)  
     {  
-        printf("Failed to create mutex\n");
+        //printf("Failed to create mutex\n");
         exit(-1);
     }  
 	if(!decoder.initDecorder())
 	{
-		printf("Failed Init Decorder\n");
+		//printf("Failed Init Decorder\n");
 		exit(-1);
 	}
-	printf("Decorder Init OK\n");
+	//printf("Decorder Init OK\n");
 }
 static void initRTPNetwork()
 {
@@ -326,41 +328,42 @@ static void initRTPNetwork()
 	localAudioSock=new Groupsock(*env, listenAddress,rtpAudioPort , 255);
 	if(localVideoSock==NULL)
 	{
-		printf("Init LOCAL VIDEO SOCK FAILED\n");
+		//printf("Init LOCAL VIDEO SOCK FAILED\n");
 		exit(-2);
 	}
 	if(localAudioSock==NULL)
 	{
-		printf("Init LOCAL AUDIO SOCK FAILED\n");
+		//printf("Init LOCAL AUDIO SOCK FAILED\n");
 		exit(-2);
 	}
 	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96,30000);
 	audioSource= BasicUDPSource::createNew(*env,localAudioSock);
 	if(videoSource==NULL)
 	{
-		printf("INIT Video Source Failed\n");
+		//printf("INIT Video Source Failed\n");
 		exit(-2);
 	}
 	if(audioSource==NULL)
 	{
-		printf("INIT Video Source Failed\n");
+		//printf("INIT Video Source Failed\n");
 		exit(-2);
 	}
-	printf("NETWORK INIT OK\n");
+	//printf("NETWORK INIT OK\n");
 	
 	
 }
-int main(int argv,char **argc)
+int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nCmdShow)
 {
-	initControllerNetwork();
+	//initControllerNetwork();
+	initSDL();
 	initDecoder();
 	initRTPNetwork();
-	initSDL();
+	
 	_beginthread(RTPNetworkThread,0,NULL);
 	_beginthread(SDL_VideoDisplayThread,0,NULL);
 	bool quitFlag=false;
 	SDL_Event event;
-	printf("SDL Ready\n");
+	//printf("SDL Ready\n");
 	
 	while(!quitFlag)
 	{
@@ -377,12 +380,12 @@ int main(int argv,char **argc)
 							SDL_WM_GrabInput(SDL_GRAB_OFF);
 							break;
 						}
-						printf("%d%d\n",event.key.keysym.sym,event.key.keysym.mod);
+						//printf("%d%d\n",event.key.keysym.sym,event.key.keysym.mod);
 						controller.sendKeyEvent(event.key.keysym.sym,event.key.keysym.mod);
 				    break;
 
 					case SDL_MOUSEMOTION:
-						printf("Mouse moved by %d,%d to (%d,%d)\n",event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
+						//printf("Mouse moved by %d,%d to (%d,%d)\n",event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
 						controller.sendMouseEvent(event.motion.xrel, event.motion.yrel,0,0);
 					break;
 
@@ -392,7 +395,7 @@ int main(int argv,char **argc)
 							SDL_WM_GrabInput(SDL_GRAB_ON);
 							break;
 						}
-						printf("Mouse button %d pressed at (%d,%d,%d,%d)\n",event.button.button, event.button.x, event.button.y,event.motion.xrel,event.motion.yrel);
+						//printf("Mouse button %d pressed at (%d,%d,%d,%d)\n",event.button.button, event.button.x, event.button.y,event.motion.xrel,event.motion.yrel);
 						controller.sendMouseEvent(0,0,event.button.button,PRESSDOWNDIRECTION);
 						break;
 
@@ -410,7 +413,7 @@ int main(int argv,char **argc)
 				 }
 		 }
 	}
-	
+	SafeCleanUp();
 	
 	return 0;
 	

@@ -14,6 +14,7 @@
     <ProjectGuid>{AB61846F-3781-49A2-A3AD-DC5A93F45FD4}</ProjectGuid>
     <RootNamespace>FFMPEG</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <ProjectName>Server</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -95,18 +96,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="IAudioStreamServer.cpp" />
     <ClCompile Include="IController.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ISoundCapturer.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="IVideoCapturer.cpp" />
-    <ClCompile Include="StreamServer.cpp" />
+    <ClCompile Include="IVideoStreamServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IAudioStreamServer.h" />
     <ClInclude Include="IController.h" />
     <ClInclude Include="ISoundCapturer.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="StreamServer.h" />
+    <ClInclude Include="IVideoStreamServer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="IVideoCapturer.h" />
   </ItemGroup>

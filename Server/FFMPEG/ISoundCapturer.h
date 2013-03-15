@@ -9,7 +9,7 @@
 #include <iterator>
 #include <mmsystem.h>
 #include <mmdeviceapi.h>
-#include "StreamServer.h"
+#include "IAudioStreamServer.h"
 extern "C"
 {
 #include <libavutil/opt.h>
@@ -22,7 +22,7 @@ class ISoundCapturer
 public:
 	ISoundCapturer();
 	~ISoundCapturer();
-	void setStreamServer(StreamServer * streamServer);
+	void setStreamServer(IAudioStreamServer * streamServer);
 	bool initISoundCapturer();
 	void startFrameLoop();
 	void stopFrameLoop();
@@ -33,12 +33,12 @@ private:
 	IAudioClient *audioClient;
 	WAVEFORMATEX *waveFormat;
 	IAudioCaptureClient *audioCaptureClient;
-	StreamServer * streamServer;
-	AVFrame *frame;
+	IAudioStreamServer * streamServer;
 	SwrContext *swr_ctx;
 	bool runFlag;
 	bool setupSwscale();
 	void removeSwscale();
 	int alloc_samples_array_and_data(uint8_t ***data, int *linesize, int nb_channels,
-                                    int nb_samples, enum AVSampleFormat sample_fmt, int align);
+                                    int nb_samples, enum AVSampleFormat sample_fmt, int align);\
+	AVFrame *frame;
 };

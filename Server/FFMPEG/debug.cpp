@@ -116,7 +116,7 @@ static void audio_encode_example(const char *filename)
     printf("Encode audio file %s\n", filename);
 
     /* find the MP2 encoder */
-	codec = avcodec_find_encoder(AV_CODEC_ID_MP2);
+	codec = avcodec_find_encoder(AV_CODEC_ID_SPEEX);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
         exit(1);
@@ -204,25 +204,21 @@ static void audio_encode_example(const char *filename)
             t += tincr;
         }
         /* encode the samples */
-		if(t1==0)
-		{
-			FILE *f=fopen("C:/o11.dump","w");
-			fwrite(samples,buffer_size,1,f);
-			fclose(f);
-		}
+		
         ret = avcodec_encode_audio2(c, &pkt, frame, &got_output);
         if (ret < 0) {
             fprintf(stderr, "Error encoding audio frame\n");
             exit(1);
         }
         if (got_output) {
-			if(t1==1000000)
-			{
-
+			
+				
 				AVFrame *dframe=avcodec_alloc_frame();
 				avcodec_get_frame_defaults(dframe);
-				AVCodec *decoder=avcodec_find_decoder(AV_CODEC_ID_MP2);
+				AVCodec *decoder=avcodec_find_decoder(AV_CODEC_ID_SPEEX);
 				AVCodecContext *decodecontext=avcodec_alloc_context3(decoder);
+				decodecontext->sample_rate=32000;
+				decodecontext->channels=2;
 				avcodec_open2(decodecontext, decoder,NULL);
 				int pic;
 				int ret=avcodec_decode_audio4(decodecontext,dframe,&pic,&pkt);
@@ -230,15 +226,14 @@ static void audio_encode_example(const char *filename)
 				{
 					printf("Seem fuck\n");
 				}
-				printf("LINE SIZE:%d<->%d\n",dframe->linesize[0],dframe->nb_samples);
+				printf("LINE SIZE:%d<->%d format:%d\n",dframe->linesize[0],dframe->nb_samples,dframe->format);
 				FILE *f=fopen("c:/o12.dump","w");
 				fwrite(dframe->data[0],dframe->linesize[0],1,f);
 				fclose(f);
 			}
             fwrite(pkt.data, 1, pkt.size, f);
             av_free_packet(&pkt);
-        }
-		t1++;
+        
     }
 
     /* get the delayed frames */

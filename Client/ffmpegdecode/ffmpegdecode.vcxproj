@@ -14,6 +14,7 @@
     <ProjectGuid>{4E7D10D5-DF56-41F5-A77B-D50B71699865}</ProjectGuid>
     <RootNamespace>ffmpegdecode</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <ProjectName>Client</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -75,7 +76,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -86,7 +87,7 @@
     <Link>
       <AdditionalDependencies>udt.lib;libBasicUsageEnvironment.lib;libUsageEnvironment.lib;libliveMedia.lib;libgroupsock.lib;swresample.lib;avcodec.lib;avutil.lib;swscale.lib;Ws2_32.lib;sdl.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <OptimizeReferences>false</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>

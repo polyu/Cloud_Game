@@ -27,10 +27,13 @@
     <ClCompile Include="ISoundCapturer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="StreamServer.cpp">
+    <ClCompile Include="IController.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="IController.cpp">
+    <ClCompile Include="IVideoStreamServer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="IAudioStreamServer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,10 +50,13 @@
     <ClInclude Include="ISoundCapturer.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StreamServer.h">
+    <ClInclude Include="IController.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="IController.h">
+    <ClInclude Include="IVideoStreamServer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="IAudioStreamServer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

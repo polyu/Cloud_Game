@@ -25,7 +25,7 @@ IVideoCapturer::~IVideoCapturer()
 	removeSwscale();
 	uninstallSharedMemory();
 }
-void IVideoCapturer::setStreamServer(StreamServer * streamServer)
+void IVideoCapturer::setStreamServer(IVideoStreamServer * streamServer)
 {
 	this->streamServer=streamServer;
 }
