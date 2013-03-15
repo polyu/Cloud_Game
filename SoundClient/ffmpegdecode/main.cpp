@@ -39,78 +39,28 @@ static void SDL_VideoDisplayThread(void *);
 
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-	////printf("I got audio %d\n",frameSize);
+	printf("I got audio %d\n",frameSize);
 	
-	unsigned char *p;
-	unsigned char *p_content;
-	int headerLength;
-	int frameCount;
-	int frameSizeList[10];
-	int remainSize=0;
-	unsigned char adts[7]={0xFF, 0xF9, 0x50, 0x80, 0x00, 0x00, 0xFC};
-	if(frameSize>100)//UDP CHECK!
+	
+	if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
 	{
-		p=audiotempBuf+12;//SKIP RTP HEADER
-		if(*p==0)//CHECK RTP
-		{
-			p++;
-			headerLength=*p;
-			frameCount=headerLength/16;
-			p_content=audiotempBuf+12+2+frameCount*2;
-			remainSize=frameSize-12-2-frameCount*2;
-			for(int i=0;i<frameCount;i++)
-			{
-				p++;
-				int part1=*p;
-				part1=part1<<8;
-				p++;
-				int part2=*p;
-				frameSizeList[i]=(part1+part2)>>3;
-				
-			}
-			for(int i=0;i<frameCount;i++)
-			{
-				if(remainSize>=frameSizeList[i])
-				{
-					
-					if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
-					{
 						//printf("QUEUE:report:%d\n",audioPacketQueue.size());
-						if(audioPacketQueue.size()>MAXAUDIOQUEUENUM)
-						{
-							int popnum=audioPacketQueue.size();
-							for(int j=0;j<popnum;j++)
-							{
-								free(audioPacketQueue.front().second);
-								audioPacketQueue.pop();
-							}
-						}
-						int frameLen=frameSizeList[i]+7;
-						frameLen <<= 5;//8bit * 2 - 11 = 5(headerSize 11bit)
-						frameLen |= 0x1F;//5 bit    1            
-						adts[4] = frameLen>>8;
-						adts[5] = frameLen & 0xFF;
-						char *audioframeBuf=(char *)malloc(frameSizeList[i]+sizeof(adts));
-						memcpy(audioframeBuf,adts,sizeof(adts));
-						memcpy(audioframeBuf+sizeof(adts),p_content,frameSizeList[i]);
-						
-						audioPacketQueue.push(pair<int,char*>(frameSizeList[i]+7,audioframeBuf));
-						ReleaseMutex(g_hMutex_audio); 
-					}
-					p_content+=frameSizeList[i];
-					remainSize-=frameSizeList[i];
-				}
-				else
-				{
-					//printf("Bad packet found\n");
-					break;
-				}
+		if(audioPacketQueue.size()>MAXAUDIOQUEUENUM)
+		{
+			int popnum=audioPacketQueue.size();
+			for(int j=0;j<popnum;j++)
+			{
+				free(audioPacketQueue.front().second);
+				audioPacketQueue.pop();
 			}
-			
 		}
-		
+					
+		char *audioframeBuf=(char *)malloc(frameSize);
+		memcpy(audioframeBuf,audiotempBuf,frameSize);
+		audioPacketQueue.push(pair<int,char*>(frameSize,audioframeBuf));
+		ReleaseMutex(g_hMutex_audio); 
 	}
-	
+					
 	refreshAudio();
 	
 }
@@ -156,14 +106,10 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 				cursor+=outSize;
 				audioPacketQueue.pop();
 				free(packet.second);
-				av_freep(&frame->data[0]);
-				av_freep(&frame->data);
 			}
 			else
 			{
-				//printf("Buffer filled\n");
-				av_freep(&frame->data[0]);
-				av_freep(&frame->data);
+				printf("Buffer filled\n");
 				break;
 			}
 		}
@@ -193,18 +139,18 @@ static void initSDL()
 	SDL_WM_SetCaption("SOUND CLIENT",NULL);
 	
 	//=============Sound
-	wanted.freq = 44100;//音频的频率 
+	wanted.freq = 32000;//音频的频率 
 	wanted.format = AUDIO_S16SYS;//数据格式为有符号16位		
 	wanted.channels = 2;//双声道 
 	wanted.samples = AUDIOBUFFERNUM;//采样数 
 	wanted.callback = decodeAudioFromQueue;//设置回调函数 
 	wanted.userdata = NULL; 
-	/*if(SDL_OpenAudio(&wanted, NULL) < 0) 
+	if(SDL_OpenAudio(&wanted, NULL) < 0) 
 	{  
 		//printf( "SDL_OpenAudio: %s\n", SDL_GetError());  
 		exit(-3); 
 	}	  
-	SDL_PauseAudio(0);*/
+	SDL_PauseAudio(0);
 
 }
 static void initDecoder()

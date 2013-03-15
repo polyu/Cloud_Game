@@ -41,4 +41,7 @@ private:
 	int alloc_samples_array_and_data(uint8_t ***data, int *linesize, int nb_channels,
                                     int nb_samples, enum AVSampleFormat sample_fmt, int align);\
 	AVFrame *frame;
+	bool sendChunkedData(BYTE *data,int dataSize);
+	BYTE* soundBuffer;
+	int soundBufferCursor;
 };

@@ -4,9 +4,13 @@ IAudioStreamServer::IAudioStreamServer()
 	this->sock_fd=-1;
 	this->audio_codec=0;
 	this->audio_codec_context=0;
-	this->localport=DEFAULT_RTPAUDIOPORT;
+	//==========Default Setting==============
 	this->remoteAddr=DEFAULT_REMOTEADDRESS;
 	this->remoteAudioPort=DEFAULT_RTPAUDIOPORT;
+	remote.sin_family = AF_INET;  
+    remote.sin_port = htons(this->remoteAudioPort); 
+	remote.sin_addr.s_addr = inet_addr(this->remoteAddr.c_str());   
+	//=========================
 	soundBuffer=(BYTE*)malloc(SOUNDCAPTUREMAXBUFSIZE);
 	soundBufferCursor=0;
 	avformat_network_init();
@@ -29,7 +33,7 @@ void IAudioStreamServer::setRemoteAddress(string address,int audioport)
     remote.sin_port = htons(this->remoteAudioPort); 
 	remote.sin_addr.s_addr = inet_addr(this->remoteAddr.c_str());   
 }
-bool IAudioStreamServer::addAudioStream()
+bool IAudioStreamServer::openAudioStream()
 {
 	this->audio_codec = avcodec_find_encoder(CODEC_ID_SPEEX);
 	if (!this->audio_codec) 
@@ -44,6 +48,7 @@ bool IAudioStreamServer::addAudioStream()
     this->audio_codec_context->bit_rate    = 64000;
     this->audio_codec_context->sample_rate = OUTPUTSAMPLERATE;
     this->audio_codec_context->channels    = 2;
+	this->audio_codec_context->compression_level=10;
 	this->audio_codec_context->channel_layout=AV_CH_LAYOUT_STEREO;
 	if( avcodec_open2(this->audio_codec_context, this->audio_codec, NULL)<0)
 	{
@@ -87,10 +92,8 @@ bool IAudioStreamServer::write_audio_frame(AVFrame *frame)
 	return true;
 	
 }
-
-bool IAudioStreamServer::initAudioStreamServer()
+bool IAudioStreamServer::openUDPStream()
 {
-
 	int iResult;
 	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 	if (iResult != 0) 
@@ -98,23 +101,25 @@ bool IAudioStreamServer::initAudioStreamServer()
 		printf("WSAStartup failed: %d\n", iResult);
 		return false;
 	}
-	int len = sizeof(struct sockaddr_in);  
-	local.sin_family = AF_INET;  
-	local.sin_port = htons(this->localport); /* ¼àÌý¶Ë¿Ú */  
-	local.sin_addr.s_addr = INADDR_ANY;  /* ±¾»ú */  
+	
 	sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sock_fd== INVALID_SOCKET)
 	{
 		printf("Create socket failed\n");
 		return false;
 	}
-	iResult=bind(sock_fd, (struct sockaddr *)&local, sizeof(local)); 
-	if(iResult== SOCKET_ERROR)
+
+	return true;
+}
+bool IAudioStreamServer::initAudioStreamServer()
+{
+
+	if(!openUDPStream())
 	{
-		printf("Bind failed\n");
+		printf("Can't open udp audio stream\n");
 		return false;
 	}
-	if(!addAudioStream())
+	if(!openAudioStream())
 	{
 		printf("Can't  add audio stream\n");
 		return false;
@@ -143,13 +148,16 @@ bool IAudioStreamServer::sendPacket(char* buf, int size)
 	int sendSize=sendto(sock_fd, buf, size, 0, (struct sockaddr *)&remote, sizeof(remote));
 	if( sendSize!= SOCKET_ERROR)
 	{
-		
-		printf("Send pieces packet in data %d\n",sendSize);
+		printf("Send pieces packet in data %d<->%d\n",sendSize,size);
 		return true;
 	}
 	else
 	{
-		printf("Send data failed\n");
+		printf("Send data failed:%d\n",WSAGetLastError());
 		return false;
 	}
+}
+int IAudioStreamServer::getRequestedFrameSize() const
+{
+	return this->audio_codec_context->frame_size;
 }

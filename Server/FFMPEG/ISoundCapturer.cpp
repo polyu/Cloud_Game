@@ -9,6 +9,8 @@ ISoundCapturer::ISoundCapturer()
 	this->streamServer=0;
 	this->frame=0;
 	this->swr_ctx=0;
+	this->soundBuffer=(BYTE*)malloc(SOUNDCAPTUREMAXBUFSIZE);
+	this->soundBufferCursor=0;
 	runFlag=false;
 }
 ISoundCapturer::~ISoundCapturer()
@@ -18,6 +20,12 @@ ISoundCapturer::~ISoundCapturer()
 		CoTaskMemFree(waveFormat);
 	}
 	removeSwscale();
+	if(frame!=0)
+	{
+		avcodec_free_frame(&frame);
+		frame=0;
+	}
+	
 }
 void ISoundCapturer::removeSwscale()
 {
@@ -34,7 +42,7 @@ bool ISoundCapturer::setupSwscale()
         printf( "Could not allocate resampler context\n");
         return false;
     }
-	av_opt_set_int(swr_ctx, "in_channel_count",    waveFormat->nChannels, 0);
+	av_opt_set_int(swr_ctx, "in_channel_count",    REQEUSTRECORDCHANNEL, 0);
 	av_opt_set_int(swr_ctx, "in_sample_rate",       waveFormat->nSamplesPerSec, 0);
     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt",  AV_SAMPLE_FMT_S16, 0);
 	av_opt_set_int(swr_ctx, "out_channel_count",    2, 0);
@@ -54,7 +62,7 @@ void ISoundCapturer::startFrameLoop()
 	long debugFrameCounter=0;
 	while(runFlag)
 	{
-		Sleep(ANTISPIN);
+		
 		debugFrameCounter++;
 		UINT32 nextPacketSize;
 		hr = audioCaptureClient->GetNextPacketSize(&nextPacketSize);
@@ -68,9 +76,10 @@ void ISoundCapturer::startFrameLoop()
 			  return;
 		}
 
-		if (nextPacketSize == 0 || nextPacketSize <1024) 
+		if (nextPacketSize == 0) 
 		{ // no data yet
-			printf("%d\n",nextPacketSize);
+		  //printf("%d\n",nextPacketSize);
+		  Sleep(ANTISPIN);
 		  continue;
 		}
 		//printf("Next packet Size %d\n",nextPacketSize);
@@ -124,8 +133,8 @@ void ISoundCapturer::startFrameLoop()
 			uint8_t **dst_data=0 ;
 			int dst_linesize;
 			int dst_nb_samples =av_rescale_rnd(swr_get_delay(swr_ctx, waveFormat->nSamplesPerSec)+frameCount, OUTPUTSAMPLERATE, waveFormat->nSamplesPerSec, AV_ROUND_UP);
-			alloc_samples_array_and_data(&src_data, &src_linesize, 2,frameCount, AV_SAMPLE_FMT_S16, 0);
-			alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 0);
+			alloc_samples_array_and_data(&src_data, &src_linesize, 2,frameCount, AV_SAMPLE_FMT_S16, 1);
+			alloc_samples_array_and_data(&dst_data, &dst_linesize, 2,dst_nb_samples, AV_SAMPLE_FMT_S16, 1);
 			memcpy(src_data[0],data,bytesToWrite);
 			int retFrameCount=swr_convert(swr_ctx, dst_data, dst_nb_samples, (const uint8_t **)src_data, frameCount);
 			if(retFrameCount<0)
@@ -133,17 +142,9 @@ void ISoundCapturer::startFrameLoop()
 				printf("Serious Problem:resample failed\n");
 				return;
 			}
-			int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 0);
-
+			int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 1);
 			printf("Resample Result:Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
-			frame->nb_samples=retFrameCount;
-			ret=avcodec_fill_audio_frame(frame,2,AV_SAMPLE_FMT_S16,dst_data[0],dst_outputsize,0);
-			if(ret<0)
-			{
-				printf("Fill audio frame failed!\n");
-			}
-
-			this->streamServer->write_audio_frame(frame);
+			this->sendChunkedData((BYTE*)dst_data[0],dst_outputsize);
 			av_freep(&src_data[0]);
 			av_freep(&dst_data[0]);
 			av_freep(&src_data);
@@ -242,6 +243,12 @@ bool ISoundCapturer::initISoundCapturer()
 		return false;
 	}
 
+	if(waveFormat->nBlockAlign!=REQUESTRECORDBLOCK||waveFormat->nChannels!=REQEUSTRECORDCHANNEL||waveFormat->wBitsPerSample!=REQUESTBIT)
+	{
+		printf("Hardware can't not record\n");
+		return false;
+	}
+
 
 	  // call IAudioClient::Initialize
 	  // note that AUDCLNT_STREAMFLAGS_LOOPBACK and AUDCLNT_STREAMFLAGS_EVENTCALLBACK do not work together...
@@ -295,4 +302,28 @@ int ISoundCapturer::alloc_samples_array_and_data(uint8_t ***data, int *linesize,
         return AVERROR(ENOMEM);
     return av_samples_alloc(*data, linesize, nb_channels,
                             nb_samples, sample_fmt, align);
+}
+bool ISoundCapturer::sendChunkedData(BYTE *data,int bytesToWrite)
+{
+	int requestFrameSize=this->streamServer->getRequestedFrameSize();
+	int requestFrameByteSize=requestFrameSize*REQUESTRECORDBLOCK;
+	memcpy(soundBuffer+soundBufferCursor,data,bytesToWrite);
+	soundBufferCursor+=bytesToWrite;
+	BYTE* tmpBUF=(BYTE*)malloc(requestFrameByteSize);
+	while(soundBufferCursor>=requestFrameByteSize)//DATA OUT
+	{
+		
+		memcpy(tmpBUF,soundBuffer,requestFrameByteSize);
+		memmove(soundBuffer,soundBuffer+requestFrameByteSize,soundBufferCursor-requestFrameByteSize);
+		soundBufferCursor-=requestFrameByteSize;
+		frame->nb_samples=requestFrameSize;
+		int ret=avcodec_fill_audio_frame(frame,REQEUSTRECORDCHANNEL,AV_SAMPLE_FMT_S16,tmpBUF,requestFrameByteSize,1);
+		if(ret<0)
+		{
+			printf("Fill audio frame failed!\n");
+		}
+		this->streamServer->write_audio_frame(frame);
+	}
+	free(tmpBUF);
+	return true;
 }

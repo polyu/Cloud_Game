@@ -29,18 +29,18 @@ public:
 	bool initAudioStreamServer();
 	void cleanup();
 	bool write_audio_frame(AVFrame *frame);
-
+	int getRequestedFrameSize() const;
 private:
     
     AVCodec *audio_codec;
 	AVCodecContext *audio_codec_context;
 	string remoteAddr;
 	int remoteAudioPort;
-	bool addAudioStream();
-	
+	bool openAudioStream();
+	bool openUDPStream();
 	WSADATA wsaData;
-	sockaddr_in local;
-	int localport;
+	
+	
 	SOCKET sock_fd;
 	sockaddr_in remote; 
 	bool sendPacket(char* buf, int size);
