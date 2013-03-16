@@ -39,7 +39,7 @@ static void SDL_VideoDisplayThread(void *);
 
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
-	printf("I got audio %d\n",frameSize);
+	printf("I'm getting audio %d\n",frameSize);
 	
 	
 	if(WaitForSingleObject(g_hMutex_audio, 3)==WAIT_OBJECT_0)
@@ -54,10 +54,14 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 				audioPacketQueue.pop();
 			}
 		}
-					
-		char *audioframeBuf=(char *)malloc(frameSize);
-		memcpy(audioframeBuf,audiotempBuf,frameSize);
-		audioPacketQueue.push(pair<int,char*>(frameSize,audioframeBuf));
+		AVFrame *frame;
+		int outSize;
+		long performance=clock();
+		decoder.decodeAudioFrame((char *)audiotempBuf,frameSize,&frame,&outSize);
+		printf("Pre Decoder Performance Test:%d\n",clock()-performance);			
+		char *audioframeBuf=(char *)malloc(outSize);
+		memcpy(audioframeBuf,frame->data[0],outSize);
+		audioPacketQueue.push(pair<int,char*>(outSize,audioframeBuf));
 		ReleaseMutex(g_hMutex_audio); 
 	}
 					
@@ -86,7 +90,7 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len);
 
 static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 {
-	long performance=clock();
+	
 	int availLen=len;
 	int requestLen=0;
 	int cursor=0;
@@ -96,14 +100,12 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 		while(audioPacketQueue.size()>0)
 		{
 			pair<int,char*> packet=audioPacketQueue.front();
-			AVFrame *frame;
-			int outSize;
-			decoder.decodeAudioFrame(packet.second,packet.first,&frame,&outSize);
-			requestLen+=outSize;;
+			
+			requestLen+=packet.first;;
 			if(requestLen<=len)
 			{
-				memcpy(stream+cursor,frame->data[0],outSize);
-				cursor+=outSize;
+				memcpy(stream+cursor,packet.second,packet.first);
+				cursor+=packet.first;
 				audioPacketQueue.pop();
 				free(packet.second);
 			}
@@ -115,7 +117,7 @@ static void decodeAudioFromQueue(void *udata, Uint8 *stream, int len)
 		}
 		ReleaseMutex(g_hMutex_audio); 
 	}
-	printf("Performance Test:%d\n",clock()-performance);
+	
 	////printf("I am quit\n");
 }
 

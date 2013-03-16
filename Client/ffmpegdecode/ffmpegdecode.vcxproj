@@ -94,15 +94,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AudioStreamDecoder.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="StreamDecoder.cpp" />
+    <ClCompile Include="VideoStreamDecoder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AudioStreamDecoder.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="StreamDecoder.h" />
+    <ClInclude Include="VideoStreamDecoder.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>

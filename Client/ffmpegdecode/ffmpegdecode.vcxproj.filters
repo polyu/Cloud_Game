@@ -21,10 +21,13 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="StreamDecoder.cpp">
+    <ClCompile Include="Controller.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Controller.cpp">
+    <ClCompile Include="VideoStreamDecoder.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioStreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,10 +38,13 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StreamDecoder.h">
+    <ClInclude Include="Controller.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Controller.h">
+    <ClInclude Include="VideoStreamDecoder.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioStreamDecoder.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
