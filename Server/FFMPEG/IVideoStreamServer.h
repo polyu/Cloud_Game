@@ -35,6 +35,7 @@ private:
     AVFormatContext *voc;
     AVStream *video_st;
     AVCodec *video_codec;
+	
     double video_pts;
 	string remoteAddr;
 	int remoteVideoPort;

@@ -6,6 +6,7 @@ IVideoStreamServer::IVideoStreamServer()
 	this->video_st=0;
 	this->video_codec=0;
 	this->video_pts=0;
+	
 	this->remoteAddr=DEFAULT_REMOTEADDRESS;
 	this->remoteVideoPort=DEFAULT_RTPVIDEOPORT;
 	avformat_network_init();
@@ -15,7 +16,7 @@ IVideoStreamServer::IVideoStreamServer()
 IVideoStreamServer::~IVideoStreamServer()
 {
 	cleanup();
-	WSACleanup();
+	
 }
 void IVideoStreamServer::setRemoteAddress(string address,int videoport)
 {
@@ -78,8 +79,9 @@ bool IVideoStreamServer::addVideoStream()
 
 	c=this->video_st->codec;
 	avcodec_get_context_defaults3(c, this->video_codec);
+	
 	c->codec_id=CODEC_ID_H264;
-	c->bit_rate = 4000000;
+	c->bit_rate = 1000000;
     c->width = RWIDTH;
     c->height = RHEIGHT;
 	c->gop_size=0;
@@ -88,8 +90,8 @@ bool IVideoStreamServer::addVideoStream()
 	c->me_range = 16;
     c->max_qdiff = 4;
     c->qmin = 10;
-    c->qmax = 30;
-    c->qcompress = (0.6f);
+    c->qmax = 51;
+    
 	c->refs=1;
 	c->dia_size=1;
 	c->keyint_min=46;
@@ -97,8 +99,8 @@ bool IVideoStreamServer::addVideoStream()
 	c->thread_type=FF_THREAD_SLICE;
 	c->thread_count=4;
 	c->slices=4;
-	c->rc_max_rate=6500000;
-	c->rc_buffer_size=260000;
+	/*c->rc_max_rate=6500000;
+	c->rc_buffer_size=260000;*/
 	c->time_base.den = 25;
     c->time_base.num = 1;
 	av_opt_set(c->priv_data, "tune", "zerolatency", 0);
@@ -156,14 +158,19 @@ bool IVideoStreamServer::initVideoStreamServer()
 
 void IVideoStreamServer::cleanup()
 {
-	
-	av_write_trailer(voc);
-	if(this->video_st->codec!=NULL)
-		avcodec_close(this->video_st->codec);
-	for (int i = 0; i <  this->voc->nb_streams; i++) {
-        av_freep(&voc->streams[i]->codec);
-        av_freep(&voc->streams[i]);
-    }
-	avio_close(voc->pb);
-	av_free(voc);
+	if(this->video_st!=NULL)
+	{
+		if(this->video_st->codec!=NULL)
+			avcodec_close(this->video_st->codec);
+	}
+	if(this->voc!=NULL)
+	{
+		for (int i = 0; i <  this->voc->nb_streams; i++) {
+			av_freep(&voc->streams[i]->codec);
+			av_freep(&voc->streams[i]);
+		}
+		avio_close(voc->pb);
+		av_free(voc);
+	}
+
 }

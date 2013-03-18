@@ -8,22 +8,21 @@ IController::IController()
 }
 IController::~IController()
 {
-	UDT::close(socket);
+	if(socket!=0)
+	{
+		UDT::close(socket);
+	}
 }
 bool IController::initIController()
 {
 	int retryTime=0;
-	while(true)
+	
+	
+	if(!this->establishConntection())
 	{
-		if(!this->establishConntection())
-		{
-			retryTime++;
-			if(retryTime>3) return false;
-			printf("Failed to create connection/Retrying\n");
-			continue;
-		}
-		break;
+		return false;
 	}
+	
 	runFlag=true;
 	return true;
 }
@@ -71,9 +70,22 @@ bool IController::establishConntection()
 	remote_addr.sin_addr.s_addr=inet_addr(remoteAddr.c_str());
 	memset(&(remote_addr.sin_zero), '\0', 8);
 	printf("Try connecting remote client\n");
-	if (UDT::ERROR == UDT::connect(socket, (sockaddr*)&remote_addr, sizeof(remote_addr)))
+	int retryTime=0;
+	bool connected=false;
+	while(retryTime<3)
 	{
-		printf("connect error: %s\n", UDT::getlasterror().getErrorMessage());
+		retryTime++;
+		if (UDT::ERROR == UDT::connect(socket, (sockaddr*)&remote_addr, sizeof(remote_addr)))
+		{
+			printf("connect error: %s\n", UDT::getlasterror().getErrorMessage());
+			continue;
+		}
+		connected=true;
+		break;
+	}
+	if(!connected)
+	{
+		printf("Connected Remote Failed\n");
 		return false;
 	}
 	printf("Client connected\n");

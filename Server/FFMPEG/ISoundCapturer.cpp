@@ -127,7 +127,12 @@ void ISoundCapturer::startFrameLoop()
 		int bytesToWrite = frameCount * waveFormat->nBlockAlign;
 		int ret=-1;
 	
-			
+		if(this->waveFormat->nSamplesPerSec==OUTPUTSAMPLERATE)//48000 Not need to use cpu!
+		{
+			this->sendChunkedData((BYTE*)data,bytesToWrite);
+		}
+		else
+		{
 			uint8_t **src_data=0;
 			int src_linesize;
 			uint8_t **dst_data=0 ;
@@ -149,7 +154,7 @@ void ISoundCapturer::startFrameLoop()
 			av_freep(&dst_data[0]);
 			av_freep(&src_data);
 			av_freep(&dst_data);
-		
+		}
 		
 		//======================
 		 hr = audioCaptureClient->ReleaseBuffer(frameCount);

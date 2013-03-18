@@ -109,11 +109,14 @@ static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned num
 		AVFrame *frame;
 		int outSize;
 		long performance=clock();
-		adecoder.decodeAudioFrame((char *)audiotempBuf,frameSize,&frame,&outSize);
-		printf("Pre Decoder Performance Test:%d\n",clock()-performance);			
-		char *audioframeBuf=(char *)malloc(outSize);
-		memcpy(audioframeBuf,frame->data[0],outSize);
-		audioPacketQueue.push(pair<int,char*>(outSize,audioframeBuf));
+		if(adecoder.decodeAudioFrame((char *)audiotempBuf,frameSize,&frame,&outSize))
+		{
+			printf("Pre Decoder Performance Test:%d\n",clock()-performance);			
+			char *audioframeBuf=(char *)malloc(outSize);
+			memcpy(audioframeBuf,frame->data[0],outSize);
+			audioPacketQueue.push(pair<int,char*>(outSize,audioframeBuf));
+		}
+		
 		ReleaseMutex(g_hMutex_audio); 
 	}
 					
@@ -241,12 +244,12 @@ static void initSDL()
 	wanted.samples = AUDIOBUFFERNUM;//采样数 
 	wanted.callback = getAudioFromQueue;//设置回调函数 
 	wanted.userdata = NULL; 
-	if(SDL_OpenAudio(&wanted, NULL) < 0) 
+	/*if(SDL_OpenAudio(&wanted, NULL) < 0) 
 	{  
 		//printf( "SDL_OpenAudio: %s\n", SDL_GetError());  
 		exit(-3); 
 	}	  
-	SDL_PauseAudio(0);
+	SDL_PauseAudio(0);*/
 
 }
 static void initDecoder()
@@ -308,7 +311,7 @@ static void initRTPNetwork()
 }
 int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nCmdShow)
 {
-	//initControllerNetwork();
+	initControllerNetwork();
 	initSDL();
 	initDecoder();
 	initRTPNetwork();

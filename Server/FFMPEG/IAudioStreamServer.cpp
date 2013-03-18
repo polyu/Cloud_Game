@@ -22,7 +22,6 @@ IAudioStreamServer::~IAudioStreamServer()
 	free(soundBuffer);
 	if(sock_fd!=-1)
 		closesocket(sock_fd);
-	WSACleanup();
 	cleanup();
 }
 void IAudioStreamServer::setRemoteAddress(string address,int audioport)
@@ -35,7 +34,7 @@ void IAudioStreamServer::setRemoteAddress(string address,int audioport)
 }
 bool IAudioStreamServer::openAudioStream()
 {
-	this->audio_codec = avcodec_find_encoder(CODEC_ID_SPEEX);
+	this->audio_codec = avcodec_find_encoder(CODEC_ID_OPUS);
 	if (!this->audio_codec) 
 	{
 		printf( "aideo codec not found/n");
@@ -43,12 +42,10 @@ bool IAudioStreamServer::openAudioStream()
     }
 	
 	this->audio_codec_context=avcodec_alloc_context3(this->audio_codec);
-	this->audio_codec_context->flags|= CODEC_FLAG_QSCALE;
 	this->audio_codec_context->sample_fmt  = AV_SAMPLE_FMT_S16;
     this->audio_codec_context->bit_rate    = 64000;
     this->audio_codec_context->sample_rate = OUTPUTSAMPLERATE;
     this->audio_codec_context->channels    = 2;
-	this->audio_codec_context->compression_level=10;
 	this->audio_codec_context->channel_layout=AV_CH_LAYOUT_STEREO;
 	if( avcodec_open2(this->audio_codec_context, this->audio_codec, NULL)<0)
 	{
@@ -159,5 +156,6 @@ bool IAudioStreamServer::sendPacket(char* buf, int size)
 }
 int IAudioStreamServer::getRequestedFrameSize() const
 {
+	printf("Debug:Request frameSize:%d\n",this->audio_codec_context->frame_size);
 	return this->audio_codec_context->frame_size;
 }

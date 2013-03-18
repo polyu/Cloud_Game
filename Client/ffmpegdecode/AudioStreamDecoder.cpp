@@ -4,6 +4,7 @@ AudioStreamDecoder::AudioStreamDecoder()
 	this->outputaudioFrame=0;
 	this->audio_codec=0;
 	this->audioframe=0;
+	
 	avcodec_register_all();
 
 }
@@ -64,7 +65,7 @@ bool AudioStreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outda
 
 bool AudioStreamDecoder::openAudioCodec()
 {
-	this->audio_codec=avcodec_find_decoder(AV_CODEC_ID_SPEEX);
+	this->audio_codec=avcodec_find_decoder(AV_CODEC_ID_OPUS);
 	if (!this->audio_codec) 
 	{
 		printf( "audio codec not found/n");

@@ -7,6 +7,8 @@ VideoStreamDecoder::VideoStreamDecoder()
 	this->lastWidth=0;
 	this->lastHeight=0;
 	this->img_convert_ctx=0;
+	this->outputHeight=RHEIGHT;
+	this->outputWidth=RWIDTH;
 	avcodec_register_all();
 }
 VideoStreamDecoder::~VideoStreamDecoder()
@@ -107,11 +109,18 @@ bool VideoStreamDecoder::initDecorder()
 	videopicture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
 	return true;
 }
-
+bool VideoStreamDecoder::setOutputSize(int outputWidth,int outputHeight)
+{
+	this->outputHeight=outputHeight;
+	this->outputWidth=outputWidth;
+	this->lastWidth=0;
+	this->lastHeight=0;//Require Refresh!
+	return true;
+}
 bool VideoStreamDecoder::setupSwscale()
 {
 	img_convert_ctx = sws_getContext(videoframe->width, videoframe->height, this->video_codec_context->pix_fmt, 
-	RWIDTH, RHEIGHT, PIX_FMT_YUV420P, SWS_BILINEAR, 
+	outputWidth, outputHeight, PIX_FMT_YUV420P, SWS_BILINEAR, 
 	NULL, NULL, NULL);
 	if(img_convert_ctx == NULL) { 
 	printf( "Cannot initialize the conversion context!\n"); 

@@ -33,6 +33,7 @@ public:
 	
 	bool initDecorder();
 	bool decodeVideoFrame(char *indata,int insize,AVFrame **frame);
+	bool setOutputSize(int outputWidth,int outputHeight);
 private:
     AVCodec  *video_codec;
 	AVCodecContext *video_codec_context;
@@ -44,6 +45,8 @@ private:
 	AVFrame* videopicture;
 	int lastWidth;
 	int lastHeight;
+	int outputWidth;
+	int outputHeight;
 	SwsContext *img_convert_ctx;
 	AVFrame* alloc_picture(enum PixelFormat pix_fmt, int width, int height);
 	
