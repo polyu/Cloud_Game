@@ -1,13 +1,21 @@
 #include "Controller.h"
 Controller::Controller()
 {
-	serv=0;
-	client=0;
+	fd=0;
+	this->setRemoteAddress(LOCALADDRESS,DEFAULT_CONTROLLERPORT);
 }
 Controller::~Controller()
 {
-	UDT::close(serv);
-	UDT::close(client);
+	if(fd!=0)
+	{
+		closesocket(fd);
+	}
+}
+void Controller::setRemoteAddress(string remoteAddr,int port)
+{
+	this->remoteAddr.sin_port=htons(port);
+	this->remoteAddr.sin_family=AF_INET;
+	this->remoteAddr.sin_addr.s_addr=inet_addr(remoteAddr.c_str());
 }
 bool Controller::sendKeyEvent(int key1,int key2)
 {
@@ -48,40 +56,19 @@ bool Controller::sendMouseEvent(int relx,int rely,int clickButton,int direction)
 }
 bool Controller::sendOutEvent(char *data,int size)
 {
-	int sendSize=UDT::sendmsg(client,data,size,-1,true);
+	int sendSize=sendto(fd,data,size,0,(const sockaddr *)&this->remoteAddr,sizeof(this->remoteAddr));
 	return sendSize==size;
-	return true;
+	
 }
 bool Controller::initControllerClient()
 {
-	serv = UDT::socket(AF_INET, SOCK_DGRAM, 0);
-	sockaddr_in my_addr;
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(DEFAULT_CONTROLLERPORT);
-	my_addr.sin_addr.s_addr = INADDR_ANY;
-	memset(&(my_addr.sin_zero), '\0', 8);
-	if (UDT::ERROR == UDT::bind(serv, (sockaddr*)&my_addr, sizeof(my_addr)))
+	fd=socket(AF_INET, SOCK_DGRAM, 0);
+	if(fd==INVALID_SOCKET)
 	{
-		printf("bind: %s\n" , UDT::getlasterror().getErrorMessage());
-		return false;
-	}
-	UDT::listen(serv,1);
-	int namelen;
-	OutputDebugStringA("Waiting remote server's connection\n");
-	//printf("Waiting remote server's connection\n");
-	client = UDT::accept(serv, (sockaddr*)&client_addr, &namelen);
-	//printf( "new connection: %s:%s\n",inet_ntoa(client_addr.sin_addr),ntohs(client_addr.sin_port) );
-	printf("Connectiong established\n");
-	bool blockingFlag=false;
-	int ret=UDT::setsockopt(client,0,UDT_SNDSYN,(const char*)(&blockingFlag),sizeof(bool));
-	if(ret!=0)
-	{
-		printf("Set unblocking send failed\n");
+		printf("failed to init controller socket\n");
 		return false;
 	}
 	return true;
-	
- 
 }
 int Controller::sdlkeyCodeTransfer(int sdlKeyCode)
 {

@@ -4,7 +4,6 @@ AudioStreamDecoder::AudioStreamDecoder()
 	this->outputaudioFrame=0;
 	this->audio_codec=0;
 	this->audioframe=0;
-	
 	avcodec_register_all();
 
 }

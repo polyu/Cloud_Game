@@ -1,22 +1,14 @@
-#include "stdafx.h"
-#include <BasicUsageEnvironment.hh>
-#include <liveMedia.hh>
-#include "VideoStreamDecoder.h"
-#include "AudioStreamDecoder.h"
-#include <SDL.h>
-#include <process.h>
-#include <queue>
-#include "Controller.h"
-using namespace std;
 
+#include "main.h"
+//===============Flag=====================
 static bool videoThreadRunFlag=true;
-static bool rtpThreadRunFlag=true;
-
-//=====================Controller Network===================
+static bool NetworkRecvThreadRunFlag=true;
+static char *NetworkThreadWatchVariable=0;
+//==================Controller======================
 static Controller controller;
-
-//====================NETWORKVIDEO================
-static HANDLE g_hMutex_video = INVALID_HANDLE_VALUE;  
+//==============================================
+static SDL_mutex *videomut;
+static SDL_cond *videocond;
 static H264VideoRTPSource *videoSource;
 static unsigned char videotempBuf[MAXTEMPBUF];
 static unsigned char videoframeBuf[MAXFRAMEBUF];
@@ -24,18 +16,14 @@ static unsigned char videoframeCopyBuf[MAXFRAMEBUF];
 static bool videoCanDecode=false;
 static int videoframeCursor=0;
 static int videocopyframeCursor=0;
-static void refreshVideo();
 static Groupsock *localVideoSock;
-static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 static VideoStreamDecoder vdecoder;
 //===================NETWORKAUDIO======================
-static void refreshAudio();
 static queue< pair<int,char*> > audioPacketQueue;
 static unsigned char audiotempBuf[MAXTEMPBUF];
-static HANDLE g_hMutex_audio = INVALID_HANDLE_VALUE; 
+static SDL_mutex *audiomut;
 static BasicUDPSource *audioSource;
 static Groupsock *localAudioSock;
-static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 static AudioStreamDecoder adecoder;
 //=====================NETENV=========================
 static TaskScheduler* scheduler;
@@ -46,29 +34,30 @@ static SDL_Overlay *screenOverlay;
 static SDL_AudioSpec wanted;
 static int SDL_WindowHeight=RHEIGHT;
 static int SDL_WindowWidth=RWIDTH;
-static void SDL_VideoDisplayThread(void *);
-static void SafeCleanUp();
+
+
+
 static void SafeCleanUp()
 {
 	videoThreadRunFlag=false;
-	rtpThreadRunFlag=false;
+	NetworkRecvThreadRunFlag=false;
+	NetworkThreadWatchVariable=(char*)'a';//Abort
 	SDL_CloseAudio();
+	SDL_DestroyCond(videocond);
+	SDL_DestroyMutex(videomut);
+	SDL_DestroyMutex(audiomut);
+	Sleep(1000);
 }
-//==============================================================
-static void SDL_VideoDisplayThread(void *)
+static int SDL_VideoDisplayThread(void *)
 {
 	SDL_Rect rect;  
 	while(videoThreadRunFlag)
 	{
-		 Sleep(GUISLEEPTIME);
-		 if(WaitForSingleObject(g_hMutex_video, 10)==WAIT_OBJECT_0)
+		// Sleep(GUISLEEPTIME);
+		 SDL_CondWait(videocond,videomut);
+		 AVFrame* frame;
+		 if(vdecoder.decodeVideoFrame((char*)videoframeCopyBuf,videocopyframeCursor,&frame))
 		 {
-			 if(videoCanDecode==true)
-			 {
-				 ////printf("Try send this thing to decode length %d\n",videocopyframeCursor);
-				 AVFrame* frame;
-				 if(vdecoder.decodeVideoFrame((char*)videoframeCopyBuf,videocopyframeCursor,&frame))
-				 {
 					SDL_LockYUVOverlay(screenOverlay);
 					screenOverlay->pixels[0]=frame->data[0];
 					screenOverlay->pixels[1]=frame->data[1];
@@ -82,12 +71,10 @@ static void SDL_VideoDisplayThread(void *)
 					rect.y=0;
 					SDL_DisplayYUVOverlay(screenOverlay, &rect);
 					SDL_UnlockYUVOverlay(screenOverlay);
-				 }
-				 videoCanDecode=false;
-			 }
-			 ReleaseMutex(g_hMutex_video); 
 		 }
+		
 	}
+	return 0;
 }
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds)
 {
@@ -139,13 +126,8 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 	videoframeCursor+=frameSize;
 	if(videoSource->curPacketMarkerBit())
 	{
-		if(WaitForSingleObject(g_hMutex_video, 1)==WAIT_OBJECT_0)
-		{
-			memcpy(videoframeCopyBuf,videoframeBuf,videoframeCursor);
-			videocopyframeCursor=videoframeCursor;
-			videoCanDecode=true;
-			ReleaseMutex(g_hMutex_video); 
-		}
+		memcpy(videoframeCopyBuf,videoframeBuf,videoframeCursor);
+		videocopyframeCursor=videoframeCursor;
 		videoframeCursor=0;
 	}
 	else
@@ -159,26 +141,23 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 }
 static void refreshVideo(void )
 {
-	if(rtpThreadRunFlag)
+	if(NetworkRecvThreadRunFlag)
 	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
 }
 static void refreshAudio(void )
 {
-	if(rtpThreadRunFlag)
+	if(NetworkRecvThreadRunFlag)
 	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
 }
-static void RTPNetworkThread(void *)
+static int NetworkRecvThread(void *)
 {
 	refreshAudio();
 	refreshVideo();
 	printf("Network Event Loop Start\n");
-	env->taskScheduler().doEventLoop();
+	env->taskScheduler().doEventLoop(NetworkThreadWatchVariable);
+	return 0;
 }
-static void initDecoder();
-static void initRTPNetwork();
-static void initSDL();
-static void initControllerNetwork();
-static void getAudioFromQueue(void *udata, Uint8 *stream, int len);
+
 static void initControllerNetwork()
 {
 	if(!controller.initControllerClient())
@@ -225,9 +204,12 @@ static void initSDL()
         //printf("Could not initialize SDL: %s.\n", SDL_GetError());
        exit(-3);
     }
-	atexit(SafeCleanUp);
 	atexit(SDL_Quit);
-	//=============Video
+	//=============Thread======================
+	videomut=SDL_CreateMutex();
+	videocond=SDL_CreateCond();
+	audiomut=SDL_CreateMutex();
+	//=============Video=======================
 	screen = SDL_SetVideoMode(RWIDTH, RHEIGHT, 32, SDL_SWSURFACE);
 	if ( screen == NULL ) {
         //printf("Couldn't set 640x480x32 video mode: %s\n",SDL_GetError());
@@ -236,7 +218,7 @@ static void initSDL()
 	screenOverlay=SDL_CreateYUVOverlay(RWIDTH,RHEIGHT,SDL_IYUV_OVERLAY,screen);
 	SDL_WM_SetCaption("Cloud Gaming",NULL);
 	SDL_ShowCursor(0);
-	SDL_WM_GrabInput( SDL_GRAB_ON );
+	//SDL_WM_GrabInput( SDL_GRAB_ON );
 	//=============Sound
 	wanted.freq = OUTPUTSAMPLERATE;//音频的频率 
 	wanted.format = AUDIO_S16SYS;//数据格式为有符号16位		
@@ -254,13 +236,7 @@ static void initSDL()
 }
 static void initDecoder()
 {
-	g_hMutex_video = CreateMutex(NULL, FALSE, L"Mutex");
-	g_hMutex_audio = CreateMutex(NULL, FALSE, L"Mutex2");
-	if (!g_hMutex_video || !g_hMutex_audio)  
-    {  
-        //printf("Failed to create mutex\n");
-        exit(-1);
-    }  
+	
 	if(!vdecoder.initDecorder())
 	{
 		printf("Failed Init Video Decorder\n");
@@ -273,7 +249,7 @@ static void initDecoder()
 	}
 	
 }
-static void initRTPNetwork()
+static void initStreamNetwork()
 {
 	in_addr listenAddress;
 	listenAddress.s_addr=htonl(INADDR_ANY);
@@ -309,19 +285,21 @@ static void initRTPNetwork()
 	
 	
 }
+
 int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nCmdShow)
 {
-	initControllerNetwork();
 	initSDL();
-	initDecoder();
-	initRTPNetwork();
 	
-	_beginthread(RTPNetworkThread,0,NULL);
-	_beginthread(SDL_VideoDisplayThread,0,NULL);
+	initStreamNetwork();
+	initControllerNetwork();
+	initDecoder();
+	videoThreadRunFlag=true;
+	NetworkRecvThreadRunFlag=true;
+	NetworkThreadWatchVariable=0;
+	SDL_CreateThread(NetworkRecvThread,NULL);
+	SDL_CreateThread(SDL_VideoDisplayThread,NULL);
 	bool quitFlag=false;
 	SDL_Event event;
-	//printf("SDL Ready\n");
-	
 	while(!quitFlag)
 	{
 		 Sleep(GUISLEEPTIME);

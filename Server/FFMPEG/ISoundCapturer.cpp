@@ -148,7 +148,7 @@ void ISoundCapturer::startFrameLoop()
 				return;
 			}
 			int dst_outputsize = av_samples_get_buffer_size(&dst_linesize, 2, retFrameCount,AV_SAMPLE_FMT_S16 , 1);
-			printf("Resample Result:Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
+			//printf("Resample Result:Convert frame %d<---->%d\n",retFrameCount,dst_outputsize);
 			this->sendChunkedData((BYTE*)dst_data[0],dst_outputsize);
 			av_freep(&src_data[0]);
 			av_freep(&dst_data[0]);

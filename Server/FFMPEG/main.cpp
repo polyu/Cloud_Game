@@ -5,22 +5,55 @@
 #include "IController.h"
 #include <process.h>
 
-IVideoStreamServer videoserver;
-IAudioStreamServer audioserver;
-IVideoCapturer vcapturer;
-ISoundCapturer acapturer;
-IController controller;
-bool runFlag;
+static IVideoStreamServer videoserver;
+static IAudioStreamServer audioserver;
+static IVideoCapturer vcapturer;
+static ISoundCapturer acapturer;
+static IController controller;
+static bool runFlag;
+static void initFFMPEGLibrary();
 static void shutdownServer();
 static void videoCaptureThread(void*);
 static void audioCaptureThread(void*);
 static void controllerThread(void *);
+static  bool consoleHandler( DWORD fdwctrltype );
+static bool consoleHandler( DWORD fdwctrltype )
+{
+	switch( fdwctrltype ) 
+    { 
+
+		case CTRL_C_EVENT: 
+
+		case CTRL_CLOSE_EVENT: 
+
+		case CTRL_BREAK_EVENT: 
+ 
+		case CTRL_LOGOFF_EVENT: 
+ 
+		case CTRL_SHUTDOWN_EVENT: 
+			runFlag=false;
+			shutdownServer();
+			return true;
+			break;
+		default: 
+			return false; 
+    } 
+	
+}
+static void initFFMPEGLibrary()
+{
+	avformat_network_init();
+	av_register_all() ;
+	avcodec_register_all();
+}
 static void shutdownServer()
 {
 	vcapturer.stopCapture();
 	acapturer.stopFrameLoop();
 	controller.stopControllerLoop();
-	Sleep(1000);
+	printf("System going to shutdown\n");
+	Sleep(5000);
+
 }
 static void videoCaptureThread(void*)
 {
@@ -40,6 +73,7 @@ static void controllerThread(void *)
 }
 int main(int argc, char* argv[])
 {
+	initFFMPEGLibrary();
 	if(!controller.initIController())
 	{
 		printf("Init controller failed\n");
@@ -73,10 +107,10 @@ int main(int argc, char* argv[])
 	_beginthread(audioCaptureThread,0,NULL);
 	_beginthread(controllerThread,0,NULL);
 	runFlag=true;
+	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) consoleHandler, true ) ;
 	while(runFlag)
 	{
 		Sleep(1000);
 	}
-	shutdownServer();
-	system("pause");
+	
 }

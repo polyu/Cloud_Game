@@ -13,9 +13,7 @@ IAudioStreamServer::IAudioStreamServer()
 	//=========================
 	soundBuffer=(BYTE*)malloc(SOUNDCAPTUREMAXBUFSIZE);
 	soundBufferCursor=0;
-	avformat_network_init();
-	av_register_all() ;
-	avcodec_register_all();
+	
 }
 IAudioStreamServer::~IAudioStreamServer()
 {
@@ -91,13 +89,7 @@ bool IAudioStreamServer::write_audio_frame(AVFrame *frame)
 }
 bool IAudioStreamServer::openUDPStream()
 {
-	int iResult;
-	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-	if (iResult != 0) 
-	{
-		printf("WSAStartup failed: %d\n", iResult);
-		return false;
-	}
+
 	
 	sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sock_fd== INVALID_SOCKET)
@@ -145,7 +137,7 @@ bool IAudioStreamServer::sendPacket(char* buf, int size)
 	int sendSize=sendto(sock_fd, buf, size, 0, (struct sockaddr *)&remote, sizeof(remote));
 	if( sendSize!= SOCKET_ERROR)
 	{
-		printf("Send pieces packet in data %d<->%d\n",sendSize,size);
+		//printf("Send pieces packet in data %d<->%d\n",sendSize,size);
 		return true;
 	}
 	else
@@ -156,6 +148,6 @@ bool IAudioStreamServer::sendPacket(char* buf, int size)
 }
 int IAudioStreamServer::getRequestedFrameSize() const
 {
-	printf("Debug:Request frameSize:%d\n",this->audio_codec_context->frame_size);
+	//printf("Debug:Request frameSize:%d\n",this->audio_codec_context->frame_size);
 	return this->audio_codec_context->frame_size;
 }

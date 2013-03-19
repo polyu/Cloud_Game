@@ -1,40 +1,47 @@
 #include "IController.h"
 IController::IController()
 {
-	this->remoteAddr=DEFAULT_REMOTEADDRESS;
-	this->remotePort=DEFAULT_REMOTECONTROLPORT;
-	socket=0;
+	this->localPort=DEFAULT_CONTROLPORT;
+	fd=0;
 	this->runFlag=false;
 }
 IController::~IController()
 {
-	if(socket!=0)
+	if(fd!=0)
 	{
-		UDT::close(socket);
+		closesocket(fd);
 	}
 }
 bool IController::initIController()
 {
 	int retryTime=0;
-	
-	
-	if(!this->establishConntection())
+	fd=socket(AF_INET,SOCK_DGRAM,0);
+	if(fd==INVALID_SOCKET)
 	{
+		printf("Error init controller socket\n");
 		return false;
 	}
-	
+	localAddr.sin_family=AF_INET;   
+	localAddr.sin_port=htons(this->localPort);   
+	localAddr.sin_addr.s_addr = INADDR_ANY;
+	if (bind(fd,(sockaddr*)&localAddr,sizeof(localAddr)) == SOCKET_ERROR) 
+	{   
+		printf("Error when bind controller socket\n");
+        return false;
+    }
 	runFlag=true;
 	return true;
 }
 void IController::startControllerLoop()
 {
 	char dataBuf[10240];
+	
 	while(runFlag)
 	{
-		int getSize=UDT::recvmsg(socket, dataBuf, 10240);
-		if (UDT::ERROR == getSize)
+		int getSize=recvfrom(fd, dataBuf, 10240,0,NULL,NULL);
+		if (getSize<=0)
 		{
-			printf( "recv message Error:%s\n" ,UDT::getlasterror().getErrorMessage());
+			printf( "recv message Error:%s\n" ,WSAGetLastError());
 			break;
 		}
 		if(getSize!=sizeof(ControlEvent))
@@ -60,41 +67,10 @@ void IController::stopControllerLoop()
 	this->runFlag=false;
 }
 
-bool IController::establishConntection()
-{
 
-	socket = UDT::socket(AF_INET, SOCK_DGRAM, 0);
-	sockaddr_in remote_addr;
-	remote_addr.sin_family = AF_INET;
-	remote_addr.sin_port = htons(this->remotePort);
-	remote_addr.sin_addr.s_addr=inet_addr(remoteAddr.c_str());
-	memset(&(remote_addr.sin_zero), '\0', 8);
-	printf("Try connecting remote client\n");
-	int retryTime=0;
-	bool connected=false;
-	while(retryTime<3)
-	{
-		retryTime++;
-		if (UDT::ERROR == UDT::connect(socket, (sockaddr*)&remote_addr, sizeof(remote_addr)))
-		{
-			printf("connect error: %s\n", UDT::getlasterror().getErrorMessage());
-			continue;
-		}
-		connected=true;
-		break;
-	}
-	if(!connected)
-	{
-		printf("Connected Remote Failed\n");
-		return false;
-	}
-	printf("Client connected\n");
-	return true;
-}
-void IController::setRemoteAddress(string address,int remotePort)
+void IController::setLocalPort(int port)
 {
-	this->remoteAddr=address;
-	this->remotePort=remotePort;
+	this->localPort=port;
 }
 bool IController::sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2)
 {
@@ -109,6 +85,7 @@ bool IController::sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2)
 	else
 	{
 		keybd_event(virtualKeyCode1,0,0,0);
+		keybd_event(virtualKeyCode1,0,KEYEVENTF_KEYUP,0);
 	}
 	return true;
 

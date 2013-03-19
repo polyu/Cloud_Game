@@ -38,7 +38,6 @@ private:
 	int remoteAudioPort;
 	bool openAudioStream();
 	bool openUDPStream();
-	WSADATA wsaData;
 	
 	
 	SOCKET sock_fd;

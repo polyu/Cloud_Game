@@ -1,8 +1,5 @@
 #include "stdafx.h"
-#include <Windows.h>
-#include <string>
-#include <udt.h>
-using namespace std;
+#include <windows.h>
 #define KEYEVENT 1
 #define MOUSEEVENT 2
 #define PRESSDOWNDIRECTION 0
@@ -23,16 +20,15 @@ public:
 	IController();
 	~IController();
 	bool initIController();
-	void setRemoteAddress(string remoteAddr,int port);
+	void setLocalPort(int port);
 	void startControllerLoop();
 	void stopControllerLoop();
 private:
 	bool sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2);
 	bool sendMouseEvent(int relx,int rely,int button,int updown);
-	bool establishConntection();
-	UDTSOCKET socket;
-	string remoteAddr;
-	int remotePort;
+	SOCKET fd;
+	int localPort;
 	bool runFlag;
+	SOCKADDR_IN localAddr;
 	
 };

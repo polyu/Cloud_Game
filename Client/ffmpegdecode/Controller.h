@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include <SDL.h>
 #include <Windows.h>
-#include <udt.h>
+#include <string>
+using namespace std;
 #define KEYEVENT 1
 #define MOUSEEVENT 2
 #define PRESSDOWNDIRECTION 0
@@ -24,11 +25,12 @@ public:
 	bool initControllerClient();
 	bool sendKeyEvent(int key1,int key2);
 	bool sendMouseEvent(int relx,int rely,int clickButton,int direction);
+	void setRemoteAddress(string remoteAddr,int port);
 private:
 	int sdlkeyCodeTransfer(int sdlKeyCode);
 	bool sendOutEvent(char *event,int size);
-	UDTSOCKET serv ;
-	UDTSOCKET client ;
-	sockaddr_in client_addr;
+	SOCKET fd;
+	sockaddr_in remoteAddr;
+	
 };
 

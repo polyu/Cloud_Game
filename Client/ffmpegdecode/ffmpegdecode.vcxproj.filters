@@ -47,6 +47,9 @@
     <ClInclude Include="AudioStreamDecoder.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="main.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />

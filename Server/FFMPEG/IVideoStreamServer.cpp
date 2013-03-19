@@ -6,12 +6,8 @@ IVideoStreamServer::IVideoStreamServer()
 	this->video_st=0;
 	this->video_codec=0;
 	this->video_pts=0;
-	
 	this->remoteAddr=DEFAULT_REMOTEADDRESS;
 	this->remoteVideoPort=DEFAULT_RTPVIDEOPORT;
-	avformat_network_init();
-	av_register_all() ;
-	avcodec_register_all();
 }
 IVideoStreamServer::~IVideoStreamServer()
 {
