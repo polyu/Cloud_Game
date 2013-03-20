@@ -19,7 +19,7 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 //AUDIO FUNCTION
 static void refreshAudio();
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
-
+static void decodeAudioQueue();
 
 //SDL FUNCTION
 static int SDL_VideoDisplayThread(void *);
@@ -29,4 +29,4 @@ static void initDecoder();
 static void initStreamNetwork();
 static void initSDL();
 static void initControllerNetwork();
-static void getAudioFromQueue(void *udata, Uint8 *stream, int len);
+static void getAudioFromBuffer(void *udata, Uint8 *stream, int len);

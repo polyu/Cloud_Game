@@ -137,7 +137,7 @@ bool IAudioStreamServer::sendPacket(char* buf, int size)
 	int sendSize=sendto(sock_fd, buf, size, 0, (struct sockaddr *)&remote, sizeof(remote));
 	if( sendSize!= SOCKET_ERROR)
 	{
-		//printf("Send pieces packet in data %d<->%d\n",sendSize,size);
+		printf("Send pieces packet in data %d<->%d\n",sendSize,size);
 		return true;
 	}
 	else
