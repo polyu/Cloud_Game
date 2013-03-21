@@ -30,7 +30,7 @@
     <ClCompile Include="AudioStreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DataTunnel.cpp">
+    <ClCompile Include="Agent.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,7 +53,7 @@
     <ClInclude Include="main.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DataTunnel.h">
+    <ClInclude Include="Agent.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,12 +1,12 @@
 #include "Controller.h"
 Controller::Controller()
 {
-	fd=0;
+	fd=INVALID_SOCKET;
 	this->setRemoteAddress(LOCALADDRESS,DEFAULT_CONTROLLERPORT);
 }
 Controller::~Controller()
 {
-	if(fd!=0)
+	if(fd!=INVALID_SOCKET)
 	{
 		closesocket(fd);
 	}

@@ -1,7 +1,7 @@
 #include "IAudioStreamServer.h"
 IAudioStreamServer::IAudioStreamServer()
 {
-	this->sock_fd=-1;
+	this->sock_fd=INVALID_SOCKET;
 	this->audio_codec=0;
 	this->audio_codec_context=0;
 	//==========Default Setting==============
@@ -18,7 +18,7 @@ IAudioStreamServer::IAudioStreamServer()
 IAudioStreamServer::~IAudioStreamServer()
 {
 	free(soundBuffer);
-	if(sock_fd!=-1)
+	if(sock_fd!=INVALID_SOCKET)
 		closesocket(sock_fd);
 	cleanup();
 }

@@ -2,12 +2,12 @@
 IController::IController()
 {
 	this->localPort=DEFAULT_CONTROLPORT;
-	fd=0;
+	fd=INVALID_SOCKET;
 	this->runFlag=false;
 }
 IController::~IController()
 {
-	if(fd!=0)
+	if(fd!=INVALID_SOCKET)
 	{
 		closesocket(fd);
 	}

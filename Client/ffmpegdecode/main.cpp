@@ -50,6 +50,8 @@ static void SafeCleanUp()
 	{
 		SDL_DestroySemaphore(audioSem);
 	}
+	
+	exit(0);
 	Sleep(1000);
 }
 static int SDL_VideoDisplayThread(void *)
@@ -176,7 +178,7 @@ static void initControllerNetwork()
 }
 static void decodeAudioQueue()
 {
-	if(SDL_SemWait(audioSem)==0)
+	if(SDL_SemTryWait(audioSem)==0)
 	{
 		////printf("Size:%d,Request:%d\n",audioPacketQueue.size(),len);
 		while(audioPacketQueue.size()>0)//Decode them all
@@ -205,6 +207,7 @@ static void getAudioFromBuffer(void *udata, Uint8 *stream, int len)
 
 	while(audioplaycursor<len)
 	{
+		if(!videoThreadRunFlag) return;
 		decodeAudioQueue();
 		if(audioplaycursor<len)
 		{

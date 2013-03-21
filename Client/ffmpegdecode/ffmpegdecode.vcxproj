@@ -50,8 +50,8 @@
     <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AllRules.ruleset</CodeAnalysisRuleSet>
     <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\udt4\include;E:\150w\live\include;E:\150w\SDL-1.2.15\include;E:\150w\ffmpeg\include;$(IncludePath)</IncludePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\udt4\lib;E:\150w\rtplib\jrtplib\lib;E:\150w\live\lib;E:\150w\SDL-1.2.15\lib\x86;E:\150w\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\libevent\include;E:\150w\live\include;E:\150w\SDL-1.2.15\include;E:\150w\ffmpeg\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">E:\150w\libevent\lib;E:\150w\live\lib;E:\150w\SDL-1.2.15\lib\x86;E:\150w\ffmpeg\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -85,18 +85,21 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libBasicUsageEnvironment.lib;libUsageEnvironment.lib;libliveMedia.lib;libgroupsock.lib;swresample.lib;avcodec.lib;avutil.lib;swscale.lib;Ws2_32.lib;sdl.lib;SDL_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libevent_core.lib;libBasicUsageEnvironment.lib;libUsageEnvironment.lib;libliveMedia.lib;libgroupsock.lib;swresample.lib;avcodec.lib;avutil.lib;swscale.lib;Ws2_32.lib;sdl.lib;SDL_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>false</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+      <IgnoreSpecificDefaultLibraries>libcmt</IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioStreamDecoder.cpp" />
     <ClCompile Include="Controller.cpp" />
-    <ClCompile Include="DataTunnel.cpp" />
+    <ClCompile Include="Agent.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="VideoStreamDecoder.cpp" />
@@ -104,7 +107,7 @@
   <ItemGroup>
     <ClInclude Include="AudioStreamDecoder.h" />
     <ClInclude Include="Controller.h" />
-    <ClInclude Include="DataTunnel.h" />
+    <ClInclude Include="Agent.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoStreamDecoder.h" />
