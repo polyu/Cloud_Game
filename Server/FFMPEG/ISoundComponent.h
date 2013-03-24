@@ -9,7 +9,8 @@
 #include <iterator>
 #include <mmsystem.h>
 #include <mmdeviceapi.h>
-#include "IAudioStream.h"
+#include "IDataTunnel.h"
+
 extern "C"
 {
 #include <libavutil/opt.h>
@@ -28,7 +29,7 @@ class ISoundComponent
 public:
 	ISoundComponent();
 	~ISoundComponent();
-	
+	void setDataTunnel(IDataTunnel *tunnel);
 	bool initSoundComponent();
 	void startFrameLoop();
 	void stopFrameLoop();
@@ -52,11 +53,14 @@ private:
 	BYTE* soundBuffer;
 	int soundBufferCursor;
 
+	IDataTunnel *tunnel;
+	//***************Encoder*******************
 	AVCodec *audio_codec;
 	AVCodecContext *audio_codec_context;
 	bool openAudioEncoder();
 	bool write_audio_frame(AVFrame *frame);
 	int getRequestedFrameSize() const;
 	void cleanupEncoder();
+	//******************************************
 
 };

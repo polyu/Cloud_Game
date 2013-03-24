@@ -19,16 +19,16 @@ class IController
 public:
 	IController();
 	~IController();
-	bool initIController();
+	bool initController();
 	void setLocalPort(int port);
 	void startControllerLoop();
 	void stopControllerLoop();
 private:
 	bool sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2);
 	bool sendMouseEvent(int relx,int rely,int button,int updown);
-	SOCKET fd;
-	int localPort;
+	
+	
 	bool runFlag;
-	SOCKADDR_IN localAddr;
+	
 	
 };

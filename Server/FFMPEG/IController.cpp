@@ -1,34 +1,16 @@
 #include "IController.h"
 IController::IController()
 {
-	this->localPort=DEFAULT_CONTROLPORT;
-	fd=INVALID_SOCKET;
+	
 	this->runFlag=false;
 }
 IController::~IController()
 {
-	if(fd!=INVALID_SOCKET)
-	{
-		closesocket(fd);
-	}
+	
 }
-bool IController::initIController()
+bool IController::initController()
 {
-	int retryTime=0;
-	fd=socket(AF_INET,SOCK_DGRAM,0);
-	if(fd==INVALID_SOCKET)
-	{
-		printf("Error init controller socket\n");
-		return false;
-	}
-	localAddr.sin_family=AF_INET;   
-	localAddr.sin_port=htons(this->localPort);   
-	localAddr.sin_addr.s_addr = INADDR_ANY;
-	if (bind(fd,(sockaddr*)&localAddr,sizeof(localAddr)) == SOCKET_ERROR) 
-	{   
-		printf("Error when bind controller socket\n");
-        return false;
-    }
+	
 	runFlag=true;
 	return true;
 }
@@ -38,7 +20,7 @@ void IController::startControllerLoop()
 	
 	while(runFlag)
 	{
-		int getSize=recvfrom(fd, dataBuf, 10240,0,NULL,NULL);
+		/*int getSize=recvfrom(fd, dataBuf, 10240,0,NULL,NULL);
 		if (getSize<=0)
 		{
 			printf( "recv message Error:%s\n" ,WSAGetLastError());
@@ -59,7 +41,7 @@ void IController::startControllerLoop()
 		{
 			printf("Got Mouseevent%d<-->%d<-->%d<-->%d\n",cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
 			this->sendMouseEvent(cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
-		}
+		}*/
 	}
 }
 void IController::stopControllerLoop()
@@ -68,10 +50,7 @@ void IController::stopControllerLoop()
 }
 
 
-void IController::setLocalPort(int port)
-{
-	this->localPort=port;
-}
+
 bool IController::sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2)
 {
 	printf("Push %d--->%d\n",virtualKeyCode1,virtualKeyCode2);

@@ -24,4 +24,5 @@
 #define REQEUSTRECORDCHANNEL 2
 #define REQUESTBIT 16
 #define RBANDWIDTH 1000000
+#define NETWORKMTU 1450 
 // TODO: 在此处引用程序需要的其他头文件

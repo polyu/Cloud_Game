@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "IVideoStream.h"
+#include <Windows.h>
 #define RESERVEDMEMORY 256
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
 #define MAXFPS 200
@@ -58,6 +58,7 @@ private:
 	AVCodec *video_codec;
 	AVCodecContext *video_codec_context;
 	int sendOutFrame(AVPacket *packet);
+	int sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast);
 	bool openVideoEncoder();
 	
 	void cleanupEncoder();

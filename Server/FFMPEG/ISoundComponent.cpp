@@ -6,7 +6,7 @@ ISoundComponent::ISoundComponent()
 	this->audioClient=0;
 	this->waveFormat=0;
 	this->audioCaptureClient=0;
-	
+	this->tunnel=0;
 	this->frame=0;
 	this->swr_ctx=0;
 	this->soundBuffer=(BYTE*)malloc(SOUNDCAPTUREMAXBUFSIZE);
@@ -28,6 +28,10 @@ ISoundComponent::~ISoundComponent()
 		frame=0;
 	}
 	cleanupEncoder();
+}
+void ISoundComponent::setDataTunnel(IDataTunnel *tunnel)
+{
+	this->tunnel=tunnel;
 }
 void ISoundComponent::removeSwscale()
 {
@@ -376,10 +380,11 @@ bool ISoundComponent::write_audio_frame(AVFrame *frame)
     }
 	if(got_output)
 	{
-		
-		//sendPacket((char *)pkt.data,pkt.size);
+		if(tunnel!=0&&tunnel->isClientConnected())
+		{
+			tunnel->sendAudioData((char*)pkt.data,pkt.size);
+		}
 		av_free_packet(&pkt);
-
 		if(ret<0)
 		{
 			printf( "Error writing audio frame\n");
