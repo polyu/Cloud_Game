@@ -1,6 +1,10 @@
 #include "stdafx.h"
 #include <string>
 #include <event2/event.h>
+static bool setupLocalSocket();
+static bool setupProxySocket();
+void startAgentLoop();
+/*
 using namespace std;
 static void agentConnectNetworkProxyFunc(evutil_socket_t fd, short what, void *arg);
 class Agent
@@ -31,4 +35,4 @@ private:
 	bool tunnelEstablished;
 private:
 	void agentConnectNetworkCallBack(short what);
-};
+};*/

@@ -107,7 +107,7 @@ bool IVideoStreamServer::addVideoStream()
         printf( "could not open video codec\n");
         return false;
     }
-	_snprintf_s(this->voc->filename, sizeof(this->voc->filename), "rtp://%s:%d", this->remoteAddr.c_str(), this->remoteVideoPort);
+	_snprintf_s(this->voc->filename, sizeof(this->voc->filename), "udp://%s:%d", this->remoteAddr.c_str(), this->remoteVideoPort);
 	if (avio_open(&(this->voc->pb), this->voc->filename, AVIO_FLAG_WRITE ) < 0)
     {
        printf("Can open video rtp stream! Network Problem\n");
@@ -126,7 +126,6 @@ bool IVideoStreamServer::initVideoStreamServer()
 		return false;
 	}
 	this->vfmt = av_guess_format("rtp", NULL, NULL);
-	
 
 	if (!this->vfmt)
     {

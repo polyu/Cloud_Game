@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -30,7 +27,7 @@
     <ClCompile Include="AudioStreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Agent.cpp">
+    <ClCompile Include="GameWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,10 +47,7 @@
     <ClInclude Include="AudioStreamDecoder.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="main.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Agent.h">
+    <ClInclude Include="GameWindow.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
