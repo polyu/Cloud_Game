@@ -1,17 +1,15 @@
-#include "IVideoStreamServer.h"
-#include "IAudioStreamServer.h"
-#include "ISoundCapturer.h"
-#include "IVideoCapturer.h"
+
+#include "ISoundComponent.h"
+#include "IVideoComponent.h"
 #include "IController.h"
 #include <process.h>
 
-static IVideoStreamServer videoserver;
-static IAudioStreamServer audioserver;
-static IVideoCapturer vcapturer;
-static ISoundCapturer acapturer;
+
+static IVideoComponent vcapturer;
+static ISoundComponent acapturer;
 static IController controller;
 static bool runFlag;
-static void initFFMPEGLibrary();
+static void initExternLibrary();
 static void shutdownServer();
 static void videoCaptureThread(void*);
 static void audioCaptureThread(void*);
@@ -34,13 +32,13 @@ static bool consoleHandler( DWORD fdwctrltype )
 			runFlag=false;
 			shutdownServer();
 			return true;
-			break;
+			
 		default: 
 			return false; 
     } 
 	
 }
-static void initFFMPEGLibrary()
+static void initExternLibrary()
 {
 	avformat_network_init();
 	av_register_all() ;
@@ -73,36 +71,28 @@ static void controllerThread(void *)
 }
 int main(int argc, char* argv[])
 {
-	initFFMPEGLibrary();
+	initExternLibrary();
 	if(!controller.initIController())
 	{
 		printf("Init controller failed\n");
 		return -2;
 	}
-	if(!videoserver.initVideoStreamServer())
-	{
-		printf("Video Stream Server Failed\n");
-		return -1;	
-	}
+	
 	printf("Video Stream Server Start\n");
-	if(!audioserver.initAudioStreamServer())
-	{
-		printf("Audio Stream Server Failed\n");
-		return -1;	
-	}
-	printf("Audio Stream Server Start\n");
-	if(!vcapturer.initVideoCapture())
+	
+	
+	if(!vcapturer.initVideoComponent())
 	{
 		printf("Video Capture Server Failed\n");
 		return -1;	
 	}
-	vcapturer.setStreamServer(&videoserver);
-	if(!acapturer.initISoundCapturer())
+	
+	if(!acapturer.initSoundComponent())
 	{
 		printf("Audio Capture Server Failed\n");
 		return -1;	
 	}
-	acapturer.setStreamServer(&audioserver);
+	
 	_beginthread(videoCaptureThread,0,NULL);
 	_beginthread(audioCaptureThread,0,NULL);
 	_beginthread(controllerThread,0,NULL);

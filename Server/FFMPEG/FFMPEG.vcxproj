@@ -79,7 +79,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -97,23 +97,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="IDataTunnel.cpp" />
-    <ClCompile Include="IAudioStreamServer.cpp" />
     <ClCompile Include="IController.cpp" />
+    <ClCompile Include="IVideoComponent.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="ISoundCapturer.cpp" />
+    <ClCompile Include="ISoundComponent.cpp" />
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="IVideoCapturer.cpp" />
-    <ClCompile Include="IVideoStreamServer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IDataTunnel.h" />
-    <ClInclude Include="IAudioStreamServer.h" />
     <ClInclude Include="IController.h" />
-    <ClInclude Include="ISoundCapturer.h" />
+    <ClInclude Include="ISoundComponent.h" />
+    <ClInclude Include="IVideoComponent.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="IVideoStreamServer.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="IVideoCapturer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
