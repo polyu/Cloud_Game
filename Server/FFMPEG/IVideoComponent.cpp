@@ -16,7 +16,7 @@ IVideoComponent::IVideoComponent()
 	rawFrame=NULL;
 	img_convert_ctx=NULL;
 	this->lastBPPFormat=-1;
-	
+	this->tunnel=0;
 	workingThread=false;
 }
 IVideoComponent::~IVideoComponent()
@@ -154,7 +154,7 @@ void IVideoComponent::startFrameLoop()
 		}
 	}
 }
-void IVideoComponent::stopCapture()
+void IVideoComponent::stopFrameLoop()
 {
 	workingThread=false;
 }
@@ -205,19 +205,18 @@ void IVideoComponent::setQuality(int width,int height,int bandwidth)
 	this->outputHeight=height;
 	this->bandwidth=bandwidth;
 }
-int IVideoComponent::sendOutFrame(AVPacket *pkt)
+bool IVideoComponent::sendOutFrame(AVPacket *pkt)
 {
 	PBYTE p_buffer = pkt->data;
 	int	i_buffer = pkt->size;
-	printf("=====================================Total Size:%d\n",i_buffer);
-	int writeSize = 0;
+	//printf("=====================================Total Size:%d\n",i_buffer);
+	
 
 	while( i_buffer > 4 && ( p_buffer[0] != 0 || p_buffer[1] != 0 || p_buffer[2] != 1 ) )
 	{
 		i_buffer--;
 		p_buffer++;
 	}
-	
 	while( i_buffer > 4 )
 	{
 		int i_offset;
@@ -236,35 +235,36 @@ int IVideoComponent::sendOutFrame(AVPacket *pkt)
 			} 
 		}
 		int iWrite=0;
-		printf("Got Nal:%d\n",i_size);
+		//printf("Got Nal:%d\n",i_size);
 	/* TODO add STAP-A to remove a lot of overhead with small slice/sei/... */
 	//UINT iWrite = TransportH264Nal(p_buffer, i_size, pts, (i_size >= i_buffer) );
-		iWrite=sendOutSliceFrame(p_buffer,i_size,(i_size >= i_buffer));
-		if (iWrite > 0 )
-			writeSize += iWrite;
-
+		sendOutSliceFrame(p_buffer,i_size,(i_size >= i_buffer));
 		i_buffer -= i_skip;
 		p_buffer += i_skip;
 	}
-	return writeSize;
+	return true;
 }
-int IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast)
+bool IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast)
 {
 	if( nalSize < 5 )
-		return 0;
+		return false;
 	int i_max = NETWORKMTU; /* payload max in one packet */
 	int i_nal_hdr;
 	int i_nal_type;
 	i_nal_hdr = pNal[3];
 	i_nal_type = i_nal_hdr&0x1f;
-	printf("Nal Type:%d\n",i_nal_type);
+	//printf("Nal Type:%d\n",i_nal_type);
 	PBYTE p_data = pNal;
 	int	i_data = nalSize;
 	p_data += 3;
 	i_data -= 3;
 	if( i_data <= i_max )
 	{
-		printf("I_data :%d\n",i_data);
+		//printf("I_data :%d\n",i_data);
+		if(tunnel!=NULL&&tunnel->isClientConnected())
+		{
+			tunnel->sendVideoData((char*)p_data,i_data,isLast);
+		}
 	}
 	else
 	{
@@ -280,13 +280,16 @@ int IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast)
 			packetBuf[0]= 0x00 | (i_nal_hdr & 0x60) | 28;
 			packetBuf[1]= ( i == 0 ? 0x80 : 0x00 ) | ( (i == i_count-1) ? 0x40 : 0x00 )  | i_nal_type;
 			memcpy(packetBuf+2, p_data, i_payload);
-			printf("PayLoad Size:%d\n",i_payload);
+			if(tunnel!=NULL&&tunnel->isClientConnected())
+			{
+				tunnel->sendVideoData((char*)packetBuf,nalSize,isLast && (i == i_count-1));
+			}
 			free(packetBuf);
 			i_data -= i_payload;
 			p_data += i_payload;
 		}
 	}
-	return 0;
+	return true;
 }
 bool IVideoComponent::write_video_frame(AVFrame *frame)
 {
@@ -375,4 +378,7 @@ void IVideoComponent::cleanupEncoder()
 	}
 
 }
-
+void IVideoComponent::setDataTunnel(IDataTunnel *tunnel)
+{
+	this->tunnel=tunnel;
+}

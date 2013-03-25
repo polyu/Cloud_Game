@@ -11,13 +11,12 @@
 using namespace std;
 
 //VIDEO FUNCTION
-static void refreshVideo();
 static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 
 
 
 //AUDIO FUNCTION
-static void refreshAudio();
+
 static void afterGetAudioUnit(void *clientData, unsigned frameSize, unsigned numTruncatedBytes, struct timeval presentationTime, unsigned durationInMicroseconds);
 static void decodeAudioQueue();
 
@@ -26,7 +25,7 @@ static int SDL_VideoDisplayThread(void *);
 static void SafeCleanUp();
 static int NetworkRecvThread(void *);
 static void initDecoder();
-static void initStreamNetwork();
+static void initNetwork();
 static void initSDL();
 static void initControllerNetwork();
 static void getAudioFromBuffer(void *udata, Uint8 *stream, int len);

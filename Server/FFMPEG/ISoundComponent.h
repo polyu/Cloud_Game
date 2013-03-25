@@ -24,6 +24,12 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 }
+#define SOUNDCAPTUREMAXBUFSIZE 4096*4
+#define OUTPUTSAMPLERATE 48000
+#define REQUESTRECORDBLOCK 4
+#define REQEUSTRECORDCHANNEL 2
+#define REQUESTBIT 16
+
 class ISoundComponent
 {
 public:

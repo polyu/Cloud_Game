@@ -3,19 +3,16 @@
 //===============Flag=====================
 static bool videoThreadRunFlag=true;
 static bool NetworkRecvThreadRunFlag=true;
-static char *NetworkThreadWatchVariable=0;
 //==================Controller======================
 static Controller controller;
 //==============================================
 static SDL_sem* videoSem=0;
-static H264VideoRTPSource *videoSource;
 static unsigned char videotempBuf[MAXTEMPBUF];
 static unsigned char videoframeBuf[MAXFRAMEBUF];
 static unsigned char videoframeCopyBuf[MAXFRAMEBUF];
 static int videoframeCursor=0;
 static int videocopyframeCursor=0;
 static bool videoCanDecode=false;
-static Groupsock *localVideoSock;
 static VideoStreamDecoder vdecoder;
 static bool isFullScreen=false;
 //===================NETWORKAUDIO======================
@@ -24,12 +21,9 @@ static unsigned char audiotempBuf[MAXTEMPBUF];
 static unsigned char audioplayBuf[MAXTEMPBUF];
 static int audioplaycursor=0;
 static SDL_sem* audioSem=0;
-static BasicUDPSource *audioSource;
-static Groupsock *localAudioSock;
 static AudioStreamDecoder adecoder;
 //=====================NETENV=========================
-static TaskScheduler* scheduler;
-static UsageEnvironment* env ;
+
 //========================SDL===================================
 static SDL_Surface *screen;
 static SDL_Overlay *screenOverlay;
@@ -41,7 +35,7 @@ static void SafeCleanUp()
 {
 	videoThreadRunFlag=false;
 	NetworkRecvThreadRunFlag=false;
-	NetworkThreadWatchVariable=(char*)'a';//Abort
+
 	SDL_CloseAudio();
 	if(videoSem!=NULL)
 	{
@@ -131,7 +125,7 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 	videoframeCursor+=4;
 	memcpy(videoframeBuf+videoframeCursor,videotempBuf,frameSize);
 	videoframeCursor+=frameSize;
-	if(videoSource->curPacketMarkerBit())
+	/*if(videoSource->curPacketMarkerBit())
 	{
 		if(SDL_SemTryWait(videoSem)==0)
 		{
@@ -146,29 +140,11 @@ static void afterGetVideoUnit(void *clientData, unsigned frameSize, unsigned num
 	else
 	{
 
-	}
+	}*/
 
 
 	refreshVideo();
 
-}
-static void refreshVideo(void )
-{
-	if(NetworkRecvThreadRunFlag)
-	videoSource->getNextFrame(videotempBuf,102400,afterGetVideoUnit,NULL,NULL,NULL);
-}
-static void refreshAudio(void )
-{
-	if(NetworkRecvThreadRunFlag)
-	audioSource->getNextFrame(audiotempBuf,102400,afterGetAudioUnit,NULL,NULL,NULL);
-}
-static int NetworkRecvThread(void *)
-{
-	refreshAudio();
-	refreshVideo();
-	printf("Network Event Loop Start\n");
-	env->taskScheduler().doEventLoop(NetworkThreadWatchVariable);
-	return 0;
 }
 static void initControllerNetwork()
 {
@@ -220,7 +196,6 @@ static void getAudioFromBuffer(void *udata, Uint8 *stream, int len)
 	audioplaycursor-=len;
 	
 }
-
 static void initSDL()
 {
 	
@@ -277,53 +252,22 @@ static void initDecoder()
 	}
 	
 }
-static void initStreamNetwork()
+static void initNetwork()
 {
-	in_addr listenAddress;
-	listenAddress.s_addr=htonl(INADDR_ANY);
-	scheduler = BasicTaskScheduler::createNew();
-	env = BasicUsageEnvironment::createNew(*scheduler);
-	Port rtpVideoPort(DEFAULT_RTPVIDEOPORT);
-	localVideoSock=new Groupsock(*env, listenAddress,rtpVideoPort , 255);
-	Port rtpAudioPort(DEFAULT_RTPAUDIOPORT);
-	localAudioSock=new Groupsock(*env, listenAddress,rtpAudioPort , 255);
-	if(localVideoSock==NULL)
-	{
-		//printf("Init LOCAL VIDEO SOCK FAILED\n");
-		exit(-2);
-	}
-	if(localAudioSock==NULL)
-	{
-		//printf("Init LOCAL AUDIO SOCK FAILED\n");
-		exit(-2);
-	}
-	videoSource=H264VideoRTPSource::createNew(*env,localVideoSock,96,30000);
-	audioSource= BasicUDPSource::createNew(*env,localAudioSock);
-	if(videoSource==NULL)
-	{
-		//printf("INIT Video Source Failed\n");
-		exit(-2);
-	}
-	if(audioSource==NULL)
-	{
-		//printf("INIT Video Source Failed\n");
-		exit(-2);
-	}
-	//printf("NETWORK INIT OK\n");
+
 	
 	
 }
-
 int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpCmdLine,int nCmdShow)
 {
 	initSDL();
 	
-	initStreamNetwork();
+	initNetwork();
 	initControllerNetwork();
 	initDecoder();
 	videoThreadRunFlag=true;
 	NetworkRecvThreadRunFlag=true;
-	NetworkThreadWatchVariable=0;
+	
 	SDL_CreateThread(NetworkRecvThread,NULL);
 	SDL_CreateThread(SDL_VideoDisplayThread,NULL);
 	bool quitFlag=false;

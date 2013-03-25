@@ -100,6 +100,7 @@
   <ItemGroup>
     <ClCompile Include="AudioStreamDecoder.cpp" />
     <ClCompile Include="Controller.cpp" />
+    <ClCompile Include="DataTunnel.cpp" />
     <ClCompile Include="GameWindow.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="VideoStreamDecoder.cpp" />
@@ -107,6 +108,7 @@
   <ItemGroup>
     <ClInclude Include="AudioStreamDecoder.h" />
     <ClInclude Include="Controller.h" />
+    <ClInclude Include="DataTunnel.h" />
     <ClInclude Include="GameWindow.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoStreamDecoder.h" />

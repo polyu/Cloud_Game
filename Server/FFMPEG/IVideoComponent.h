@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "IDataTunnel.h"
 #include <Windows.h>
 #define RESERVEDMEMORY 256
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
 #define MAXFPS 200
-
+#define RHEIGHT 768
+#define RWIDTH 1024
+#define RBANDWIDTH 1000000
 extern "C"
 {
 #ifdef HAVE_AV_CONFIG_H
@@ -31,14 +34,14 @@ public:
 	~IVideoComponent();
 	bool initVideoComponent();
 	void startFrameLoop();
-	void stopCapture();
-	
+	void stopFrameLoop();
+	void setDataTunnel(IDataTunnel *tunnel);
 
 private:
 	BYTE* lpvMem;      // pointer to shared memory
 	HANDLE hMapObject;
 	AVFrame *rawFrame;
-	
+	IDataTunnel *tunnel;
 	SwsContext *img_convert_ctx; 
 	uint8_t *picture_buf;
 	int frameCounter;
@@ -57,8 +60,8 @@ private:
 	int bandwidth;
 	AVCodec *video_codec;
 	AVCodecContext *video_codec_context;
-	int sendOutFrame(AVPacket *packet);
-	int sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast);
+	bool sendOutFrame(AVPacket *packet);
+	bool sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast);
 	bool openVideoEncoder();
 	
 	void cleanupEncoder();

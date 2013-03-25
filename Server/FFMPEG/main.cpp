@@ -3,18 +3,18 @@
 #include "IController.h"
 #include <process.h>
 
-
-static IVideoComponent vcapturer;
-static ISoundComponent acapturer;
 static IController controller;
+static IVideoComponent vComponent;
+static ISoundComponent aComponent;
 static IDataTunnel tunnel;
 static WSADATA wsaData;
 static bool runFlag;
 static void initExternLibrary();
 static void shutdownServer();
-static void videoCaptureThread(void*);
-static void audioCaptureThread(void*);
+static void videoComponentThread(void*);
+static void audioComponentThread(void*);
 static void controllerThread(void *);
+static void tunnelThread(void *);
 static  bool consoleHandler( DWORD fdwctrltype );
 static bool consoleHandler( DWORD fdwctrltype )
 {
@@ -46,8 +46,8 @@ static void initExternLibrary()
 }
 static void shutdownServer()
 {
-	vcapturer.stopCapture();
-	acapturer.stopFrameLoop();
+	vComponent.stopFrameLoop();
+	aComponent.stopFrameLoop();
 	controller.stopControllerLoop();
 	tunnel.stopTunnelLoop();
 	WSACleanup();
@@ -55,17 +55,21 @@ static void shutdownServer()
 	Sleep(5000);
 
 }
-static void videoCaptureThread(void*)
+static void tunnelThread(void *)
 {
-	vcapturer.startFrameLoop();
+	tunnel.startTunnelLoop();
 	runFlag=false;
 }
-static void audioCaptureThread(void*)
+static void videoComponentThread(void*)
 {
-	acapturer.startFrameLoop();
+	vComponent.startFrameLoop();
 	runFlag=false;
 }
-
+static void audioComponentThread(void*)
+{
+	aComponent.startFrameLoop();
+	runFlag=false;
+}
 static void controllerThread(void *)
 {
 	controller.startControllerLoop();
@@ -84,20 +88,23 @@ int main(int argc, char* argv[])
 		printf("Init controller failed\n");
 		return -2;
 	}
-	if(!vcapturer.initVideoComponent())
+	if(!vComponent.initVideoComponent())
 	{
-		printf("Video Capture Server Failed\n");
+		printf("Video Component Server Failed\n");
 		return -1;	
 	}
-	if(!acapturer.initSoundComponent())
+	if(!aComponent.initSoundComponent())
 	{
-		printf("Audio Capture Server Failed\n");
+		printf("Audio Component Server Failed\n");
 		return -1;	
 	}
-	acapturer.setDataTunnel(&tunnel);
-	_beginthread(videoCaptureThread,0,NULL);
-	_beginthread(audioCaptureThread,0,NULL);
-	//_beginthread(controllerThread,0,NULL);
+	aComponent.setDataTunnel(&tunnel);
+	vComponent.setDataTunnel(&tunnel);
+	controller.setDataTunnel(&tunnel);
+	_beginthread(videoComponentThread,0,NULL);
+	_beginthread(audioComponentThread,0,NULL);
+	_beginthread(controllerThread,0,NULL);
+	_beginthread(tunnelThread,0,NULL);
 	runFlag=true;
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) consoleHandler, true ) ;
 	while(runFlag)

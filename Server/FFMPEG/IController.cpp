@@ -1,47 +1,51 @@
 #include "IController.h"
 IController::IController()
 {
-	
+	this->tunnel=0;
 	this->runFlag=false;
 }
 IController::~IController()
 {
-	
 }
 bool IController::initController()
 {
-	
 	runFlag=true;
 	return true;
 }
+void IController::setDataTunnel(IDataTunnel *tunnel)
+{
+	this->tunnel=tunnel;
+}
 void IController::startControllerLoop()
 {
-	char dataBuf[10240];
-	
+	char *dataBuf;
+	int getSize;
 	while(runFlag)
 	{
-		/*int getSize=recvfrom(fd, dataBuf, 10240,0,NULL,NULL);
-		if (getSize<=0)
+		if(tunnel!=NULL&&tunnel->isClientConnected())
 		{
-			printf( "recv message Error:%s\n" ,WSAGetLastError());
-			break;
+			if(!tunnel->getControllerData(&dataBuf,&getSize))
+			{
+				Sleep(ANTISPIN);
+				continue;
+			}
+			if(getSize!=sizeof(ControlEvent))
+			{
+				printf( "Bad procotol\n" );
+				break;
+			}
+			ControlEvent *cevent=(ControlEvent*)dataBuf;
+			if(cevent->type==KEYEVENT)
+			{
+				printf("Got Keyevent %d<-->%d\n",cevent->keyCode1,cevent->keyCode2);
+				this->sendKeyboardEvent(cevent->keyCode1,cevent->keyCode2);
+			}
+			else if(cevent->type==MOUSEEVENT)
+			{
+				printf("Got Mouseevent%d<-->%d<-->%d<-->%d\n",cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
+				this->sendMouseEvent(cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
+			}
 		}
-		if(getSize!=sizeof(ControlEvent))
-		{
-			printf( "Bad procotol\n" );
-			break;
-		}
-		ControlEvent *cevent=(ControlEvent*)dataBuf;
-		if(cevent->type==KEYEVENT)
-		{
-			printf("Got Keyevent %d<-->%d\n",cevent->keyCode1,cevent->keyCode2);
-			this->sendKeyboardEvent(cevent->keyCode1,cevent->keyCode2);
-		}
-		else if(cevent->type==MOUSEEVENT)
-		{
-			printf("Got Mouseevent%d<-->%d<-->%d<-->%d\n",cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
-			this->sendMouseEvent(cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
-		}*/
 	}
 }
 void IController::stopControllerLoop()

@@ -1,4 +1,6 @@
+#pragma once
 #include "stdafx.h"
+#include "IDataTunnel.h"
 #include <windows.h>
 #define KEYEVENT 1
 #define MOUSEEVENT 2
@@ -20,15 +22,13 @@ public:
 	IController();
 	~IController();
 	bool initController();
-	void setLocalPort(int port);
 	void startControllerLoop();
 	void stopControllerLoop();
+	void setDataTunnel(IDataTunnel *tunnel);
 private:
 	bool sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2);
 	bool sendMouseEvent(int relx,int rely,int button,int updown);
-	
-	
 	bool runFlag;
-	
+	IDataTunnel *tunnel;
 	
 };
