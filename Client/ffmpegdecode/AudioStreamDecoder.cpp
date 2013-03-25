@@ -50,7 +50,7 @@ bool AudioStreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outda
 		*outSize= av_samples_get_buffer_size(NULL, this->audio_codec_context->channels,
                                                        audioframe->nb_samples,
                                                       this->audio_codec_context->sample_fmt, 1);
-		printf("OutSize:%d,format:%d\n",*outSize,audioframe->format);
+		//printf("OutSize:%d,format:%d\n",*outSize,audioframe->format);
 		
 		return true;
 	}

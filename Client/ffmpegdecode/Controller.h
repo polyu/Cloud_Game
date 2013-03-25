@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <Windows.h>
 #include <string>
+#include "DataTunnel.h"
 using namespace std;
 #define KEYEVENT 1
 #define MOUSEEVENT 2
@@ -22,15 +23,15 @@ class Controller
 public:
 	Controller();
 	~Controller();
-	bool initControllerClient();
+	bool initController();
 	bool sendKeyEvent(int key1,int key2);
 	bool sendMouseEvent(int relx,int rely,int clickButton,int direction);
-	void setRemoteAddress(string remoteAddr,int port);
+	void SetDataTunnel(DataTunnel *tunnel);
 private:
 	int sdlkeyCodeTransfer(int sdlKeyCode);
+	DataTunnel *tunnel;
 	bool sendOutEvent(char *event,int size);
-	SOCKET fd;
-	sockaddr_in remoteAddr;
+
 	
 };
 

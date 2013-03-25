@@ -46,10 +46,11 @@ static void initExternLibrary()
 }
 static void shutdownServer()
 {
+	tunnel.stopTunnelLoop();
 	vComponent.stopFrameLoop();
 	aComponent.stopFrameLoop();
 	controller.stopControllerLoop();
-	tunnel.stopTunnelLoop();
+	Sleep(2000);
 	WSACleanup();
 	printf("System going to shutdown\n");
 	Sleep(5000);
@@ -111,5 +112,7 @@ int main(int argc, char* argv[])
 	{
 		Sleep(1000);
 	}
+	shutdownServer();
+	system("pause");
 	
 }

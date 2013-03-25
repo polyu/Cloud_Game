@@ -20,15 +20,19 @@ void IController::startControllerLoop()
 {
 	char *dataBuf;
 	int getSize;
+	
 	while(runFlag)
 	{
+		
 		if(tunnel!=NULL&&tunnel->isClientConnected())
 		{
+			
 			if(!tunnel->getControllerData(&dataBuf,&getSize))
 			{
 				Sleep(ANTISPIN);
 				continue;
 			}
+			
 			if(getSize!=sizeof(ControlEvent))
 			{
 				printf( "Bad procotol\n" );
@@ -45,6 +49,7 @@ void IController::startControllerLoop()
 				printf("Got Mouseevent%d<-->%d<-->%d<-->%d\n",cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
 				this->sendMouseEvent(cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
 			}
+			free(dataBuf);
 		}
 	}
 }

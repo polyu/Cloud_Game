@@ -1,21 +1,15 @@
 #include "Controller.h"
 Controller::Controller()
 {
-	fd=INVALID_SOCKET;
-	this->setRemoteAddress(LOCALADDRESS,DEFAULT_CONTROLLERPORT);
+	this->tunnel=0;
 }
 Controller::~Controller()
 {
-	if(fd!=INVALID_SOCKET)
-	{
-		closesocket(fd);
-	}
 }
-void Controller::setRemoteAddress(string remoteAddr,int port)
+
+void Controller::SetDataTunnel(DataTunnel *tunnel)
 {
-	this->remoteAddr.sin_port=htons(port);
-	this->remoteAddr.sin_family=AF_INET;
-	this->remoteAddr.sin_addr.s_addr=inet_addr(remoteAddr.c_str());
+	this->tunnel=tunnel;
 }
 bool Controller::sendKeyEvent(int key1,int key2)
 {
@@ -56,18 +50,17 @@ bool Controller::sendMouseEvent(int relx,int rely,int clickButton,int direction)
 }
 bool Controller::sendOutEvent(char *data,int size)
 {
-	int sendSize=sendto(fd,data,size,0,(const sockaddr *)&this->remoteAddr,sizeof(this->remoteAddr));
-	return sendSize==size;
-	
-}
-bool Controller::initControllerClient()
-{
-	fd=socket(AF_INET, SOCK_DGRAM, 0);
-	if(fd==INVALID_SOCKET)
+	//int sendSize=sendto(fd,data,size,0,(const sockaddr *)&this->remoteAddr,sizeof(this->remoteAddr));
+	//return sendSize==size;
+	if(this->tunnel!=NULL&&tunnel->isServerConnected())
 	{
-		printf("failed to init controller socket\n");
-		return false;
+		return this->tunnel->sendControllerData(data,size);
 	}
+	return false;
+}
+bool Controller::initController()
+{
+	//printf("The controller function has not beed implement yet\n");
 	return true;
 }
 int Controller::sdlkeyCodeTransfer(int sdlKeyCode)

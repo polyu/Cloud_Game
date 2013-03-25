@@ -7,6 +7,7 @@ IDataTunnel::IDataTunnel()
 	this->g_hMutex_send_network= INVALID_HANDLE_VALUE;  
 	this->g_hMutex_controller_network=INVALID_HANDLE_VALUE;
 	setLocalPort(DEFAULT_LOCALPORT);
+	
 }
 IDataTunnel::~IDataTunnel()
 {
@@ -35,7 +36,6 @@ bool IDataTunnel::sendConnectionRequestData()
 {
 	char tmpBuf[2];
 	tmpBuf[0]=CONNECTIONREQUESTHEADERTYPE;
-	tmpBuf[0]|=0x40;
 	tmpBuf[1]=0x1;//Not implement yet
 	int ret=SOCKET_ERROR;
 	if(WaitForSingleObject(this->g_hMutex_send_network,INFINITE)==WAIT_OBJECT_0)
@@ -54,7 +54,6 @@ bool IDataTunnel::sendAudioData(char *data,int size)
 {
 	char *tmpBuf=(char*)malloc(size+1);
 	tmpBuf[0]=AUDIODATAHEADERTYPE;
-	tmpBuf[0]|=0x40;
 	memcpy(tmpBuf+1,data,size);
 	int ret=SOCKET_ERROR;
 	if(WaitForSingleObject(this->g_hMutex_send_network,INFINITE)==WAIT_OBJECT_0)
@@ -72,14 +71,14 @@ bool IDataTunnel::sendAudioData(char *data,int size)
 }
 bool IDataTunnel::sendVideoData(char* data,int size,bool isLast)
 {
-	BYTE *tmpBuf=(BYTE*)malloc(size+1);
+	char *tmpBuf=(char*)malloc(size+1);
 	tmpBuf[0]=VIDEODATAHEADERTYPE;
-	if(isLast) tmpBuf[0]|=0x40;
+	if(isLast) tmpBuf[0]|=LASTMARKERBIT;
 	memcpy(tmpBuf+1,data,size);
 	int ret=SOCKET_ERROR;
 	if(WaitForSingleObject(this->g_hMutex_send_network,INFINITE)==WAIT_OBJECT_0)
 	{
-		ret=sendto(this->agentFd,(const char*)tmpBuf,size+1,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
+		ret=sendto(this->agentFd,tmpBuf,size+1,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
 		ReleaseMutex(g_hMutex_send_network); 
 	}
 	free(tmpBuf);
@@ -127,6 +126,15 @@ bool IDataTunnel::initDataTunnel()
 		printf("Error when set non-blocking agentFD\n");
         return false;
 	}
+	DWORD dwBytesReturned = 0;
+	BOOL bNewBehavior = FALSE;
+	DWORD status;
+	status = WSAIoctl(agentFd, SIO_UDP_CONNRESET,&bNewBehavior, sizeof(bNewBehavior),NULL, 0, &dwBytesReturned, NULL, NULL);
+	if(status==SOCKET_ERROR)
+	{
+		printf("Failed to patch the udp socket\n");
+		return false;
+	}
 	this->runFlag=true;
 	return true;
 }
@@ -142,6 +150,7 @@ bool IDataTunnel::getControllerData(char **data,int *size)
 		pair<char*,int> t=this->controllerInformationQueue.front();
 		*data=t.first;
 		*size=t.second;
+		this->controllerInformationQueue.pop();
 		ReleaseMutex(this->g_hMutex_controller_network);
 		return true;
 	}
@@ -169,12 +178,13 @@ void IDataTunnel::startTunnelLoop()
 			int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&this->endpointAddr,&fromlen);
 			if(size==SOCKET_ERROR)
 			{
-				printf("Network Error when recv from udp port\n");
+				printf("Network Error when recv from udp port:%d\n",WSAGetLastError());
 				runFlag=false;
 				return;
 			}
 			if(buf[0]&CONNECTIONREQUESTHEADERTYPE)
 			{
+				printf("One way connection OK!Sending HandShake Connection Data\n");
 				if(!this->sendConnectionRequestData())
 				{
 					printf("Error in sending back connection data\n");
@@ -182,8 +192,9 @@ void IDataTunnel::startTunnelLoop()
 				}
 				this->clientConnected=true;
 			}
-			else if(buf[0]&CONTROLERDATAHEADERTYPE)
+			else if(buf[0]&CONTROLERDATAHEADERTYPE&&clientConnected)
 			{
+				printf("Recv a new controller signal\n");
 				if(WaitForSingleObject(this->g_hMutex_controller_network,3)==WAIT_OBJECT_0)
 				{
 					if(this->controllerInformationQueue.size()>MAXWAITQUEUENUM)
@@ -191,13 +202,14 @@ void IDataTunnel::startTunnelLoop()
 						int tsize=this->controllerInformationQueue.size();
 						for(int i=0;i<tsize;i++)
 						{
+							printf("Buffer Full\n");
 							free(this->controllerInformationQueue.front().first);
 							this->controllerInformationQueue.pop();
 						}
 					}
-					char *tmpBuf=(char*)malloc(size);
-					memcpy(tmpBuf,buf,size);
-					this->controllerInformationQueue.push(pair<char*,int>(tmpBuf,size));
+					char *tmpBuf=(char*)malloc(size-HEADERLENGTH);
+					memcpy(tmpBuf,buf+HEADERLENGTH,size-HEADERLENGTH);
+					this->controllerInformationQueue.push(pair<char*,int>(tmpBuf,size-HEADERLENGTH));
 					ReleaseMutex(this->g_hMutex_controller_network);
 				}
 				else
@@ -212,5 +224,6 @@ void IDataTunnel::startTunnelLoop()
 }
 void IDataTunnel::stopTunnelLoop()
 {
+	this->clientConnected=false;
 	runFlag=false;
 }
