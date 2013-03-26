@@ -99,6 +99,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Server\FFMPEG\getopt.cpp" />
     <ClCompile Include="AudioStreamDecoder.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="DataTunnel.cpp" />
@@ -111,6 +112,7 @@
     <ClInclude Include="Controller.h" />
     <ClInclude Include="DataTunnel.h" />
     <ClInclude Include="GameComponent.h" />
+    <ClInclude Include="getopt.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="VideoStreamDecoder.h" />
     <ClInclude Include="targetver.h" />

@@ -46,4 +46,5 @@ private:
 	HANDLE g_hMutex_controller_network;
 	queue< pair<char*,int> > controllerInformationQueue;
 	bool sendConnectionResponseData();
+	
 };

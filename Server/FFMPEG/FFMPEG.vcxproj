@@ -96,6 +96,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="getopt.cpp" />
     <ClCompile Include="IDataTunnel.cpp" />
     <ClCompile Include="IController.cpp" />
     <ClCompile Include="IVideoComponent.cpp" />
@@ -104,6 +105,7 @@
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="getopt.h" />
     <ClInclude Include="IDataTunnel.h" />
     <ClInclude Include="IController.h" />
     <ClInclude Include="ISoundComponent.h" />

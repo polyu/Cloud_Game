@@ -29,11 +29,21 @@ bool DataTunnel::isServerConnected() const
 {
 	return this->serverConnected;
 }
-void DataTunnel::setEndpointAddr(string address,int port)
+void DataTunnel::setEndpointAddr(const char* address,int port)
 {
-	this->endpointAddr.sin_addr.s_addr=inet_addr(address.c_str());
+	this->endpointAddr.sin_addr.s_addr=inet_addr(address);
 	this->endpointAddr.sin_family=AF_INET;
 	this->endpointAddr.sin_port=htons(port);
+}
+void DataTunnel::setEndpointIPAddr(const char *addr)
+{
+	this->endpointAddr.sin_addr.s_addr=inet_addr(addr);
+	this->endpointAddr.sin_family=AF_INET;
+}
+void DataTunnel::setEndpointPort(int port)
+{
+	this->endpointAddr.sin_port=htons(port);
+	this->endpointAddr.sin_family=AF_INET;
 }
 bool DataTunnel::sendControllerData(char*data,int size)
 {
@@ -87,6 +97,7 @@ bool DataTunnel::initDataTunnel()
 		printf("SET SND Buffer failed\n");
 		return false;
 	}
+
 	u_long nonblock=1;
 	if(ioctlsocket(agentFd,FIONBIO,&nonblock)==SOCKET_ERROR)
 	{
@@ -100,6 +111,7 @@ bool DataTunnel::initDataTunnel()
 		printf("Failed to patch the udp socket\n");
 		return false;
 	}
+	
 	this->runFlag=true;
 	return true;
 }
@@ -174,8 +186,8 @@ void DataTunnel::startTunnelLoop()
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
 				lastActionTime=clock();
-				int fromlen=sizeof(this->endpointAddr);
-				int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&this->endpointAddr,&fromlen);
+			
+				int size=recvfrom(this->agentFd,buf,10240,0,NULL,NULL);
 				if(size==SOCKET_ERROR)
 				{
 					printf("Network Error when recv from udp port:%d\n",WSAGetLastError());

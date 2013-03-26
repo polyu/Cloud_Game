@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include <winsock2.h>
 #include <time.h>
-#include <string>
 #include <queue>
 using namespace std;
 #define DEFAULT_LOCALPORT 20240
@@ -32,7 +31,9 @@ public:
 	void startTunnelLoop();
 	void stopTunnelLoop();
 	void setLocalPort(int port);
-	void setEndpointAddr(string addr,int port);
+	void setEndpointAddr(const char* addr,int port);
+	void setEndpointPort(int port);
+	void setEndpointIPAddr(const char *addr);
 	bool isServerConnected() const;
 	bool sendControllerData(char *data,int size);
 	bool getVideoData(char **data,int *size);

@@ -197,7 +197,7 @@ void IDataTunnel::startTunnelLoop()
 			{
 				printf("One way connection OK!Sending HandShake Connection Data\n");
 				this->clientConnected=true;
-				this->endpointAddr=tmpEndPointAddr;
+				memcpy(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr));
 				//Check Data ! Not implement yet!
 				if(!this->sendConnectionResponseData())
 				{
@@ -209,6 +209,11 @@ void IDataTunnel::startTunnelLoop()
 			
 			if(this->clientConnected)
 			{
+				if(memcmp(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr))!=0)
+				{
+					printf("Endpoint Address not meet!\n");
+					continue;
+				}
 				if(buf[0]&CONTROLERDATAHEADERTYPE&&clientConnected)
 				{
 					//printf("Recv a new controller signal\n");

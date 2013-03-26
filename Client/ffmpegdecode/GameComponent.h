@@ -1,5 +1,5 @@
 #include "stdafx.h"
-
+#include "getopt.h"
 #include "VideoStreamDecoder.h"
 #include "AudioStreamDecoder.h"
 #include <SDL.h>

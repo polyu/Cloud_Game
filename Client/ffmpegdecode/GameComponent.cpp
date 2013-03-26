@@ -174,47 +174,85 @@ static void initExternLibrary()
 //==============================
 static void handleArgument()
 {
+	 int c;
+	 int digit_optind = 0;
+	 
+	 while (true)
+      {
+			int this_option_optind = optind ? optind : 1;
+			c = getopt (__argc, __argv, "a:p:q:l:");
+			if (c == -1)
+				break;
+			switch (c)
+			{
+				case 'q':
+				{
+					int quality=atoi(optarg);//1 Means HD(8M 1024*768), 2 Means Common(4M,800*600) , 3 Means Low Quality (2M 640*480) , 4 Means Low band(1M, 320*240); 
+					switch(quality)
+					{
+						case 1:
+							vdecoder.setOutputSize(1024,768);
+							outputWidth=1024;
+							outputHeight=768;
+							break;
+						case 2:
+							vdecoder.setOutputSize(800,600);
+							outputWidth=800;
+							outputHeight=600;
+							break;
+						case 3:
+							vdecoder.setOutputSize(640,480);
+							outputWidth=640;
+							outputHeight=480;
+							break;
+						case 4:
+							vdecoder.setOutputSize(320,240);
+							outputWidth=320;
+							outputHeight=240;
+							break;
+						default:
+							vdecoder.setOutputSize(320,240);
+							outputWidth=320;
+							outputHeight=240;
+							break;
+					}
+				}
+				break;
+				case 'l':
+				{
+					int localPort=atoi(optarg);
+					if(localPort<65534&&localPort>1024)
+					{
+						tunnel.setLocalPort(localPort);
+					}
+				}
+				break;
+				case 'a':
+				{
+					tunnel.setEndpointIPAddr(optarg);
+				}
+				break;
+				case 'p':
+				{
+					int remotePort=atoi(optarg);
+					if(remotePort<65534&&remotePort>1024)
+					{
+						tunnel.setEndpointPort(remotePort);
+					}
+				}
+				break;
+			}
+	 }
+
 	if(__argc==5)//Quality And Port Set
 	{
-		int quality=atoi(__argv[1]);//1 Means HD(8M 1024*768), 2 Means Common(4M,800*600) , 3 Means Low Quality (2M 640*480) , 4 Means Low band(1M, 320*240); 
-		switch(quality)
-		{
-			case 1:
-				vdecoder.setOutputSize(1024,768);
-				outputWidth=1024;
-				outputHeight=768;
-				break;
-			case 2:
-				vdecoder.setOutputSize(800,600);
-				outputWidth=800;
-				outputHeight=600;
-				break;
-			case 3:
-				vdecoder.setOutputSize(640,480);
-				outputWidth=640;
-				outputHeight=480;
-				break;
-			case 4:
-				vdecoder.setOutputSize(320,240);
-				outputWidth=320;
-				outputHeight=240;
-				break;
-			default:
-				vdecoder.setOutputSize(320,240);
-				outputWidth=320;
-				outputHeight=240;
-				break;
-		}
+		
 		int remotePort=atoi(__argv[3]);
 		if(remotePort<65534&&remotePort>1024)
 		{
 			tunnel.setEndpointAddr(__argv[2],remotePort);
 		}
-		int localPort=atoi(__argv[4]);
-		if(localPort<65534&&localPort>1024)
-		{
-			tunnel.setLocalPort(localPort);
-		}
+		
 	}
 }
 
@@ -292,7 +330,7 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 	}
 	tunnel.stopTunnelLoop();
 	
-	Sleep(2000);
+	Sleep(500);
 	WSACleanup();
 	return 0;
 }
