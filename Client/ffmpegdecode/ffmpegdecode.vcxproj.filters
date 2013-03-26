@@ -27,10 +27,10 @@
     <ClCompile Include="AudioStreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="GameWindow.cpp">
+    <ClCompile Include="DataTunnel.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="DataTunnel.cpp">
+    <ClCompile Include="GameComponent.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,14 +50,19 @@
     <ClInclude Include="AudioStreamDecoder.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="GameWindow.h">
+    <ClInclude Include="DataTunnel.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="DataTunnel.h">
+    <ClInclude Include="GameComponent.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="PortalWindow.resx">
+      <Filter>资源文件</Filter>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

@@ -9,9 +9,9 @@
 #define RESERVEDMEMORY 256
 #define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
 #define MAXFPS 200
-#define RHEIGHT 768
-#define RWIDTH 1024
-#define RBANDWIDTH 1000000
+#define RHEIGHT 800
+#define RWIDTH 600
+#define RBANDWIDTH 4000000
 extern "C"
 {
 #ifdef HAVE_AV_CONFIG_H
@@ -36,7 +36,7 @@ public:
 	void startFrameLoop();
 	void stopFrameLoop();
 	void setDataTunnel(IDataTunnel *tunnel);
-
+	void setQuality(int width,int height,int bandwidth);
 private:
 	BYTE* lpvMem;      // pointer to shared memory
 	HANDLE hMapObject;
@@ -66,6 +66,6 @@ private:
 	
 	void cleanupEncoder();
 	bool write_video_frame(AVFrame *frame);
-	void setQuality(int width,int height,int bandwidth);
+	
 
 };

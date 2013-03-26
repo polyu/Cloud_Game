@@ -106,7 +106,7 @@ bool VideoStreamDecoder::initDecorder()
         return false;
     }
 	av_init_packet(&videoavpkt);
-	videopicture=alloc_picture(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
+	videopicture=alloc_picture(PIX_FMT_YUV420P, this->outputWidth, this->outputHeight);
 	return true;
 }
 bool VideoStreamDecoder::setOutputSize(int outputWidth,int outputHeight)

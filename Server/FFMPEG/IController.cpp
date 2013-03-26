@@ -51,6 +51,10 @@ void IController::startControllerLoop()
 			}
 			free(dataBuf);
 		}
+		else
+		{
+			Sleep(ANTISPIN);
+		}
 	}
 }
 void IController::stopControllerLoop()

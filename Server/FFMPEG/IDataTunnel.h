@@ -4,10 +4,12 @@
 #include <windows.h>
 #include <string>
 #include <queue>
+#include <time.h>
 using namespace std;
 #define DEFAULT_LOCALPORT 20000
 #define NETWORKMTU 1450 
 #define MAXWAITQUEUENUM 20
+#define MAXPENDINGTIME 1*60*1000
 //===========Explation
 #define VIDEODATAHEADERTYPE 0x1
 #define AUDIODATAHEADERTYPE 0x2
@@ -43,4 +45,5 @@ private:
 	HANDLE g_hMutex_send_network;
 	HANDLE g_hMutex_controller_network;
 	queue< pair<char*,int> > controllerInformationQueue;
+	
 };

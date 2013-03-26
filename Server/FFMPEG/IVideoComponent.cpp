@@ -97,7 +97,7 @@ void IVideoComponent::startFrameLoop()
 	while(workingThread)
 	{
 		//if(isMemoryReadable())
-		if(isMemoryReadable())
+		if(isMemoryReadable()&&tunnel!=NULL&&tunnel->isClientConnected())//Safe Protect
 		{	
 			
 			int copySize=0;
@@ -135,7 +135,7 @@ void IVideoComponent::startFrameLoop()
 			}
 			if(rawFrame==NULL)
 			{
-				rawFrame=allocFrame(PIX_FMT_YUV420P, RWIDTH, RHEIGHT);
+				rawFrame=allocFrame(PIX_FMT_YUV420P, this->outputWidth, this->outputHeight);
 			}
 			uint8_t *rgb_src[3]={lpvMem,NULL,NULL};
 			int rgb_stride[3]={4*width, 0, 0};
@@ -280,7 +280,7 @@ bool IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast
 			packetBuf[0]= 0x00 | (i_nal_hdr & 0x60) | 28;
 			packetBuf[1]= ( i == 0 ? 0x80 : 0x00 ) | ( (i == i_count-1) ? 0x40 : 0x00 )  | i_nal_type;
 			memcpy(packetBuf+2, p_data, i_payload);
-			printf("FU-A NAL:%d\n",nalSize);
+			printf("FU-A NAL:%d IsStart:%d\n",nalSize,i);
 			if(tunnel!=NULL&&tunnel->isClientConnected())
 			{
 				

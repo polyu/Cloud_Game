@@ -68,7 +68,11 @@ void ISoundComponent::startFrameLoop()
 	long debugFrameCounter=0;
 	while(runFlag)
 	{
-		
+		if(tunnel==NULL||!tunnel->isClientConnected())
+		{
+			Sleep(ANTISPIN);
+		    continue;
+		}
 		debugFrameCounter++;
 		UINT32 nextPacketSize;
 		hr = audioCaptureClient->GetNextPacketSize(&nextPacketSize);

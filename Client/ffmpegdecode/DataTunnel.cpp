@@ -9,8 +9,7 @@ DataTunnel::DataTunnel()
 	this->g_hMutex_video_network=INVALID_HANDLE_VALUE;
 	this->nalPacketCursor=0;
 	this->videoPacketCursor=0;
-	
-	setLocalPort(DEFAULT_LOCALPORT);
+	//setLocalPort(DEFAULT_LOCALPORT);
 	this->setEndpointAddr(DEFAULT_REMOTEADDRESS,DEFAULT_REMOTEPORT);
 }
 DataTunnel::~DataTunnel()
@@ -72,11 +71,11 @@ bool DataTunnel::initDataTunnel()
 		printf("Failed to get socket\n");
 		return false;
 	}
-	if (bind(agentFd,(sockaddr*)&this->agentLocalAddr,sizeof(agentLocalAddr)) == SOCKET_ERROR) 
+	/*if (bind(agentFd,(sockaddr*)&this->agentLocalAddr,sizeof(agentLocalAddr)) == SOCKET_ERROR) 
 	{   
 		printf("Error when bind Agent socket\n");
         return false;
-    }
+    }*/
 	int buff_size=65536;
 	if(setsockopt(agentFd,SOL_SOCKET,SO_RCVBUF,(char*)&buff_size,sizeof(buff_size))==SOCKET_ERROR)
 	{
@@ -154,9 +153,14 @@ void DataTunnel::startTunnelLoop()
 	timeval tv;
 	tv.tv_sec=1;
 	tv.tv_usec=0;
+	long lastActionTime=clock();
 	while(runFlag)
 	{
-		
+		if(clock()-lastActionTime>MAXPENDINGTIME)
+		{
+			MessageBoxA(0,"Lost connection with server\n","Error",0);
+			return;
+		}
 		if(!this->serverConnected)
 		{
 			printf("Sending Connection Request\n");
@@ -171,6 +175,7 @@ void DataTunnel::startTunnelLoop()
 		FD_SET(agentFd,&fdread);
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
+				lastActionTime=clock();
 				int fromlen=sizeof(this->endpointAddr);
 				int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&this->endpointAddr,&fromlen);
 				if(size==SOCKET_ERROR)
@@ -245,7 +250,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 					return;
 				}
 				BYTE flag = head2 & 0xe0;
-				if(flag==0x80)//start
+				if(flag==0x80)//start For Begin! We should only discard one bit rather then two bits
 				{
 					printf("nal start:%d\n",size-1);
 					if(this->nalPacketCursor!=0)
@@ -253,6 +258,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 						 this->nalPacketCursor=0;//Drop Bad Packet
 						 printf("Drop some bad packet due to packet loss\n");
 					}
+					//buf[2]=(head1&0xE0)+(head2&0x1F);
 					memcpy(this->nalPacketBuf+this->nalPacketCursor,buf+HEADERLENGTH+1,size-HEADERLENGTH-1);//1 For FU_A HEADER
 					this->nalPacketCursor+=(size-HEADERLENGTH-1);
 			    }
@@ -288,7 +294,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 			}
 			if(isLast)
 			{
-				//printf("ISLAST\n");
+				printf("ISLAST\n");
 				if(WaitForSingleObject(this->g_hMutex_video_network,5)==WAIT_OBJECT_0)
 				{
 					if(this->videoQueue.size()>MAXWAITQUEUENUM)

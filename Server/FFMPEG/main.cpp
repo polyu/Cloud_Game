@@ -2,7 +2,6 @@
 #include "IVideoComponent.h"
 #include "IController.h"
 #include <process.h>
-
 static IController controller;
 static IVideoComponent vComponent;
 static ISoundComponent aComponent;
@@ -11,6 +10,7 @@ static WSADATA wsaData;
 static bool runFlag;
 static void initExternLibrary();
 static void shutdownServer();
+static void handleArgument(int argc, char* argv[]);
 static void videoComponentThread(void*);
 static void audioComponentThread(void*);
 static void controllerThread(void *);
@@ -76,8 +76,39 @@ static void controllerThread(void *)
 	controller.startControllerLoop();
 	runFlag=false;
 }
+static void handleArgument(int argc, char* argv[])
+{
+	if(argc==3)//Quality And Port Set
+	{
+		int quality=atoi(argv[1]);//1 Means HD(8M 1024*768), 2 Means Common(4M,800*600) , 3 Means Low Quality (2M 640*480) , 4 Means Low band(1M, 320*240); 
+		switch(quality)
+		{
+			case 1:
+				vComponent.setQuality(1024,768,8000000);
+				break;
+			case 2:
+				vComponent.setQuality(800,600,4000000);
+				break;
+			case 3:
+				vComponent.setQuality(640,480,2000000);
+				break;
+			case 4:
+				vComponent.setQuality(320,240,1000000);
+				break;
+			default:
+				vComponent.setQuality(320,240,1000000);
+		}
+		int localPort=atoi(argv[2]);
+		if(localPort>10000&&localPort<65530)
+		{
+			tunnel.setLocalPort(localPort);
+		}
+	}
+}
 int main(int argc, char* argv[])
 {
+	
+	handleArgument(argc,argv);
 	initExternLibrary();
 	if(!tunnel.initDataTunnel())
 	{

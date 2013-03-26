@@ -1,7 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include <winsock2.h>
-
+#include <time.h>
 #include <string>
 #include <queue>
 using namespace std;
@@ -11,7 +11,7 @@ using namespace std;
 #define MAXWAITQUEUENUM 20
 #define MAXVIDEONALPACKETBUFSIZE 1024*100
 #define MAXVIDEOPACKETBUFSIZE 1024*1000
-
+#define MAXPENDINGTIME 10*1000
 //===========Explation
 #define VIDEODATAHEADERTYPE 0x1
 #define AUDIODATAHEADERTYPE 0x2

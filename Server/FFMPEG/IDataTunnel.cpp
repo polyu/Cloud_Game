@@ -6,6 +6,7 @@ IDataTunnel::IDataTunnel()
 	this->runFlag=false;
 	this->g_hMutex_send_network= INVALID_HANDLE_VALUE;  
 	this->g_hMutex_controller_network=INVALID_HANDLE_VALUE;
+	
 	setLocalPort(DEFAULT_LOCALPORT);
 	
 }
@@ -167,13 +168,22 @@ void IDataTunnel::startTunnelLoop()
 	timeval tv;
 	tv.tv_sec=2;
 	tv.tv_usec=0;
+	long lastActionTime=clock();
 	while(runFlag)
 	{
+		
 		FD_ZERO(&fdread);
 		FD_SET(agentFd,&fdread);
-		
+		if(clock()-lastActionTime>MAXPENDINGTIME)
+		{
+				//this->stopTunnelLoop();
+				printf("Max Pending Time Arrive\n");
+				return;
+		}
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
+			
+			lastActionTime=clock();
 			int fromlen=sizeof(this->endpointAddr);
 			int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&this->endpointAddr,&fromlen);
 			if(size==SOCKET_ERROR)
