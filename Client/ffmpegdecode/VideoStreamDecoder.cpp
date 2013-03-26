@@ -62,7 +62,7 @@ bool VideoStreamDecoder::decodeVideoFrame(char*data,int size,AVFrame **getframe)
 				return false;
 			}
 		}
-		sws_scale(img_convert_ctx, videoframe->data, videoframe->linesize,0, RHEIGHT, videopicture->data, videopicture->linesize);  
+		sws_scale(img_convert_ctx, videoframe->data, videoframe->linesize,0, videoframe->height, videopicture->data, videopicture->linesize);  
 		*getframe=videopicture;
 		return true;
 	}

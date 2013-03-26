@@ -60,9 +60,4 @@
   <ItemGroup>
     <None Include="ReadMe.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="PortalWindow.resx">
-      <Filter>资源文件</Filter>
-    </EmbeddedResource>
-  </ItemGroup>
 </Project>

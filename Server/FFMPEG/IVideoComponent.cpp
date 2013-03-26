@@ -260,7 +260,7 @@ bool IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast
 	i_data -= 3;
 	if( i_data <= i_max )
 	{
-		printf("Single NAL I_data :%d\n",i_data);
+		//printf("Single NAL I_data :%d\n",i_data);
 		if(tunnel!=NULL&&tunnel->isClientConnected())
 		{
 			tunnel->sendVideoData((char*)p_data,i_data,isLast);
@@ -280,7 +280,7 @@ bool IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast
 			packetBuf[0]= 0x00 | (i_nal_hdr & 0x60) | 28;
 			packetBuf[1]= ( i == 0 ? 0x80 : 0x00 ) | ( (i == i_count-1) ? 0x40 : 0x00 )  | i_nal_type;
 			memcpy(packetBuf+2, p_data, i_payload);
-			printf("FU-A NAL:%d IsStart:%d\n",nalSize,i);
+			//printf("FU-A NAL:%d IsStart:%d\n",nalSize,i);
 			if(tunnel!=NULL&&tunnel->isClientConnected())
 			{
 				
@@ -303,6 +303,7 @@ bool IVideoComponent::write_video_frame(AVFrame *frame)
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
 	ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
+
     if (ret < 0) 
 	{
         printf( "Error encoding video frame\n");

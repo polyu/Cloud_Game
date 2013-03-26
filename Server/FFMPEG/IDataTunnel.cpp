@@ -33,7 +33,7 @@ bool IDataTunnel::isClientConnected() const
 {
 	return this->clientConnected;
 }
-bool IDataTunnel::sendConnectionRequestData()
+bool IDataTunnel::sendConnectionResponseData()
 {
 	char tmpBuf[2];
 	tmpBuf[0]=CONNECTIONREQUESTHEADERTYPE;
@@ -127,11 +127,10 @@ bool IDataTunnel::initDataTunnel()
 		printf("Error when set non-blocking agentFD\n");
         return false;
 	}
+	
 	DWORD dwBytesReturned = 0;
 	BOOL bNewBehavior = FALSE;
-	DWORD status;
-	status = WSAIoctl(agentFd, SIO_UDP_CONNRESET,&bNewBehavior, sizeof(bNewBehavior),NULL, 0, &dwBytesReturned, NULL, NULL);
-	if(status==SOCKET_ERROR)
+	if(WSAIoctl(agentFd, SIO_UDP_CONNRESET,&bNewBehavior, sizeof(bNewBehavior),NULL, 0, &dwBytesReturned, NULL, NULL)==SOCKET_ERROR)
 	{
 		printf("Failed to patch the udp socket\n");
 		return false;
@@ -169,6 +168,8 @@ void IDataTunnel::startTunnelLoop()
 	tv.tv_sec=2;
 	tv.tv_usec=0;
 	long lastActionTime=clock();
+	SOCKADDR_IN tmpEndPointAddr;
+	int fromlen=sizeof(tmpEndPointAddr);
 	while(runFlag)
 	{
 		
@@ -184,47 +185,54 @@ void IDataTunnel::startTunnelLoop()
 		{
 			
 			lastActionTime=clock();
-			int fromlen=sizeof(this->endpointAddr);
-			int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&this->endpointAddr,&fromlen);
+			int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&tmpEndPointAddr,&fromlen);
 			if(size==SOCKET_ERROR)
 			{
 				printf("Network Error when recv from udp port:%d\n",WSAGetLastError());
 				runFlag=false;
 				return;
 			}
+			
 			if(buf[0]&CONNECTIONREQUESTHEADERTYPE)
 			{
 				printf("One way connection OK!Sending HandShake Connection Data\n");
-				if(!this->sendConnectionRequestData())
+				this->clientConnected=true;
+				this->endpointAddr=tmpEndPointAddr;
+				//Check Data ! Not implement yet!
+				if(!this->sendConnectionResponseData())
 				{
 					printf("Error in sending back connection data\n");
 					return ;
 				}
-				this->clientConnected=true;
+				continue;
 			}
-			else if(buf[0]&CONTROLERDATAHEADERTYPE&&clientConnected)
+			
+			if(this->clientConnected)
 			{
-				printf("Recv a new controller signal\n");
-				if(WaitForSingleObject(this->g_hMutex_controller_network,3)==WAIT_OBJECT_0)
+				if(buf[0]&CONTROLERDATAHEADERTYPE&&clientConnected)
 				{
-					if(this->controllerInformationQueue.size()>MAXWAITQUEUENUM)
+					//printf("Recv a new controller signal\n");
+					if(WaitForSingleObject(this->g_hMutex_controller_network,3)==WAIT_OBJECT_0)
 					{
-						int tsize=this->controllerInformationQueue.size();
-						for(int i=0;i<tsize;i++)
+						if(this->controllerInformationQueue.size()>MAXWAITQUEUENUM)
 						{
-							printf("Buffer Full\n");
-							free(this->controllerInformationQueue.front().first);
-							this->controllerInformationQueue.pop();
+							int tsize=this->controllerInformationQueue.size();
+							for(int i=0;i<tsize;i++)
+							{
+								printf("Buffer Full\n");
+								free(this->controllerInformationQueue.front().first);
+								this->controllerInformationQueue.pop();
+							}
 						}
-					}
-					char *tmpBuf=(char*)malloc(size-HEADERLENGTH);
-					memcpy(tmpBuf,buf+HEADERLENGTH,size-HEADERLENGTH);
-					this->controllerInformationQueue.push(pair<char*,int>(tmpBuf,size-HEADERLENGTH));
-					ReleaseMutex(this->g_hMutex_controller_network);
-				}
-				else
-				{
-					printf("Due to lock condition! Loss a packet\n");
+						char *tmpBuf=(char*)malloc(size-HEADERLENGTH);
+						memcpy(tmpBuf,buf+HEADERLENGTH,size-HEADERLENGTH);
+						this->controllerInformationQueue.push(pair<char*,int>(tmpBuf,size-HEADERLENGTH));
+						ReleaseMutex(this->g_hMutex_controller_network);
+						}
+						else
+						{
+							printf("Due to lock condition! Loss a packet\n");
+						}
 				}
 
 			}

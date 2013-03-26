@@ -99,7 +99,7 @@ static void handleArgument(int argc, char* argv[])
 				vComponent.setQuality(320,240,1000000);
 		}
 		int localPort=atoi(argv[2]);
-		if(localPort>10000&&localPort<65530)
+		if(localPort>1024&&localPort<65534)
 		{
 			tunnel.setLocalPort(localPort);
 		}

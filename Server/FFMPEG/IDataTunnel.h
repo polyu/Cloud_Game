@@ -35,7 +35,7 @@ public:
 	bool sendAudioData(char*data,int size);
 	bool isClientConnected() const;
 	bool getControllerData(char **data,int *size);
-	bool sendConnectionRequestData();
+	
 private:
 	SOCKET agentFd;
 	SOCKADDR_IN agentLocalAddr;
@@ -45,5 +45,5 @@ private:
 	HANDLE g_hMutex_send_network;
 	HANDLE g_hMutex_controller_network;
 	queue< pair<char*,int> > controllerInformationQueue;
-	
+	bool sendConnectionResponseData();
 };

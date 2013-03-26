@@ -142,6 +142,7 @@ static void SDL_VideoDisplayThread(void *)
 		int size;
 		if(tunnel.isServerConnected()&&tunnel.getVideoData(&data,&size))
 		{
+			
 			if(vdecoder.decodeVideoFrame((char*)data,size,&frame))
 			{
 				SDL_LockYUVOverlay(screenOverlay);
@@ -173,7 +174,7 @@ static void initExternLibrary()
 //==============================
 static void handleArgument()
 {
-	if(__argc==4)//Quality And Port Set
+	if(__argc==5)//Quality And Port Set
 	{
 		int quality=atoi(__argv[1]);//1 Means HD(8M 1024*768), 2 Means Common(4M,800*600) , 3 Means Low Quality (2M 640*480) , 4 Means Low band(1M, 320*240); 
 		switch(quality)
@@ -205,19 +206,22 @@ static void handleArgument()
 				break;
 		}
 		int remotePort=atoi(__argv[3]);
-		if(remotePort<65530&&remotePort>10000)
+		if(remotePort<65534&&remotePort>1024)
 		{
 			tunnel.setEndpointAddr(__argv[2],remotePort);
 		}
+		int localPort=atoi(__argv[4]);
+		if(localPort<65534&&localPort>1024)
+		{
+			tunnel.setLocalPort(localPort);
+		}
 	}
 }
-#ifdef main
-#undef main
-#endif
-int main(int argc,char **argv)
-//int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow )
+
+
+int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow )
 {
-	//handleArgument();
+	handleArgument();
 	initExternLibrary();
 	initSDL();
 	initDecoder();

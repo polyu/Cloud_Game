@@ -9,7 +9,7 @@ DataTunnel::DataTunnel()
 	this->g_hMutex_video_network=INVALID_HANDLE_VALUE;
 	this->nalPacketCursor=0;
 	this->videoPacketCursor=0;
-	//setLocalPort(DEFAULT_LOCALPORT);
+	setLocalPort(DEFAULT_LOCALPORT);
 	this->setEndpointAddr(DEFAULT_REMOTEADDRESS,DEFAULT_REMOTEPORT);
 }
 DataTunnel::~DataTunnel()
@@ -71,11 +71,11 @@ bool DataTunnel::initDataTunnel()
 		printf("Failed to get socket\n");
 		return false;
 	}
-	/*if (bind(agentFd,(sockaddr*)&this->agentLocalAddr,sizeof(agentLocalAddr)) == SOCKET_ERROR) 
+	if (bind(agentFd,(sockaddr*)&this->agentLocalAddr,sizeof(agentLocalAddr)) == SOCKET_ERROR) 
 	{   
 		printf("Error when bind Agent socket\n");
         return false;
-    }*/
+    }
 	int buff_size=65536;
 	if(setsockopt(agentFd,SOL_SOCKET,SO_RCVBUF,(char*)&buff_size,sizeof(buff_size))==SOCKET_ERROR)
 	{
@@ -95,9 +95,7 @@ bool DataTunnel::initDataTunnel()
 	}
 	DWORD dwBytesReturned = 0;
 	BOOL bNewBehavior = FALSE;
-	DWORD status;
-	status = WSAIoctl(agentFd, SIO_UDP_CONNRESET,&bNewBehavior, sizeof(bNewBehavior),NULL, 0, &dwBytesReturned, NULL, NULL);
-	if(status==SOCKET_ERROR)
+	if(WSAIoctl(agentFd, SIO_UDP_CONNRESET,&bNewBehavior, sizeof(bNewBehavior),NULL, 0, &dwBytesReturned, NULL, NULL)==SOCKET_ERROR)
 	{
 		printf("Failed to patch the udp socket\n");
 		return false;
@@ -242,7 +240,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 			
 			if(type==0x1c)
 			{
-				printf("It's a fu-a nal:%d\n",size-1);
+				//printf("It's a fu-a nal:%d\n",size-1);
 				if(this->nalPacketCursor+size-HEADERLENGTH>MAXVIDEONALPACKETBUFSIZE)
 				{
 					printf("NAL Buffer full! May have another problem\n");
@@ -252,19 +250,19 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 				BYTE flag = head2 & 0xe0;
 				if(flag==0x80)//start For Begin! We should only discard one bit rather then two bits
 				{
-					printf("nal start:%d\n",size-1);
+					//printf("nal start:%d\n",size-1);
 					if(this->nalPacketCursor!=0)
 					{
 						 this->nalPacketCursor=0;//Drop Bad Packet
 						 printf("Drop some bad packet due to packet loss\n");
 					}
-					//buf[2]=(head1&0xE0)+(head2&0x1F);
+					buf[2]=(head1&0xE0)+(head2&0x1F);
 					memcpy(this->nalPacketBuf+this->nalPacketCursor,buf+HEADERLENGTH+1,size-HEADERLENGTH-1);//1 For FU_A HEADER
 					this->nalPacketCursor+=(size-HEADERLENGTH-1);
 			    }
 				else if (flag==0x40) //end
 				{
-					printf("nal end:%d\n",size-1);
+					//printf("nal end:%d\n",size-1);
 					if(this->nalPacketCursor==0)
 					{
 						 printf("Ignore a end packet\n");
@@ -277,7 +275,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 				}
 				else //middle
 				{
-					printf("nal middle:%d\n",size-1);
+					//printf("nal middle:%d\n",size-1);
 					if(this->nalPacketCursor==0)
 					{
 						printf("Ignore a middle packet\n");
@@ -294,7 +292,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 			}
 			if(isLast)
 			{
-				printf("ISLAST\n");
+				//printf("ISLAST\n");
 				if(WaitForSingleObject(this->g_hMutex_video_network,5)==WAIT_OBJECT_0)
 				{
 					if(this->videoQueue.size()>MAXWAITQUEUENUM)
