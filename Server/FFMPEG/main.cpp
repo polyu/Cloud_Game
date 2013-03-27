@@ -16,6 +16,7 @@ static void videoComponentThread(void*);
 static void audioComponentThread(void*);
 static void controllerThread(void *);
 static void tunnelThread(void *);
+static void instanceProtect();
 static  bool consoleHandler( DWORD fdwctrltype );
 static bool consoleHandler( DWORD fdwctrltype )
 {
@@ -127,9 +128,18 @@ static void handleArgument(int argc, char* argv[])
     }
 
 }
+static void instanceProtect()
+{
+	CreateMutex(NULL,true,L"SHOULDNOTRUNTOOMUCHINSAMEMACHINE"); 
+	if(GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		printf("Can not run one more server in same time\n");
+		exit(-11);
+	}
+}
 int main(int argc, char* argv[])
 {
-	
+	instanceProtect();
 	handleArgument(argc,argv);
 	initExternLibrary();
 	if(!tunnel.initDataTunnel())
@@ -163,9 +173,9 @@ int main(int argc, char* argv[])
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) consoleHandler, true ) ;
 	while(runFlag)
 	{
-		Sleep(1000);
+		Sleep(50);
 	}
 	shutdownServer();
-	system("pause");
+	//system("pause");
 	
 }

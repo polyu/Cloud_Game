@@ -73,12 +73,15 @@ InjectDllW_NEW(
 	PWSTR pszLibFileRemote = NULL;	// 动态库内存地址
 
 	WCHAR szDllName[MAX_PATH];
-	swprintf(szDllName, L"%s\%s", pszDllPath, pszDllFile);
+	swprintf(szDllName, L"%s/%s", pszDllPath, pszDllFile);
 
 	__try
 	{
 		if (!EnableDebugPriv())
-			MessageBox(NULL, L"提升权限失败！", L"test", 0);
+		{
+			printf("Error in get priviledge\n");
+			return false;
+		}
 
 		int iDllNameLen = (lstrlenW(szDllName) + 1) * sizeof(WCHAR);
 
@@ -86,7 +89,7 @@ InjectDllW_NEW(
 		pszLibFileRemote = (PWSTR)VirtualAllocEx(hProcess, NULL, iDllNameLen, MEM_COMMIT, PAGE_READWRITE);
 		if (pszLibFileRemote == NULL)
 		{
-			MessageBox(NULL, L"获取虚拟内存地址失败！", L"test", 0);
+			printf("Error in get virtual address\n");
 
 			return FALSE;
 		}
@@ -94,18 +97,18 @@ InjectDllW_NEW(
 		// 将DLL文件地址写入到相关内存中
 		if (!WriteProcessMemory(hProcess, pszLibFileRemote, (PVOID)szDllName, iDllNameLen,  NULL))
 		{
-			MessageBox(NULL, L"写进程内存失败！", L"test", 0);
+			printf("Error in write content in virtual address\n");
 
 			return FALSE;
 		}
 
 		// 得到LoadLibraryW函数物理地址，存放到pfnThreadRtn中。
-		// 以上工作，纯粹是将要加载的DLL地址，COPY到目标进程的内存里， \
-			然后用CreateRemoteThread加载运行LoadLibraryW函数，把它的数据作为参数加载进去。
+		// 以上工作，纯粹是将要加载的DLL地址，COPY到目标进程的内存里， 
+		//	然后用CreateRemoteThread加载运行LoadLibraryW函数，把它的数据作为参数加载进去。
 		PTHREAD_START_ROUTINE pfnThreadRtn = (PTHREAD_START_ROUTINE) GetProcAddress(GetModuleHandle(TEXT("kernel32")), "LoadLibraryW");
 		if (pfnThreadRtn == NULL)
 		{
-			MessageBox(NULL, L"GetProcAddress error！", L"test", 0);
+			printf("get proc error\n");
 
 			return FALSE;
 		}
@@ -126,7 +129,7 @@ InjectDllW_NEW(
 					0,
 					NULL);
 
-			MessageBox(NULL, (LPCTSTR)lpMsgBuf, TEXT("Error"), MB_OK);
+			printf("Unknown Error\n");
 
 			LocalFree(lpMsgBuf);
 
@@ -138,7 +141,7 @@ InjectDllW_NEW(
 
 		if (WAIT_FAILED == WaitForSingleObject(hThread, INFINITE))
 		{
-			MessageBox(NULL, L"call WaitForSingleObject failed！", L"test", 0);
+			printf("Wait for single object failed\n");
 
 			return FALSE;
 		}
@@ -165,16 +168,25 @@ int _tmain(int argc, _TCHAR* argv[])
 	PROCESS_INFORMATION ProcessInfo;
 
 	WCHAR szBuf[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, szBuf);
+	GetModuleFileName(NULL,szBuf,MAX_PATH);  
+	(_tcsrchr(szBuf, _T('\\')))[1] = 0;
 	wcscat(szBuf, L"\\");
 
-	CreateApp(&ProcessInfo, szBuf, argv[1]);
+	if(!CreateApp(&ProcessInfo, szBuf, L"Text3D.exe"))
+	{
+		printf("failed to start program\n");
+		return false;
+	}
 
-	InjectDllW_NEW(ProcessInfo.hProcess, szBuf, argv[2]);
+	if(!InjectDllW_NEW(ProcessInfo.hProcess, szBuf, L"dxhook.dll"))
+	{
+		printf("failed to inject dll\n");
+		return false;
+	}
 
 	ResumeThread(ProcessInfo.hThread);
-
+	
 	//system("pause");
-
+	WaitForSingleObject(ProcessInfo.hProcess, INFINITE); 
 	return 0;
 }
