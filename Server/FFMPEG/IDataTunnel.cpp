@@ -184,7 +184,7 @@ void IDataTunnel::startTunnelLoop()
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
 			
-			lastActionTime=clock();
+			
 			int size=recvfrom(this->agentFd,buf,10240,0,(sockaddr *)&tmpEndPointAddr,&fromlen);
 			if(size==SOCKET_ERROR)
 			{
@@ -209,6 +209,7 @@ void IDataTunnel::startTunnelLoop()
 			
 			if(this->clientConnected)
 			{
+				lastActionTime=clock();
 				if(memcmp(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr))!=0)
 				{
 					printf("Endpoint Address not meet!\n");
