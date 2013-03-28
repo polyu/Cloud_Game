@@ -37,7 +37,7 @@ static bool consoleHandler( DWORD fdwctrltype )
  
 		case CTRL_SHUTDOWN_EVENT: 
 			runFlag=false;
-			shutdownServer();
+			//shutdownServer();
 			return true;
 			
 		default: 
@@ -101,15 +101,19 @@ static void handleArgument(int argc, char* argv[])
 						switch(quality)
 						{
 							case HD1024_768_6M:
+								printf("Using HD Mode:1024*768\n");
 								vComponent.setQuality(1024,768,6000000);
 								break;
 							case SD800_600_4M:
+								printf("Using SD Mode:800*600\n");
 								vComponent.setQuality(800,600,4000000);
 								break;
 							case CD640_480_2M:
+								printf("Using CD Mode:640*480\n");
 								vComponent.setQuality(640,480,2000000);
 								break;
 							case LD320_240_1M:
+								printf("Using LD Mode:320*240\n");
 								vComponent.setQuality(320,240,1000000);
 								break;
 							default:
@@ -180,6 +184,7 @@ int main(int argc, char* argv[])
 		Sleep(50);
 	}
 	shutdownServer();
+	return 0;
 	//system("pause");
 	
 }

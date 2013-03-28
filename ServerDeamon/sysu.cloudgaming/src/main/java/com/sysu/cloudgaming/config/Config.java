@@ -10,12 +10,13 @@ import org.slf4j.LoggerFactory;
 public class Config {
 	public static String VERSION="1.00 Alpha";
 	public static String LOCALPROGRAMPATH="e:/150w/CloudGaming/Games";
+	public static String DEAMONPATH="e:/150w/Server/Release/Server.exe";
 	public static String LOCALPROGRAMXMLNAME="info.xml";
 	public static String HUBSERVERADDR="127.0.0.1";
 	public static int HUBSERVERPORT=10060;
 	public static int CONNECT_TIMEOUT=3000;
 	public static String HOSTNAME="GameHost1";
-	public static int REFRESHINTEVAL=10;
+	public static int REFRESHINTEVAL=30;
 	private static Logger logger = LoggerFactory.getLogger(Config.class);
 	public static boolean initConfig()
 	{

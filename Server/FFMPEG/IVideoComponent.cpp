@@ -88,7 +88,7 @@ bool IVideoComponent::initVideoComponent()
 		return false;
 	}
 	
-	printf("Video Capture Init Great!\n");
+	
 	workingThread=true;
 	return true;
 }

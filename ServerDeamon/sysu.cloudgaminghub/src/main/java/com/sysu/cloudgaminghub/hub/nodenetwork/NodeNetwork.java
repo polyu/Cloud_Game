@@ -16,7 +16,7 @@ public class NodeNetwork {
 	
 	private IoAcceptor acceptor;
 	private static Logger logger = LoggerFactory.getLogger(NodeNetwork.class);
-	public boolean setupInstanceNetwork()
+	public boolean setupNodeNetwork()
 	{
 		acceptor = new NioSocketAcceptor();
 		acceptor.getSessionConfig().setReadBufferSize( 2048 );

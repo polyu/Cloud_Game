@@ -1,41 +1,96 @@
 package com.sysu.cloudgaming.node;
 
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.exec.CommandLine;
-import org.apache.commons.exec.DefaultExecuteResultHandler;
-import org.apache.commons.exec.DefaultExecutor;
-import org.apache.commons.exec.ExecuteException;
-import org.apache.commons.exec.ExecuteWatchdog;
+
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.input.SAXBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sysu.cloudgaming.config.Config;
+import com.sysu.cloudgaming.node.network.NodeNetwork;
 
 public class NodeManager {
 	private static NodeManager manager=null;
 	private static Logger logger = LoggerFactory.getLogger(NodeManager.class);
-	private Map<String,ProgramBean> programMap=null;
-	private boolean runningFlag=true;
+	private Map<String,ProgramBean> programMap=new HashMap<String,ProgramBean>();
+	private boolean runningFlag=false;
 	private ProgramBean runningbean=null;
 	private int errorCode=0;
-	private ExecuteWatchdog watchdog = null;
-	private DefaultExecutor executor =null;
-	private DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler()
+	private Process gameProcess=null;
+	private Process deamonProcess=null;
+	private NodeNetwork nodeNetwork=new NodeNetwork();
+	
+	private class WatchDogThread extends Thread
 	{
-		@Override
-		public void onProcessComplete(int exitValue)
+		public void run()
 		{
-			logger.info("Application exit normally in {}",exitValue);
-			runningFlag=false;
+			
+			while(true)
+			{
+				try
+				{
+					sleep(5);
+				}
+				catch(Exception e)
+				{
+					
+				}
+				try
+				{
+					gameProcess.exitValue();
+					logger.info("Game Process Exited");
+					break;
+				}
+				catch(IllegalThreadStateException e)
+				{
+					
+				}
+				try
+				{
+					deamonProcess.exitValue();
+					logger.info("Daemon Process Exited");
+					break;
+				}
+				catch(IllegalThreadStateException e)
+				{
+					
+				}
+			}
+			killAllProcess();
 		}
-		@Override
-		public void onProcessFailed(ExecuteException e)
+	}
+	WatchDogThread watchThread=null;
+	private void killAllProcess()
+	{
+		try
 		{
-			logger.warn("Application exit error for {}",e.getMessage());
-			runningFlag=false;
-			errorCode=e.getExitValue();
+			gameProcess.destroy();
+			logger.info("Game Process was killed");
 		}
-	};
+		catch(Exception e)
+		{
+			logger.warn("Try to terminate game process But Failed");
+		}
+		try
+		{
+			deamonProcess.destroy();
+			logger.info("Daemon Process was killed");
+		}
+		catch(Exception e)
+		{
+			logger.warn("Try to terminate deamon process But Failed");
+		}
+		runningFlag=false;
+		nodeNetwork.sendRunningFinishMessage(true, 0);
+
+	}
 	public static NodeManager getNodeManager()
 	{
 		
@@ -50,9 +105,22 @@ public class NodeManager {
 		
 		
 	}
+	public ProgramBean getRunningApplicationProgramBean()
+	{
+		return this.runningbean;
+	}
 	public boolean initNodeManager()
 	{
-		programMap=ProgramUtils.searchLocalProgram();
+		if(!searchLocalProgram())
+		{
+			logger.warn("Failed to search local program!");
+        	return false;
+		}
+		if(!nodeNetwork.setupNodeNetwork())
+        {
+        	logger.warn("Init Node Network Failed!");
+        	return false;
+        }
 		return true;
 	}
 	public boolean isNodeRunningApplication()
@@ -63,7 +131,38 @@ public class NodeManager {
 	{
 		return this.errorCode;
 	}
-	public boolean executeApplication(String programId)
+	public boolean startApplication(String programId,int quality)
+	{
+		if(!executeDeamonApplication(quality))
+		{
+			logger.warn("Unable to init server deamon");
+			return false;
+		}
+		if(!executeGameApplication(programId))
+		{
+			logger.warn("Unable to init game application");
+			return false;
+		}
+		watchThread=new WatchDogThread();
+		watchThread.start();
+		return true;
+	}
+	private boolean executeDeamonApplication(int quality)
+	{
+		try
+		{
+			ProcessBuilder builder=new ProcessBuilder(Config.DEAMONPATH,"-q "+quality);
+			gameProcess=builder.start();
+			return true;
+		}
+		catch(Exception e)
+		{
+			logger.warn(e.getMessage(),e);
+			return false;
+		}
+		
+	}
+	private boolean executeGameApplication(String programId)
 	{
 		if(!programMap.containsKey(programId))
 		{
@@ -74,9 +173,20 @@ public class NodeManager {
 		{
 			this.runningbean=programMap.get(programId);
 			logger.info("Try to execute {} in {}",runningbean.getProgramName(),runningbean.getProgramPath());
-			return this.executorProgram(runningbean.getProgramPath());
+			try
+			{
+				ProcessBuilder builder=new ProcessBuilder(runningbean.getProgramPath());
+				deamonProcess=builder.start();
+				return true;
+			}
+			catch(Exception e)
+			{
+				logger.warn(e.getMessage(),e);
+				return false;
+			}
 		}
 	}
+	
 	public boolean shutdownApplication()
 	{
 		if(!runningFlag)
@@ -86,41 +196,54 @@ public class NodeManager {
 		}
 		else
 		{
-			try
-			{
-				watchdog.destroyProcess();
-				if(!watchdog.killedProcess())
-				{
-					logger.warn("Process try to kill! But failed");
-					return false;
-				}
-				return true;
-			}
-			catch(Exception e)
-			{
-				logger.error(e.getMessage(),e);
-				return false;
-			}
+			killAllProcess();
+			return true;
 		}
 	}
 	
-	private  boolean executorProgram(String pathname)
+
+	
+	public  boolean searchLocalProgram()
 	{
-		CommandLine cmdLine = CommandLine.parse(pathname);
-		executor = new DefaultExecutor();
-		watchdog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
-		executor.setWatchdog(watchdog);
-		//executor.setExitValue(1);
-		try {
-			executor.execute(cmdLine,resultHandler);
-			this.runningFlag=true;
-			return true;
-		} 
-		catch (Exception e)
+		
+		try
+		{
+			programMap.clear();
+			File infoFile=new File(Config.LOCALPROGRAMPATH+"/"+Config.LOCALPROGRAMXMLNAME);
+			if(infoFile.exists())
+			{
+				SAXBuilder builder=new SAXBuilder();
+				
+					Document doc=builder.build(infoFile);
+					Element info=doc.getRootElement();
+					List<Element> games=info.getChildren("program");
+					logger.info("Local disk have {} game",games.size());
+					for(Element g: games)
+					{
+						ProgramBean b=new ProgramBean();
+						b.setProgramID(g.getChildText("id"));
+						b.setProgramName(g.getChildText("name"));
+						b.setProgramVersion(g.getChildText("ver"));
+						b.setProgramPath(Config.LOCALPROGRAMPATH+'/'+g.getChildText("path"));
+						logger.info("Add Game to Map Id:{}, Name:{}",b.getProgramID(),b.getProgramName());
+						programMap.put(b.getProgramID(), b);
+					}
+					return true;
+				
+				
+			}
+			else
+			{
+				logger.warn("Info File Not Existed!");
+			}
+			return false;
+		}
+		
+		catch(Exception e)
 		{
 			logger.warn(e.getMessage(),e);
 			return false;
 		}
-		
 	}
+	
 }

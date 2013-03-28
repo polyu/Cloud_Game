@@ -2,6 +2,7 @@ package com.sysu.cloudgaming.node.network;
 
 import java.net.InetSocketAddress;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -18,11 +19,22 @@ public class NodeNetwork {
 	{
 		return this.session;
 	}
+	public boolean sendRunningFinishMessage(boolean successful,int errorcode)
+	{
+		NodeMessage msg=new NodeMessage();
+		msg.setMessageType(NodeMessage.RUNNINGFINISHMESSAGE);
+		msg.setSuccess(successful);
+		msg.setErrorCode(errorcode);
+		session.write(msg);
+		return true;
+	}
 	public boolean setupNodeNetwork()
 	{
 		connector = new NioSocketConnector();
+		
 	    connector.setConnectTimeoutMillis(Config.CONNECT_TIMEOUT);
 	    connector.setHandler(new NodeNetworkHandler());
+	    connector.getSessionConfig().setIdleTime( IdleStatus.BOTH_IDLE, Config.REFRESHINTEVAL );
 	    connector.getFilterChain().addLast("protocol", new ProtocolCodecFilter(new NetworkCodecFactory()));
 	    try
 	    {

@@ -1,9 +1,10 @@
 package com.sysu.cloudgaminghub;
 
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
 
-import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetwork;
+import com.sysu.cloudgaminghub.hub.HubManager;
 
 
 /**
@@ -16,9 +17,17 @@ public class App
     	private static Logger logger = LoggerFactory.getLogger(App.class);
         public static void main( String[] args )
         {
-        	logger.info("System Start");
-        	NodeNetwork instanceNetwork=new NodeNetwork();
-        	instanceNetwork.setupInstanceNetwork();
+        	
+        	HubManager manager=HubManager.getHubManager();
+        	if(manager.initManager())
+        	{
+        		logger.info("Hub System Start");
+        	}
+        	else
+        	{
+        		logger.warn("Hub System Failed");
+        	}
+        	
         }
     
 }

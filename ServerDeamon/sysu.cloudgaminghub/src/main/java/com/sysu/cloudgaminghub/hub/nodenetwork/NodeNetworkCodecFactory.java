@@ -13,7 +13,7 @@ public class NodeNetworkCodecFactory implements ProtocolCodecFactory {
     public NodeNetworkCodecFactory()
     {
     	encoder = new HubMessageEncoder();
-        decoder = new HubMessageDecoder();
+        decoder = new NodeMessageDecoder();
 
     }
 	public ProtocolDecoder getDecoder(IoSession arg0) throws Exception {

@@ -4,9 +4,10 @@ public class NodeMessage {
 	public final static int INSTANCEREPORTMESSAGE=1;
 	public final static int RUNRESPONSEMESSAGE=2;
 	public final static int SHUTDOWNRESPONSEMESSAGE=3;
+	public final static int RUNNINGFINISHMESSAGE=4;
 	private int messageLength=0;
 	private int messageType=1;
-	private int machineID=0;
+	
 	private boolean success=false;
 	private int errorCode=0;
 	private byte extendedData[]=null;
@@ -22,12 +23,7 @@ public class NodeMessage {
 	public void setMessageType(int messageType) {
 		this.messageType = messageType;
 	}
-	public int getMachineID() {
-		return machineID;
-	}
-	public void setMachineID(int machineID) {
-		this.machineID = machineID;
-	}
+	
 	public boolean isSuccess() {
 		return success;
 	}
