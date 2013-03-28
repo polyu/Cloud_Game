@@ -190,22 +190,22 @@ static void handleArgument()
 					int quality=atoi(optarg);//1 Means HD(8M 1024*768), 2 Means Common(4M,800*600) , 3 Means Low Quality (2M 640*480) , 4 Means Low band(1M, 320*240); 
 					switch(quality)
 					{
-						case 1:
+						case HD1024_768_6M:
 							vdecoder.setOutputSize(1024,768);
 							outputWidth=1024;
 							outputHeight=768;
 							break;
-						case 2:
+						case SD800_600_4M:
 							vdecoder.setOutputSize(800,600);
 							outputWidth=800;
 							outputHeight=600;
 							break;
-						case 3:
+						case CD640_480_2M:
 							vdecoder.setOutputSize(640,480);
 							outputWidth=640;
 							outputHeight=480;
 							break;
-						case 4:
+						case LD320_240_1M:
 							vdecoder.setOutputSize(320,240);
 							outputWidth=320;
 							outputHeight=240;

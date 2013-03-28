@@ -24,9 +24,6 @@
     <ClCompile Include="ID3D9Wrapper_Device.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IndexedPrimitive.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dxhook.def">

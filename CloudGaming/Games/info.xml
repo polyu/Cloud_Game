@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<programs>
+<program>
+<id>1</id>
+<name>Test Prog</name>
+<ver>1.5 Beta</ver>
+<path>TestProg/Text3D.exe</path>
+</program>
+
+</programs>

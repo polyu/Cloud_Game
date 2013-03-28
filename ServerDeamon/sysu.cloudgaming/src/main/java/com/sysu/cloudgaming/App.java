@@ -1,19 +1,14 @@
 package com.sysu.cloudgaming;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
 
-import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.quigley.zabbixj.agent.ZabbixAgent;
-import com.sysu.cloudgaming.config.Config;
-import com.sysu.cloudgaming.node.ProgramExecutor;
-import com.sysu.cloudgaming.node.ProgramManager;
-import com.sysu.cloudgaming.node.ZabbixClient;
+
+import com.sysu.cloudgaming.node.NodeManager;
+import com.sysu.cloudgaming.node.ProgramUtils;
+import com.sysu.cloudgaming.node.network.NodeNetwork;
+
 
 
 
@@ -29,13 +24,23 @@ public class App
     }
 }*/
 public class App {
-	
+	private static Logger logger = LoggerFactory.getLogger(App.class);
     public static void main(String[] args) throws Exception 
     {
-            
-            
-    	ZabbixClient client=new ZabbixClient();
-    	client.startClient();
+    	NodeManager manager=NodeManager.getNodeManager();
+    	if(!manager.initNodeManager())
+    	{
+    		logger.warn("Unable to init node manager");
+    	}
+    	NodeNetwork nodeNetwork=new NodeNetwork();
+        if(nodeNetwork.setupNodeNetwork())
+        {
+        	logger.info("System Ready to start!");
+        }
+        else
+        {
+        	logger.warn("Init Node Network Failed!");
+        }
 		
     }
     

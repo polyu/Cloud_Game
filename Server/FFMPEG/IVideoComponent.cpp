@@ -100,17 +100,24 @@ void IVideoComponent::startFrameLoop()
 		if(isMemoryReadable()&&tunnel!=NULL&&tunnel->isClientConnected())//Safe Protect
 		{	
 			
-			int copySize=0;
-			int height=0;
-			int width=0;
-			int bpp=0;
-			memcpy((void *)&copySize,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,sizeof(int));
+			UINT copySize=0;
+			UINT height=0;
+			UINT width=0;
+			UINT bpp=0;
+			memcpy((void *)&copySize,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,sizeof(UINT));
 			memcpy((void *)&height,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height),sizeof(height));
 			memcpy((void *)&width,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*2,sizeof(width));
 			memcpy((void *)&bpp,lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(height)*3,sizeof(bpp));
-			if(copySize<0 || height<0 ||width<0 || height>900 ||width>1440)
+			if(copySize<0 || height<0 ||width<0 || height>1200 ||width>1920)
 			{
-				printf("Bad Config! Waiting New Config\n");
+
+				printf("Bad Config! %d %d %d %d Waiting New Config\n",copySize,height,width,bpp);
+				setMemoryWritable();
+				continue;
+			}
+			if(bpp<1 || bpp>3 )
+			{
+				printf("Currently color not supported");
 				setMemoryWritable();
 				continue;
 			}
@@ -138,7 +145,15 @@ void IVideoComponent::startFrameLoop()
 				rawFrame=allocFrame(PIX_FMT_YUV420P, this->outputWidth, this->outputHeight);
 			}
 			uint8_t *rgb_src[3]={lpvMem,NULL,NULL};
-			int rgb_stride[3]={4*width, 0, 0};
+			int rgb_stride[3]={0,0,0};
+			if(bpp==1)//RGB32
+			{
+				rgb_stride[0]=width*4;
+			}
+			else
+			{
+				rgb_stride[0]=width*2;
+			}
 			sws_scale(img_convert_ctx, rgb_src, rgb_stride, 0, height, rawFrame->data, rawFrame->linesize);
 			
 			//=============Write encoded frame and send=============================

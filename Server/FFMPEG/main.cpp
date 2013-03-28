@@ -3,6 +3,10 @@
 #include "IController.h"
 #include "getopt.h"
 #include <process.h>
+#define HD1024_768_6M 1
+#define SD800_600_4M 2
+#define CD640_480_2M 3
+#define LD320_240_1M 4
 static IController controller;
 static IVideoComponent vComponent;
 static ISoundComponent aComponent;
@@ -96,16 +100,16 @@ static void handleArgument(int argc, char* argv[])
 						int quality=atoi(optarg);
 						switch(quality)
 						{
-							case 1:
-								vComponent.setQuality(1024,768,8000000);
+							case HD1024_768_6M:
+								vComponent.setQuality(1024,768,6000000);
 								break;
-							case 2:
+							case SD800_600_4M:
 								vComponent.setQuality(800,600,4000000);
 								break;
-							case 3:
+							case CD640_480_2M:
 								vComponent.setQuality(640,480,2000000);
 								break;
-							case 4:
+							case LD320_240_1M:
 								vComponent.setQuality(320,240,1000000);
 								break;
 							default:

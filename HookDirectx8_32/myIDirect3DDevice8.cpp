@@ -480,7 +480,7 @@ HRESULT	myIDirect3DDevice8::copyDataToMemory(IDirect3DDevice8* device)
 	}
 	
 	//================BPP ADJUSTMENT=====================
-	int bpp=4;
+	UINT bpp=4;
 	int bppformat=-1;
 	switch(surfaceDesc.Format)
 	{
@@ -503,14 +503,14 @@ HRESULT	myIDirect3DDevice8::copyDataToMemory(IDirect3DDevice8* device)
 			bppformat=1;
 			break;//Most cards are gonna support A8R8G8B8/X8R8G8B8 anyway
 	}
-	int copySize=surfaceDesc.Width*surfaceDesc.Height*bpp;
-	int surfaceHeight=surfaceDesc.Height;
-	int surfaceWidth=surfaceDesc.Width;
+	UINT copySize=surfaceDesc.Width*surfaceDesc.Height*bpp;
+	UINT surfaceHeight=surfaceDesc.Height;
+	UINT surfaceWidth=surfaceDesc.Width;
 	//======================Memory Copy=============================
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,(void *)&copySize,sizeof(int));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int),(void *)&surfaceHeight,sizeof(int));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*2,(void *)&surfaceWidth,sizeof(int));
-	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(int)*3,(void *)&bppformat,sizeof(int));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8,(void *)&copySize,sizeof(UINT));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(UINT),(void *)&surfaceHeight,sizeof(UINT));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(UINT)*2,(void *)&surfaceWidth,sizeof(UINT));
+	memcpy(lpvMem+(SHAREDMEMSIZE-RESERVEDMEMORY)/8+sizeof(UINT)*3,(void *)&bppformat,sizeof(int));
 	memcpy(lpvMem, lockedRect.pBits,copySize);
 	setMemoryReadable();
 	//===================================================

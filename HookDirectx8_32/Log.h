@@ -7,7 +7,7 @@
 #include <xstring>
 using namespace std;
 //============Log====================
-#undef DEBUG
+#define DEBUG
 #ifdef DEBUG
 #define LOGFILE(text)		\
 							{ofstream log;\

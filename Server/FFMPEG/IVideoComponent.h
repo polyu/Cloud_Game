@@ -7,7 +7,7 @@
 #include "IDataTunnel.h"
 #include <Windows.h>
 #define RESERVEDMEMORY 256
-#define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
+#define SHAREDMEMSIZE 1920*1200*32+RESERVEDMEMORY
 #define MAXFPS 200
 #define RHEIGHT 800
 #define RWIDTH 600
