@@ -12,6 +12,7 @@ import com.alibaba.fastjson.parser.Feature;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.sysu.cloudgaming.config.Config;
 import com.sysu.cloudgaming.node.NodeManager;
+import com.sysu.cloudgaming.utils.SystemMonitor;
 
 
 
@@ -73,7 +74,8 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    @Override 
 	    public void sessionCreated(IoSession session)
 	    {
-	    	
+	    	logger.info("Signup Node In Remote Server!");
+	    	session.write(generateInstanceReportMessage());
 	    }
 	    private NodeMessage generateRunCommandResponseMessage(boolean successful,int errorcode)
 	    {
@@ -107,6 +109,12 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramVersion());
 	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramName());
 	    		b.setRunningApplicationPath(manager.getRunningApplicationProgramBean().getProgramPath());
+	    		b.setCpuCoreNum(SystemMonitor.getCpuCoreNum());
+	    		b.setCpuPower(SystemMonitor.getCpuPower());
+	    		b.setCpuUsage(SystemMonitor.getCpuUsage());
+	    		b.setHostname(Config.HOSTNAME);
+	    		b.setIpAddr(SystemMonitor.getIPAddr());
+	    		b.setMacAddr(SystemMonitor.getMacAddr());
 	    	}
 	    	byte []extendData=null;
 	    	try

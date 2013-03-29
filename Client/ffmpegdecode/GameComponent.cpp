@@ -329,8 +329,8 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 		 }
 	}
 	tunnel.stopTunnelLoop();
-	
-	Sleep(500);
+	Sleep(2000);
+	tunnel.sendConnectionCloseRequest();
 	WSACleanup();
 	return 0;
 }

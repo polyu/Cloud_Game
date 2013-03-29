@@ -88,7 +88,7 @@ public class NodeManager {
 			logger.warn("Try to terminate deamon process But Failed");
 		}
 		runningFlag=false;
-		nodeNetwork.sendRunningFinishMessage(true, 0);
+		//nodeNetwork.sendRunningFinishMessage(true, 0);
 
 	}
 	public static NodeManager getNodeManager()
@@ -133,14 +133,19 @@ public class NodeManager {
 	}
 	public boolean startApplication(String programId,int quality)
 	{
+		if(runningFlag)
+			return false;
+		runningFlag=true;
 		if(!executeDeamonApplication(quality))
 		{
 			logger.warn("Unable to init server deamon");
+			killAllProcess();
 			return false;
 		}
 		if(!executeGameApplication(programId))
 		{
 			logger.warn("Unable to init game application");
+			killAllProcess();
 			return false;
 		}
 		watchThread=new WatchDogThread();

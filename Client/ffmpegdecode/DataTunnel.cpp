@@ -64,7 +64,19 @@ bool DataTunnel::sendControllerData(char*data,int size)
 	}
 	return true;
 }
-
+void DataTunnel::sendConnectionCloseRequest()
+{
+	//Not reliable way!
+	printf("Try to cutting down the client\n");
+	char tmpBuf[1];
+	tmpBuf[0]=CONNECTIONCLOSEHEADERTYPE;
+	if(WaitForSingleObject(this->g_hMutex_send_network,10)==WAIT_OBJECT_0)
+	{
+		sendto(this->agentFd,tmpBuf,2,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
+		ReleaseMutex(g_hMutex_send_network); 
+	}
+	
+}
 bool DataTunnel::initDataTunnel()
 {
 	g_hMutex_send_network = CreateMutex(NULL, FALSE, L"Mutex");
@@ -163,12 +175,14 @@ void DataTunnel::startTunnelLoop()
 	timeval tv;
 	tv.tv_sec=1;
 	tv.tv_usec=0;
+	
 	long lastActionTime=clock();
 	while(runFlag)
 	{
 		if(clock()-lastActionTime>MAXPENDINGTIME)
 		{
 			MessageBoxA(0,"Lost connection with server\n","Error",0);
+			stopTunnelLoop();
 			return;
 		}
 		if(!this->serverConnected)
@@ -186,7 +200,7 @@ void DataTunnel::startTunnelLoop()
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
 				lastActionTime=clock();
-			
+				
 				int size=recvfrom(this->agentFd,buf,10240,0,NULL,NULL);
 				if(size==SOCKET_ERROR)
 				{
@@ -198,39 +212,49 @@ void DataTunnel::startTunnelLoop()
 				{
 					printf("Connection established\n");
 					this->serverConnected=true;
+					continue;
 				}
-				else if(buf[0]&AUDIODATAHEADERTYPE&&serverConnected)
+				if(serverConnected)
 				{
-					if(WaitForSingleObject(this->g_hMutex_audio_network,3)==WAIT_OBJECT_0)
+					if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
 					{
-						if(this->audioQueue.size()>MAXWAITQUEUENUM)
+						MessageBoxA(0,"Got a request from server to abort the game\n","Sorry",0);
+						stopTunnelLoop();
+						return ;
+					}
+					if(buf[0]&AUDIODATAHEADERTYPE)
+					{
+						if(WaitForSingleObject(this->g_hMutex_audio_network,3)==WAIT_OBJECT_0)
 						{
-							int tsize=this->audioQueue.size();
-							for(int i=0;i<tsize;i++)
+							if(this->audioQueue.size()>MAXWAITQUEUENUM)
 							{
-								free(this->audioQueue.front().first);
-								this->audioQueue.pop();
+								int tsize=this->audioQueue.size();
+								for(int i=0;i<tsize;i++)
+								{
+									free(this->audioQueue.front().first);
+									this->audioQueue.pop();
+								}
 							}
+							char *tmpBuf=(char*)malloc(size-HEADERLENGTH);
+							memcpy(tmpBuf,buf+HEADERLENGTH,size-HEADERLENGTH);//remove header
+							this->audioQueue.push(pair<char*,int>(tmpBuf,size-HEADERLENGTH));
+							ReleaseMutex(this->g_hMutex_audio_network);
 						}
-						char *tmpBuf=(char*)malloc(size-HEADERLENGTH);
-						memcpy(tmpBuf,buf+HEADERLENGTH,size-HEADERLENGTH);//remove header
-						this->audioQueue.push(pair<char*,int>(tmpBuf,size-HEADERLENGTH));
-						ReleaseMutex(this->g_hMutex_audio_network);
+						else
+						{
+							printf("Due to lock condition! Loss a packet\n");
+						}
 					}
-					else
+					else if(buf[0]&VIDEODATAHEADERTYPE)
 					{
-						printf("Due to lock condition! Loss a packet\n");
-					}
-				}
-				else if(buf[0]&VIDEODATAHEADERTYPE&&serverConnected)
-				{
-					/*if(size<4)//In order to protect following code
-					{
-						printf("Seems bad packet\n");
-						continue;
-					}*/
-					handleNALPacket(buf,size);
+						/*if(size<4)//In order to protect following code
+						{
+							printf("Seems bad packet\n");
+							continue;
+						}*/
+						handleNALPacket(buf,size);
 					
+					}
 				}
 
 			}
@@ -241,6 +265,7 @@ void DataTunnel::startTunnelLoop()
 }
 void DataTunnel::stopTunnelLoop()
 {
+	this->serverConnected=false;
 	runFlag=false;
 }
 void DataTunnel::handleNALPacket(char *buf, int size)

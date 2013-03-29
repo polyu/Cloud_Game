@@ -16,10 +16,11 @@ using namespace std;
 #define AUDIODATAHEADERTYPE 0x2
 #define CONTROLERDATAHEADERTYPE 0x4
 #define CONNECTIONREQUESTHEADERTYPE 0x8
+#define CONNECTIONCLOSEHEADERTYPE 0x10
 #define HEADERLENGTH 1
 #define LASTMARKERBIT 0x40
-//0T00 LTTT From left to right, second bit show whether the last frame, From right to left, show the type of packet!
-//like Video Audio Controller, L means connection header type
+//0T0Q LTTT From left to right, second bit show whether the last frame, From right to left, show the type of packet!
+//like Video Audio Controller, L means connection header type,  Q means close connection;
 //=================
 #define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR,12)
 class DataTunnel
@@ -34,6 +35,7 @@ public:
 	void setEndpointAddr(const char* addr,int port);
 	void setEndpointPort(int port);
 	void setEndpointIPAddr(const char *addr);
+	void sendConnectionCloseRequest();
 	bool isServerConnected() const;
 	bool sendControllerData(char *data,int size);
 	bool getVideoData(char **data,int *size);

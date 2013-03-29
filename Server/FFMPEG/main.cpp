@@ -57,6 +57,7 @@ static void shutdownServer()
 	aComponent.stopFrameLoop();
 	controller.stopControllerLoop();
 	Sleep(2000);
+	tunnel.sendConnectionCloseRequest();
 	WSACleanup();
 	printf("System going to shutdown\n");
 	Sleep(5000);

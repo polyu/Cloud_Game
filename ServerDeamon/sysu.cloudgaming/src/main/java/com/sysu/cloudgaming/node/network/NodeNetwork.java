@@ -41,22 +41,13 @@ public class NodeNetwork {
 	    	logger.info("Connecting hub server");
 	    	ConnectFuture future = connector.connect(new InetSocketAddress(Config.HUBSERVERADDR,Config.HUBSERVERPORT));
             future.awaitUninterruptibly();
-            if(future.isConnected())
-            {
-            	session=future.getSession();
-	            logger.info("Got hub server");
-	            return true;
-            }
-            else
-            {
-            	logger.info("Connected hub Failed\n");
-            	connector.dispose();
-            	return false;
-            }
+            session=future.getSession();
+            logger.info("Got hub server");
+            return true;
 	    }
 	    catch(Exception e)
 	    {
-	    	logger.info("Connected hub Failed\n",e);
+	    	logger.info("Connected hub Failed",e);
 	    	connector.dispose();
 	    	return false;
 	    }

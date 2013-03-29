@@ -1,13 +1,16 @@
 package com.sysu.cloudgaming.config;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.Properties;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 public class Config {
+	public static final String PROPERTYFILE="agentd.conf";
 	public static String VERSION="1.00 Alpha";
 	public static String LOCALPROGRAMPATH="e:/150w/CloudGaming/Games";
 	public static String DEAMONPATH="e:/150w/Server/Release/Server.exe";
@@ -23,11 +26,19 @@ public class Config {
 		try
 		{
 			Properties p = new Properties();
-		    p.load(new FileInputStream("agentd.conf"));
+		    p.load(new FileInputStream(PROPERTYFILE));
 		    logger.info("Server address {}",p.getProperty("ServerActive"));
 		    HUBSERVERADDR=p.getProperty("ServerActive");
 		    logger.info("HostName {}",p.getProperty("Hostname"));
+		    
 		    HOSTNAME=p.getProperty("Hostname");
+		    if(HOSTNAME==null)
+		    {
+		    	HOSTNAME=UUID.randomUUID().toString();
+		    	p.setProperty("Hostname", HOSTNAME);
+		    	p.store(new FileOutputStream(PROPERTYFILE), "");
+		    }
+		    
 		    return true;
 		}
 		catch(Exception e)

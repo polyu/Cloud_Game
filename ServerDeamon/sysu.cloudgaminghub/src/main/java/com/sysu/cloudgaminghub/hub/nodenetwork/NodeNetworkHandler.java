@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.parser.Feature;
+import com.sysu.cloudgaminghub.config.Config;
+import com.sysu.cloudgaminghub.hub.HubManager;
 import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetworkHandler;
 
 
@@ -28,7 +30,18 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    	{
 	    		logger.info("Recv a instance report");
 	    		NodeReportBean b=JSON.parseObject(msg.getExtendedData(), NodeReportBean.class, Feature.AllowSingleQuotes);
-	    		logger.debug("{}:{}",b.getHostname(),b.isRunningFlag());
+	    		logger.info("Host:{}: Status:{}",b.getHostname(),b.isRunningFlag());
+	    		session.setAttribute(Config.HOSTNAMEKEY, b.getHostname());
+	    		HubManager manager=HubManager.getHubManager();
+	    		if(manager.isNodeExisted(b.getHostname()))
+	    		{
+	    			manager.updateNodeStatus(b.getHostname(), b);
+	    			
+	    		}
+	    		else
+	    		{
+	    			manager.insertNode(b.getHostname(), b, session);
+	    		}
 	    	}
 	    	else if(msg.getMessageType()==NodeMessage.RUNRESPONSEMESSAGE)
 	    	{
@@ -47,20 +60,19 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    @Override
 	    public void sessionCreated(IoSession session)
 	    {
-	    	logger.info("{} Session Init! Try to get node report from remote (Not reliable in Udp)!",session.getId());
-	    	session.write(generateNodeReportRequestMessage());
+	    	
 	    }
 	    @Override
 	    public void sessionClosed(IoSession session)
 	    {
+	    	String hostName=(String)session.getAttribute(Config.HOSTNAMEKEY);
+	    	if(hostName!=null)
+	    	{
+	    		HubManager.getHubManager().removeNode(hostName);
+	    	}
+	    	session.removeAttribute(Config.HOSTNAMEKEY);
 	    	session.close(true);
 	    }
 	    
-	    private HubMessage generateNodeReportRequestMessage()
-	    {
-	    	HubMessage message=new HubMessage();
-	    	message.setMessageLength(0);
-	    	message.setMessageType(HubMessage.INSTANCEREPORTREQUESTMESSAGE);
-	    	return message;
-	    }
+	
 }

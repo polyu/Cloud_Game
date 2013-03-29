@@ -59,6 +59,7 @@ bool IDataTunnel::sendAudioData(char *data,int size)
 	int ret=SOCKET_ERROR;
 	if(WaitForSingleObject(this->g_hMutex_send_network,INFINITE)==WAIT_OBJECT_0)
 	{
+
 		ret=sendto(this->agentFd,tmpBuf,size+1,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
 		ReleaseMutex(g_hMutex_send_network); 
 	}
@@ -69,6 +70,19 @@ bool IDataTunnel::sendAudioData(char *data,int size)
 		return false;
 	}
 	return true;
+}
+void IDataTunnel::sendConnectionCloseRequest()
+{
+	//Not reliable way!
+	printf("Try to cutting down the client\n");
+	char tmpBuf[1];
+	tmpBuf[0]=CONNECTIONCLOSEHEADERTYPE;
+	if(WaitForSingleObject(this->g_hMutex_send_network,10)==WAIT_OBJECT_0)
+	{
+		sendto(this->agentFd,tmpBuf,2,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
+		ReleaseMutex(g_hMutex_send_network); 
+	}
+	
 }
 bool IDataTunnel::sendVideoData(char* data,int size,bool isLast)
 {
@@ -177,7 +191,7 @@ void IDataTunnel::startTunnelLoop()
 		FD_SET(agentFd,&fdread);
 		if(clock()-lastActionTime>MAXPENDINGTIME)
 		{
-				//this->stopTunnelLoop();
+				this->stopTunnelLoop();
 				printf("Max Pending Time Arrive\n");
 				return;
 		}
@@ -215,7 +229,13 @@ void IDataTunnel::startTunnelLoop()
 					printf("Endpoint Address not meet!\n");
 					continue;
 				}
-				if(buf[0]&CONTROLERDATAHEADERTYPE&&clientConnected)
+				if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
+				{
+					printf("Got a request from client to abort the game\n");
+					stopTunnelLoop();
+					return ;
+				}
+				else if(buf[0]&CONTROLERDATAHEADERTYPE)
 				{
 					//printf("Recv a new controller signal\n");
 					if(WaitForSingleObject(this->g_hMutex_controller_network,3)==WAIT_OBJECT_0)
