@@ -1,0 +1,59 @@
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun
+END
+WinStunDlg.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/WinStunDlg.cpp
+END
+stdafx.h
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/stdafx.h
+END
+WinStunDlg.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/WinStunDlg.h
+END
+WinStun.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/WinStun.cpp
+END
+WinStun.vcproj
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/WinStun.vcproj
+END
+WinStun.rc
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/WinStun.rc
+END
+stdafx.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/stdafx.cpp
+END
+WinStun.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/WinStun.h
+END
+resource.h
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svnroot/stun/!svn/ver/1/stund/trunk/WinStun/resource.h
+END

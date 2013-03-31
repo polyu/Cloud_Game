@@ -1,6 +1,7 @@
 package com.sysu.cloudgaminghub.hub.portalnetwork;
 
 import org.eclipse.jetty.server.Server;
+
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
@@ -24,7 +25,6 @@ public class PortalNetwork {
 		     server.setHandler(context);
 		     context.addServlet(new ServletHolder(new AboutServlet()),"/about");
 			 server.start();
-			 server.join();  
 			 return true;
 	     }
 		 catch(Exception e)

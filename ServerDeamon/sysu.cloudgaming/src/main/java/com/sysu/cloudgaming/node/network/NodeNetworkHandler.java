@@ -8,10 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.parser.Feature;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+
 import com.sysu.cloudgaming.config.Config;
 import com.sysu.cloudgaming.node.NodeManager;
+import com.sysu.cloudgaming.node.network.bean.NodeReportBean;
+import com.sysu.cloudgaming.node.network.bean.NodeRunRequestBean;
 import com.sysu.cloudgaming.utils.SystemMonitor;
 
 
@@ -42,7 +43,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    		case HubMessage.RUNREQUESTMESSAGE:
 	    		{
 	    			 logger.info("Run Command Request From Server");
-	    			 NodeRunCommandBean b=JSON.parseObject(hubMessage.getExtendedData(), NodeRunCommandBean.class, Feature.AllowSingleQuotes);
+	    			 NodeRunRequestBean b=JSON.parseObject(hubMessage.getExtendedData(), NodeRunRequestBean.class);
 	    			 boolean result=NodeManager.getNodeManager().startApplication(b.getProgramId(), b.getQuality());
 	    			 session.write(generateRunCommandResponseMessage(result,NodeManager.getNodeManager().getLastError()));
 	    		}
@@ -119,7 +120,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    	byte []extendData=null;
 	    	try
 	    	{
-	    		extendData=JSON.toJSONBytes(b, SerializerFeature.UseSingleQuotes);
+	    		extendData=JSON.toJSONBytes(b);
 	    	}
 	    	catch(Exception e)
 	    	{

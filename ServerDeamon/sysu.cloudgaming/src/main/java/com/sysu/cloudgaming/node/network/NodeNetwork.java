@@ -19,15 +19,7 @@ public class NodeNetwork {
 	{
 		return this.session;
 	}
-	public boolean sendRunningFinishMessage(boolean successful,int errorcode)
-	{
-		NodeMessage msg=new NodeMessage();
-		msg.setMessageType(NodeMessage.RUNNINGFINISHMESSAGE);
-		msg.setSuccess(successful);
-		msg.setErrorCode(errorcode);
-		session.write(msg);
-		return true;
-	}
+	
 	public boolean setupNodeNetwork()
 	{
 		connector = new NioSocketConnector();

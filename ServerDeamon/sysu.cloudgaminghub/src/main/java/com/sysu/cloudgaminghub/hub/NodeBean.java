@@ -2,12 +2,15 @@ package com.sysu.cloudgaminghub.hub;
 
 import org.apache.mina.core.session.IoSession;
 
-import com.sysu.cloudgaminghub.hub.nodenetwork.NodeReportBean;
+
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
+
 
 public class NodeBean {
 	private String Hostname=null;
 	private IoSession session=null;
 	private NodeReportBean reportBean=null;
+	private boolean runningFlag=false;
 	public String getHostname() {
 		return Hostname;
 	}
@@ -25,6 +28,12 @@ public class NodeBean {
 	}
 	public void setReportBean(NodeReportBean reportBean) {
 		this.reportBean = reportBean;
+	}
+	public boolean isRunningFlag() {
+		return runningFlag;
+	}
+	public void setRunningFlag(boolean runningFlag) {
+		this.runningFlag = runningFlag;
 	}
 
 }

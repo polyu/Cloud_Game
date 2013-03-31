@@ -2,11 +2,16 @@ package com.sysu.cloudgaming.node;
 
 
 import java.io.File;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
+import org.apache.mina.core.buffer.IoBuffer;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
@@ -14,7 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sysu.cloudgaming.config.Config;
+import com.sysu.cloudgaming.node.network.NodeMessage;
 import com.sysu.cloudgaming.node.network.NodeNetwork;
+import com.sysu.cloudgaming.node.network.upnp.GatewayDevice;
+import com.sysu.cloudgaming.node.network.upnp.GatewayDiscover;
+import com.sysu.cloudgaming.node.network.upnp.PortMappingEntry;
 
 public class NodeManager {
 	private static NodeManager manager=null;
@@ -36,7 +45,7 @@ public class NodeManager {
 			{
 				try
 				{
-					sleep(5);
+					sleep(5000);
 				}
 				catch(Exception e)
 				{
@@ -206,7 +215,63 @@ public class NodeManager {
 		}
 	}
 	
-
+	public boolean sendRunningFinishMessage(boolean successful,int errorcode)
+	{
+		NodeMessage msg=new NodeMessage();
+		msg.setMessageType(NodeMessage.RUNNINGFINISHMESSAGE);
+		msg.setSuccess(successful);
+		msg.setErrorCode(errorcode);
+		nodeNetwork.getNetworkSession().write(msg);
+		return true;
+	}
+	
+	
+	/*
+	 * UDP HOLE FUNCTION
+	 */
+/*	private SocketAddress requestStunForPublicAddress()
+	{
+		DatagramSocket client=null;
+		byte[] sendBuf=new byte[32];
+		byte[] recvBuf = new byte[32];
+		DatagramPacket sendPacket =null;
+		DatagramPacket recvPacket=null;
+		try
+		{
+			client = new DatagramSocket();
+			client.setReuseAddress(true);
+			client.setSoTimeout(3000);
+			
+			sendPacket  = new DatagramPacket(sendBuf ,sendBuf.length , InetAddress.getByName(Config.HUBSERVERADDR) , Config.STUNPORT);
+			recvPacket= new DatagramPacket(recvBuf , recvBuf.length);
+		}
+		catch(Exception e)
+		{
+			logger.warn("Init Socket client error");
+		}
+		int tryTime=0;
+		while(tryTime<8)
+		{
+			try
+			{
+				client.send(sendPacket);
+				client.receive(recvPacket);
+				IoBuffer buffer=IoBuffer.allocate(recvBuf.length);
+				buffer.put(recvBuf);
+				buffer.flip();
+				byte []ipaddress=new byte[4];
+				buffer.get(ipaddress);
+				int port=buffer.getInt();
+				break;
+			}
+			catch(Exception e)
+			{
+				logger.warn("Recv Packet Failed! Retrying",e);
+				tryTime++;
+			}
+		}
+    	return null;
+	}*/
 	
 	public  boolean searchLocalProgram()
 	{

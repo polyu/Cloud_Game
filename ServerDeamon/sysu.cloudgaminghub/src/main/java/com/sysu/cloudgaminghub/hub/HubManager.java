@@ -10,9 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+import com.alibaba.fastjson.JSON;
+import com.sysu.cloudgaminghub.hub.nodenetwork.HubMessage;
 import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetwork;
-import com.sysu.cloudgaminghub.hub.nodenetwork.NodeReportBean;
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeRunCommandBean;
 import com.sysu.cloudgaminghub.hub.portalnetwork.PortalNetwork;
+import com.sysu.cloudgaminghub.stun.StunServer;
 
 public class HubManager
 {
@@ -20,6 +24,7 @@ public class HubManager
 	private static HubManager manager=null;
 	private NodeNetwork nodeNetwork=new NodeNetwork();
 	private PortalNetwork portalNetwork=new PortalNetwork();
+	private StunServer stunServer =new StunServer();
 	private Map<String,NodeBean> freeNodesSet=new HashMap<String,NodeBean>();
 	private Map<String,NodeBean> busyNodesSet=new HashMap<String,NodeBean>();
 	public static HubManager getHubManager()
@@ -35,9 +40,23 @@ public class HubManager
 		
 	}
 	/*
+	 * Free Status Report
+	 */
+	public synchronized int getFreeNodesNum()
+	{
+		return freeNodesSet.size();
+	}
+	/*
+	 * Busy Status Report
+	 */
+	public synchronized int getBusyNodesNum()
+	{
+		return busyNodesSet.size();
+	}
+	/*
 	 * Find A Free Node And Send Request!
 	 */
-	public synchronized boolean sendPlayRequest()
+	/*public synchronized boolean sendPlayRequest(NodeRunCommandBean rb)
 	{
 		NodeBean b=findFreeNode();
 		if(b==null)
@@ -45,10 +64,19 @@ public class HubManager
 			logger.warn("Cluster Busying");
 			return false;
 		}
-		return false;
+		freeNodesSet.remove(b.getHostname());
+		busyNodesSet.put(b.getHostname(), b);
+		b.getReportBean().setRunningFlag(true);
+		IoSession session=b.getSession();
+		HubMessage message=new HubMessage();
+		message.setMessageType(HubMessage.RUNREQUESTMESSAGE);
+		byte extendedData[]=JSON.toJSONBytes(rb);
+		message.setExtendedData(extendedData);
+		message.setMessageLength(extendedData.length);
+		session.write(message);
+		return true;
 		
-		
-	}
+	}*/
 	/*
 	 * Most Easy Way
 	 */
@@ -76,7 +104,7 @@ public class HubManager
 		logger.info("Remove node {} from sets",hostName);
 		return true;
 	}
-	public synchronized boolean updateNodeStatus(String hostName,NodeReportBean b)
+	public synchronized boolean updateNodeStatus(String hostName,NodeBean b)
 	{
 		boolean isRunning=b.isRunningFlag();
 		boolean inBusySet=busyNodesSet.containsKey(hostName);
@@ -85,13 +113,12 @@ public class HubManager
 			if(inBusySet)
 			{
 				logger.info("Update A running Node in busy set {}",hostName);
-				busyNodesSet.get(hostName).setReportBean(b);
+				busyNodesSet.put(hostName, b);
 			}
 			else
 			{
 				logger.info("Remove a node from free set and put it into busy set {}",hostName);
 				NodeBean tmpBean=freeNodesSet.remove(hostName);
-				tmpBean.setReportBean(b);
 				busyNodesSet.put(hostName,tmpBean);
 			}
 		}
@@ -101,25 +128,22 @@ public class HubManager
 			{
 				logger.info("Remove a node from busy set and put it into free set {}",hostName);
 				NodeBean tmpBean=busyNodesSet.remove(hostName);
-				tmpBean.setReportBean(b);
+				
 				freeNodesSet.put(hostName,tmpBean);
 			}
 			else
 			{
 				logger.info("Update A free Node in free set {}",hostName);
-				freeNodesSet.get(hostName).setReportBean(b);
+				freeNodesSet.put(hostName, b);
 			}
 		}
 		return true;
 		
 		
 	}
-	public synchronized boolean insertNode(String hostName,NodeReportBean b,IoSession session)
+	public synchronized boolean insertNode(String hostName,NodeBean b)
 	{
 		NodeBean bean=new NodeBean();
-		bean.setSession(session);
-		bean.setHostname(hostName);
-		bean.setReportBean(b);
 		if(b.isRunningFlag())
 		{
 			logger.info("Insert A Node into busy set {}",bean.getHostname());
@@ -144,8 +168,21 @@ public class HubManager
 		}
 		return false;
 	}
+	public synchronized NodeBean getNodeBean(String hostName)
+	{
+		if(freeNodesSet.containsKey(hostName))
+		{
+			return freeNodesSet.get(hostName);
+		}
+		return busyNodesSet.get(hostName);
+	}
 	public boolean initManager()
 	{
+		/*if(!stunServer.startStunServer())
+		{
+			logger.warn("Unable to init stun network");
+			return false;
+		}*/
 		if(!nodeNetwork.setupNodeNetwork())
 		{
 			logger.warn("Unable to init node network");

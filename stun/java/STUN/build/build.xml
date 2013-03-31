@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+
+<project name="JSTUN" default="all" basedir="..">
+
+	<!-- Properties -->
+	<property name="version.major" value="0" />
+	<property name="version.minor" value="7" />
+	<property name="version.revision" value="3" />
+	<property name="version" value="${version.major}.${version.minor}.${version.revision}" />
+
+	<property name="source.dir" value="${basedir}/src" />
+	<property name="source.test.dir" value="${basedir}/test" />
+	<property name="compile.dir" value="${basedir}/target/classes" />
+	<property name="compile.test.dir" value="${basedir}/target/classes-test" />
+	<property name="jar.dest.dir" value="${basedir}/target" />
+	<property name="tgz.dest.dir" value="${basedir}/target" />
+	<property name="javadoc.dest.dir" value="${basedir}/target/javadoc" />
+	<property name="build.dir" value="${basedir}/build/" />
+
+	<!-- TARGETS -->
+
+	<!-- all -->
+	<target name="all" depends="jar" description="Calls the jar target by default">
+	</target>
+
+	<!-- compile -->
+	<target name="compile" description="Compiles all sources to ${compile.dir}.">
+		<!-- make target dir -->
+		<mkdir dir="${compile.dir}" />
+		<javac srcdir="${source.dir}" destdir="${compile.dir}" includeAntRuntime="no" debug="on" source="1.5" target="1.5">
+			<classpath>
+				<fileset dir="${basedir}">
+					<include name="*.jar"/>
+				</fileset>
+			</classpath>
+		</javac>
+	</target>
+
+	<!-- compile-test -->
+	<target name="compile-test" description="Compiles all test sources to ${compile.test.dir}.">
+		<!-- make target dir -->
+		<mkdir dir="${compile.test.dir}" />
+		<javac srcdir="${source.test.dir}" destdir="${compile.test.dir}" includeAntRuntime="no" debug="on" source="1.5" target="1.5">
+			<classpath>
+				<fileset dir="${basedir}/build">
+					<include name="junit.jar" />
+				</fileset>
+				<pathelement location="${compile.dir}" />
+			</classpath>
+		</javac>
+	</target>
+
+	<!-- jar -->
+	<target name="jar" depends="compile" unless="jar.uptodate" description="Produces jstun.jar">
+		<jar destfile="${jar.dest.dir}/jstun-${version}.jar" includes=", ${basedir}/apache-license-2.0.txt, ${basedir}/gnu-public-license-2.txt">
+			<fileset dir="${compile.dir}" id="id">
+				<include name="de/javawi/jstun/**/*.class" />
+			</fileset>
+			<fileset dir="${basedir}" id="id">
+				<include name="*license*.txt" />
+			</fileset>
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<section name="jstun">
+					<attribute name="Specification-Title" value="JSTUN" />
+					<attribute name="Specification-Version" value="${version}" />
+					<attribute name="Specification-Vendor" value="Thomas King, king@t-king.de" />
+					<attribute name="Implementation-Title" value="JSTUN" />
+					<attribute name="Implementation-Version" value="${version}" />
+					<attribute name="Implementation-Vendor"	value="Thomas King, king@t-king.de" />
+				</section>
+			</manifest>
+		</jar>
+	</target>
+
+	<!-- jar -->
+	<target name="jar-test" depends="compile-test" description="Produces jar of test code">
+		<jar destfile="${jar.dest.dir}/jstun-test-${version}.jar" basedir="${compile.test.dir}" includes="de/javawi/jstun/**/*.class" />
+	</target>
+
+	<!-- javadoc -->
+	<target name="javadoc" description="JavaDocs the JSTUN source code">
+		<mkdir dir="${javadoc.dest.dir}" />
+		<javadoc packagenames="de.javawi.*"
+		         excludepackagenames=""
+		         sourcepath="${source.dir}"
+		         destdir="${javadoc.dest.dir}"
+		         author="true"
+		         windowtitle="JSTUN ${version} Documentation">
+			<doctitle>
+				<![CDATA[<font face="arial,helvetica">JSTUN ${version}</font>]]>
+			</doctitle>
+			<header>
+   			        <![CDATA[<b>JSTUN</b>]]>
+			</header>
+			<bottom>
+			        <![CDATA[<i>Copyright &copy; 2009 Thomas King <king@t-king.de>.</i>]]>
+			</bottom>
+			<link href="http://java.sun.com/j2se/1.5/docs/api/" />
+			<link href="http://java.sun.com/j2ee/sdk_1.2.1/techdocs/api/" />
+		</javadoc>
+	</target>
+	
+	<!-- source tar ball -->
+	<target name="src-tar" description="TARs and GZIPs the source">
+		<tar destfile="${tgz.dest.dir}/jstun-${version}.src.tar.gz" compression="gzip">
+			<tarfileset dir="${basedir}">
+				<include name="src/**" />
+			</tarfileset>
+			<tarfileset dir="${basedir}">
+				<include name="test/**" />
+			</tarfileset>
+			<tarfileset dir="${basedir}">
+				<include name="build/**" />
+			</tarfileset>
+			<tarfileset dir="${basedir}">
+				<include name="*license*.txt" />
+			</tarfileset>
+		</tar>
+	</target>
+
+	<!-- clean -->
+	<target name="clean" description="Deletes all generated content.">
+	    <delete dir="${javadoc.dest.dir}" />
+		<delete dir="${compile.dir}" />
+		<delete dir="${compile.test.dir}" />
+		<delete file="${basedir}/jstun.jar" />
+		<delete dir="${basedir}/target" />
+	</target>
+</project>

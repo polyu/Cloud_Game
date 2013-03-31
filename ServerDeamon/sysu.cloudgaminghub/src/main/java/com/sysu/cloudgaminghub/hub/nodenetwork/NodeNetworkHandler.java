@@ -8,10 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.parser.Feature;
+
 import com.sysu.cloudgaminghub.config.Config;
 import com.sysu.cloudgaminghub.hub.HubManager;
+import com.sysu.cloudgaminghub.hub.NodeBean;
 import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetworkHandler;
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
 
 
 public class NodeNetworkHandler extends IoHandlerAdapter{
@@ -29,23 +31,32 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    	if(msg.getMessageType()==NodeMessage.INSTANCEREPORTMESSAGE)
 	    	{
 	    		logger.info("Recv a instance report");
-	    		NodeReportBean b=JSON.parseObject(msg.getExtendedData(), NodeReportBean.class, Feature.AllowSingleQuotes);
+	    		NodeReportBean b=JSON.parseObject(msg.getExtendedData(), NodeReportBean.class);
 	    		logger.info("Host:{}: Status:{}",b.getHostname(),b.isRunningFlag());
 	    		session.setAttribute(Config.HOSTNAMEKEY, b.getHostname());
 	    		HubManager manager=HubManager.getHubManager();
+	    		NodeBean nb=new NodeBean();
+	    		nb.setHostname(b.getHostname());
+	    		nb.setReportBean(b);
+	    		nb.setRunningFlag(b.isRunningFlag());
+	    		nb.setSession(session);
 	    		if(manager.isNodeExisted(b.getHostname()))
 	    		{
-	    			manager.updateNodeStatus(b.getHostname(), b);
-	    			
+	    			manager.updateNodeStatus(b.getHostname(), nb);
 	    		}
 	    		else
 	    		{
-	    			manager.insertNode(b.getHostname(), b, session);
+	    			manager.insertNode(b.getHostname(), nb);
 	    		}
 	    	}
 	    	else if(msg.getMessageType()==NodeMessage.RUNRESPONSEMESSAGE)
 	    	{
-	    		
+	    		String hostName=(String)session.getAttribute(Config.HOSTNAMEKEY);
+	    		NodeBean b=HubManager.getHubManager().getNodeBean(hostName);
+	    		if(msg.isSuccess())
+	    		{
+	    			
+	    		}
 	    	}
 	    	else if(msg.getMessageType()==NodeMessage.SHUTDOWNRESPONSEMESSAGE)
 	    	{

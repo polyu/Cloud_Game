@@ -1,0 +1,137 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svnroot/stun/!svn/ver/8/stund/trunk
+END
+client.cxx
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/stun/!svn/ver/6/stund/trunk/client.cxx
+END
+stun.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svnroot/stun/!svn/ver/7/stund/trunk/stun.h
+END
+rfc3489.txt
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svnroot/stun/!svn/ver/1/stund/trunk/rfc3489.txt
+END
+client.vcproj
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svnroot/stun/!svn/ver/1/stund/trunk/client.vcproj
+END
+nattest
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svnroot/stun/!svn/ver/1/stund/trunk/nattest
+END
+id_key.pem
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/stun/!svn/ver/1/stund/trunk/id_key.pem
+END
+Stun.sln
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svnroot/stun/!svn/ver/1/stund/trunk/Stun.sln
+END
+nattestwarning.txt
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svnroot/stun/!svn/ver/1/stund/trunk/nattestwarning.txt
+END
+udp.cxx
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svnroot/stun/!svn/ver/1/stund/trunk/udp.cxx
+END
+stun.cxx
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svnroot/stun/!svn/ver/4/stund/trunk/stun.cxx
+END
+tlsServer.cxx
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svnroot/stun/!svn/ver/1/stund/trunk/tlsServer.cxx
+END
+license.txt
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svnroot/stun/!svn/ver/8/stund/trunk/license.txt
+END
+server.sln
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/stun/!svn/ver/1/stund/trunk/server.sln
+END
+root.pem
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svnroot/stun/!svn/ver/1/stund/trunk/root.pem
+END
+server.cxx
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/stun/!svn/ver/5/stund/trunk/server.cxx
+END
+server.vcproj
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svnroot/stun/!svn/ver/1/stund/trunk/server.vcproj
+END
+client.sln
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/stun/!svn/ver/1/stund/trunk/client.sln
+END
+readme.txt
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svnroot/stun/!svn/ver/8/stund/trunk/readme.txt
+END
+id.pem
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svnroot/stun/!svn/ver/1/stund/trunk/id.pem
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svnroot/stun/!svn/ver/1/stund/trunk/Makefile
+END
+udp.h
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svnroot/stun/!svn/ver/1/stund/trunk/udp.h
+END
+wnattest.bat
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svnroot/stun/!svn/ver/1/stund/trunk/wnattest.bat
+END
