@@ -1,6 +1,7 @@
 package com.sysu.cloudgaminghub.hub;
 
 import org.apache.mina.core.session.IoSession;
+import org.eclipse.jetty.continuation.Continuation;
 
 
 import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
@@ -11,6 +12,7 @@ public class NodeBean {
 	private IoSession session=null;
 	private NodeReportBean reportBean=null;
 	private boolean runningFlag=false;
+	private Continuation continuation=null;
 	public String getHostname() {
 		return Hostname;
 	}
@@ -34,6 +36,12 @@ public class NodeBean {
 	}
 	public void setRunningFlag(boolean runningFlag) {
 		this.runningFlag = runningFlag;
+	}
+	public Continuation getContinuation() {
+		return continuation;
+	}
+	public void setContinuation(Continuation continuation) {
+		this.continuation = continuation;
 	}
 
 }

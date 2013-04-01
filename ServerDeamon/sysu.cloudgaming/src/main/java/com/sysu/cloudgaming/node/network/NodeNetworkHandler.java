@@ -13,6 +13,7 @@ import com.sysu.cloudgaming.config.Config;
 import com.sysu.cloudgaming.node.NodeManager;
 import com.sysu.cloudgaming.node.network.bean.NodeReportBean;
 import com.sysu.cloudgaming.node.network.bean.NodeRunRequestBean;
+import com.sysu.cloudgaming.node.network.bean.NodeRunResponseBean;
 import com.sysu.cloudgaming.utils.SystemMonitor;
 
 
@@ -44,8 +45,15 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    		{
 	    			 logger.info("Run Command Request From Server");
 	    			 NodeRunRequestBean b=JSON.parseObject(hubMessage.getExtendedData(), NodeRunRequestBean.class);
-	    			 boolean result=NodeManager.getNodeManager().startApplication(b.getProgramId(), b.getQuality());
-	    			 session.write(generateRunCommandResponseMessage(result,NodeManager.getNodeManager().getLastError()));
+	    			 NodeRunResponseBean response=NodeManager.getNodeManager().startApplication(b.getProgramId(), b.getQuality());
+	    			 if(response==null)
+	    			 {
+	    				 session.write(generateRunCommandResponseMessage(false,NodeManager.getNodeManager().getLastError(),null));
+	    			 }
+	    			 else
+	    			 {
+	    				 session.write(generateRunCommandResponseMessage(true,NodeManager.getNodeManager().getLastError(),response));
+	    			 }
 	    		}
 	    			break;
 	    		case HubMessage.SHUTDOWNREQUESTMESSAGE:
@@ -78,12 +86,20 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    	logger.info("Signup Node In Remote Server!");
 	    	session.write(generateInstanceReportMessage());
 	    }
-	    private NodeMessage generateRunCommandResponseMessage(boolean successful,int errorcode)
+	    private NodeMessage generateRunCommandResponseMessage(boolean successful,int errorcode,NodeRunResponseBean b)
 	    {
 	    	NodeMessage msg=new NodeMessage();
 	    	msg.setMessageType(NodeMessage.RUNRESPONSEMESSAGE);
 	    	msg.setErrorCode(errorcode);
 	    	msg.setSuccess(successful);
+	    	if(successful)
+	    	{
+	    		byte []extendData=null;
+		    	extendData=JSON.toJSONBytes(b);
+		    	msg.setMessageLength(extendData.length);
+		    	msg.setExtendedData(extendData);
+
+	    	}
 	    	return msg;
 	    }
 	    private NodeMessage generateShutdownCommandResponseMessage(boolean successful,int errorcode)
@@ -118,15 +134,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    		b.setMacAddr(SystemMonitor.getMacAddr());
 	    	}
 	    	byte []extendData=null;
-	    	try
-	    	{
-	    		extendData=JSON.toJSONBytes(b);
-	    	}
-	    	catch(Exception e)
-	    	{
-	    		logger.error(e.getMessage(),e);
-	    		return null;
-	    	}
+	    	extendData=JSON.toJSONBytes(b);
 	    	message.setMessageLength(extendData.length);
 	    	message.setExtendedData(extendData);
 	    	return message;

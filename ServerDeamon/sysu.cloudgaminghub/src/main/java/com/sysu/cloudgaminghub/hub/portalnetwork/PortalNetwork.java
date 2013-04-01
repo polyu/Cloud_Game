@@ -23,7 +23,7 @@ public class PortalNetwork {
 		     context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		     context.setContextPath("/");
 		     server.setHandler(context);
-		     context.addServlet(new ServletHolder(new AboutServlet()),"/about");
+		     context.addServlet(new ServletHolder(new PlayServlet()),"/play");
 			 server.start();
 			 return true;
 	     }

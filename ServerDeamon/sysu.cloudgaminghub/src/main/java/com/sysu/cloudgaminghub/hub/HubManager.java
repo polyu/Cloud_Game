@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.mina.core.session.IoSession;
+import org.eclipse.jetty.continuation.Continuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,7 @@ import com.alibaba.fastjson.JSON;
 import com.sysu.cloudgaminghub.hub.nodenetwork.HubMessage;
 import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetwork;
 import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
-import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeRunCommandBean;
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeRunRequestBean;
 import com.sysu.cloudgaminghub.hub.portalnetwork.PortalNetwork;
 import com.sysu.cloudgaminghub.stun.StunServer;
 
@@ -56,7 +57,7 @@ public class HubManager
 	/*
 	 * Find A Free Node And Send Request!
 	 */
-	/*public synchronized boolean sendPlayRequest(NodeRunCommandBean rb)
+	public synchronized boolean sendPlayRequest(NodeRunRequestBean rb,Continuation continuation)
 	{
 		NodeBean b=findFreeNode();
 		if(b==null)
@@ -66,7 +67,8 @@ public class HubManager
 		}
 		freeNodesSet.remove(b.getHostname());
 		busyNodesSet.put(b.getHostname(), b);
-		b.getReportBean().setRunningFlag(true);
+		b.setRunningFlag(true);
+		b.setContinuation(continuation);
 		IoSession session=b.getSession();
 		HubMessage message=new HubMessage();
 		message.setMessageType(HubMessage.RUNREQUESTMESSAGE);
@@ -76,7 +78,7 @@ public class HubManager
 		session.write(message);
 		return true;
 		
-	}*/
+	}
 	/*
 	 * Most Easy Way
 	 */
@@ -143,16 +145,16 @@ public class HubManager
 	}
 	public synchronized boolean insertNode(String hostName,NodeBean b)
 	{
-		NodeBean bean=new NodeBean();
+		
 		if(b.isRunningFlag())
 		{
-			logger.info("Insert A Node into busy set {}",bean.getHostname());
-			busyNodesSet.put(hostName, bean);
+			logger.info("Insert A Node into busy set {}",b.getHostname());
+			busyNodesSet.put(hostName, b);
 		}
 		else
 		{
-			logger.info("Insert A Node into free set {}",bean.getHostname());
-			freeNodesSet.put(hostName, bean);
+			logger.info("Insert A Node into free set {}",b.getHostname());
+			freeNodesSet.put(hostName, b);
 		}
 		return true;
 	}

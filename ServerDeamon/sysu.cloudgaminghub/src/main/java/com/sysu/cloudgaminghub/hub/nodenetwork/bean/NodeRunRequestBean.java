@@ -1,4 +1,6 @@
-package com.sysu.cloudgaming.node.network.bean;
+package com.sysu.cloudgaminghub.hub.nodenetwork.bean;
+
+
 
 public class NodeRunRequestBean {
 	public static final int HD1024_768_6M=1;

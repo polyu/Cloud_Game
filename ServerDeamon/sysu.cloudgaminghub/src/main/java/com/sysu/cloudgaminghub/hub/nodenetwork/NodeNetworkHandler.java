@@ -4,6 +4,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
+import org.eclipse.jetty.continuation.Continuation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,7 @@ import com.sysu.cloudgaminghub.hub.HubManager;
 import com.sysu.cloudgaminghub.hub.NodeBean;
 import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetworkHandler;
 import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeRunResponseBean;
 
 
 public class NodeNetworkHandler extends IoHandlerAdapter{
@@ -53,10 +55,19 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    	{
 	    		String hostName=(String)session.getAttribute(Config.HOSTNAMEKEY);
 	    		NodeBean b=HubManager.getHubManager().getNodeBean(hostName);
+	    		Continuation continuation=b.getContinuation();
 	    		if(msg.isSuccess())
 	    		{
-	    			
+	    			NodeRunResponseBean responseb=JSON.parseObject(msg.getExtendedData(), NodeRunResponseBean.class);
+	    			continuation.setAttribute(Config.RUNRESPONSEBEAN, responseb);
+	    			logger.info("Remote Run OK");
 	    		}
+	    		else
+	    		{
+	    			logger.info("Remote Run Failed");
+	    		}
+	    		continuation.setAttribute(Config.CONTINUATIONKEY, new Object());
+	    		continuation.resume();
 	    	}
 	    	else if(msg.getMessageType()==NodeMessage.SHUTDOWNRESPONSEMESSAGE)
 	    	{

@@ -7,6 +7,7 @@ public class Config {
 	public static int STUNPORT=3478;
 	public static final String HOSTNAMEKEY="HOSTNAME";
 	public static final String CONTINUATIONKEY="CONTINUATION";
+	public static final String RUNRESPONSEBEAN="RUNRESPONSEBEAN";
 	public static final String SUCCESSFULKEY="SUCCESS";
 	
 }

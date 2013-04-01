@@ -9,6 +9,7 @@ import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 
 import org.apache.mina.core.buffer.IoBuffer;
@@ -21,9 +22,11 @@ import org.slf4j.LoggerFactory;
 import com.sysu.cloudgaming.config.Config;
 import com.sysu.cloudgaming.node.network.NodeMessage;
 import com.sysu.cloudgaming.node.network.NodeNetwork;
+import com.sysu.cloudgaming.node.network.bean.NodeRunResponseBean;
 import com.sysu.cloudgaming.node.network.upnp.GatewayDevice;
 import com.sysu.cloudgaming.node.network.upnp.GatewayDiscover;
 import com.sysu.cloudgaming.node.network.upnp.PortMappingEntry;
+import com.sysu.cloudgaming.node.network.upnp.UPNPManager;
 
 public class NodeManager {
 	private static NodeManager manager=null;
@@ -35,7 +38,18 @@ public class NodeManager {
 	private Process gameProcess=null;
 	private Process deamonProcess=null;
 	private NodeNetwork nodeNetwork=new NodeNetwork();
+	private UPNPManager upnpManager=new UPNPManager();
 	
+	private int localPort=20000;
+	public int getLocalPort() {
+		return localPort;
+	}
+	public void setLocalPort(int localPort) {
+		this.localPort = localPort;
+	}
+
+
+	private Random random=new Random();
 	private class WatchDogThread extends Thread
 	{
 		public void run()
@@ -130,6 +144,10 @@ public class NodeManager {
         	logger.warn("Init Node Network Failed!");
         	return false;
         }
+		if(!upnpManager.initManager())
+		{
+			logger.warn("Unable to find upnp device!");
+		}
 		return true;
 	}
 	public boolean isNodeRunningApplication()
@@ -140,26 +158,58 @@ public class NodeManager {
 	{
 		return this.errorCode;
 	}
-	public boolean startApplication(String programId,int quality)
+	public NodeRunResponseBean startApplication(String programId,int quality)
 	{
+		NodeRunResponseBean b=new NodeRunResponseBean();
 		if(runningFlag)
-			return false;
+			return null;
 		runningFlag=true;
+		if(upnpManager.isInit())
+		{
+			logger.info("Try to open upnp port");
+		
+			if(upnpManager.setupUPNPMapping(localPort))//Some Error may happen!!!!
+			{
+				logger.info("UPNP port open ok!");
+				b.setServerIp(upnpManager.getExternalIPAddress());
+				b.setPort(upnpManager.getOutboundPort());
+			}
+			else
+			{
+				logger.warn("Unable to open port");
+			}
+		}
+		if(b.getServerIp()==null)
+		{
+			logger.info("Simple return localaddress and port");
+			b.setPort(localPort);
+			try
+			{
+				b.setServerIp(InetAddress.getLocalHost().getHostAddress());
+			}
+			catch(Exception e)
+			{
+				logger.warn("Unable to get local node address!",e);
+				killAllProcess();
+				return null;
+			}
+		}
 		if(!executeDeamonApplication(quality))
 		{
 			logger.warn("Unable to init server deamon");
 			killAllProcess();
-			return false;
+			return null;
 		}
 		if(!executeGameApplication(programId))
 		{
 			logger.warn("Unable to init game application");
 			killAllProcess();
-			return false;
+			return null;
 		}
+		
 		watchThread=new WatchDogThread();
 		watchThread.start();
-		return true;
+		return b;
 	}
 	private boolean executeDeamonApplication(int quality)
 	{
