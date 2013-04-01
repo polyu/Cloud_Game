@@ -15,7 +15,17 @@ public class UPNPManager {
 	InetAddress localAddress=null;
 	String externalIPAddress=null;
 	int outboundPort=10240;
+	boolean isPortOpened=false;
 	Random random=new Random();
+	public boolean isPortOpened()
+	{
+		if(!hasInit)
+		{
+			return false;
+		}
+		return isPortOpened;
+		
+	}
 	public InetAddress getLocalAddress() {
 		return localAddress;
 	}
@@ -78,6 +88,7 @@ public class UPNPManager {
 		            if (d.addPortMapping(outboundPort,localPort,localAddress.getHostAddress(),"UDP","ForCloudGaming"))
 		            {
 		                logger.info("Mapping succesful");
+		                isPortOpened=true;
 		                return true;
 		            } else 
 		            {
@@ -116,6 +127,7 @@ public class UPNPManager {
 		try
 		{
 	        d.deletePortMapping(outboundPort,"UDP");
+	        isPortOpened=false;
 	        return true;
 		}
 		catch(Exception e)

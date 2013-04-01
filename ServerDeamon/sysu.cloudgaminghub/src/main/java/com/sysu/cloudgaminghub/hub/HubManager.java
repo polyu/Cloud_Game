@@ -1,6 +1,7 @@
 package com.sysu.cloudgaminghub.hub;
 
 import java.util.HashMap;
+
 import java.util.Iterator;
 
 import java.util.Map;
@@ -12,12 +13,14 @@ import org.slf4j.LoggerFactory;
 
 
 import com.alibaba.fastjson.JSON;
+import com.sysu.cloudgaminghub.config.Config;
 import com.sysu.cloudgaminghub.hub.nodenetwork.HubMessage;
+import com.sysu.cloudgaminghub.hub.nodenetwork.NodeMessage;
 import com.sysu.cloudgaminghub.hub.nodenetwork.NodeNetwork;
 import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeReportBean;
 import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeRunRequestBean;
+import com.sysu.cloudgaminghub.hub.nodenetwork.bean.NodeRunResponseBean;
 import com.sysu.cloudgaminghub.hub.portalnetwork.PortalNetwork;
-import com.sysu.cloudgaminghub.stun.StunServer;
 
 public class HubManager
 {
@@ -25,7 +28,7 @@ public class HubManager
 	private static HubManager manager=null;
 	private NodeNetwork nodeNetwork=new NodeNetwork();
 	private PortalNetwork portalNetwork=new PortalNetwork();
-	private StunServer stunServer =new StunServer();
+	//private StunServer stunServer =new StunServer();
 	private Map<String,NodeBean> freeNodesSet=new HashMap<String,NodeBean>();
 	private Map<String,NodeBean> busyNodesSet=new HashMap<String,NodeBean>();
 	public static HubManager getHubManager()
@@ -169,6 +172,55 @@ public class HubManager
 			return true;
 		}
 		return false;
+	}
+	public synchronized void onGotNodeMessage(IoSession session,Object message)
+	{
+		NodeMessage msg=(NodeMessage)message;
+    	if(msg.getMessageType()==NodeMessage.INSTANCEREPORTMESSAGE)
+    	{
+    		onInstanceReport(session,msg);
+    	}
+    	else if(msg.getMessageType()==NodeMessage.RUNRESPONSEMESSAGE)
+    	{
+    		onRunResponse(session,msg);
+    	}
+    	else if(msg.getMessageType()==NodeMessage.SHUTDOWNRESPONSEMESSAGE)
+    	{
+    		
+    	}
+	}
+	private void onRunResponse(IoSession session,NodeMessage msg)
+	{
+		logger.info("Remote Run Response!");
+		String hostName=(String)session.getAttribute(Config.HOSTNAMEKEY);
+		NodeBean b=getNodeBean(hostName);
+		Continuation continuation=b.getContinuation();
+		NodeRunResponseBean responseb=JSON.parseObject(msg.getExtendedData(), NodeRunResponseBean.class);
+		continuation.setAttribute(Config.RUNRESPONSEBEAN, responseb);
+		continuation.setAttribute(Config.CONTINUATIONKEY, new Object());
+		continuation.resume();
+	}
+	private void onInstanceReport(IoSession session,NodeMessage msg )
+	{
+		
+		logger.info("Recv a instance report");
+		NodeReportBean b=JSON.parseObject(msg.getExtendedData(), NodeReportBean.class);
+		logger.info("Host:{}: Status:{}",b.getHostname(),b.isRunningFlag());
+		session.setAttribute(Config.HOSTNAMEKEY, b.getHostname());
+		
+		NodeBean nb=new NodeBean();
+		nb.setHostname(b.getHostname());
+		nb.setReportBean(b);
+		nb.setRunningFlag(b.isRunningFlag());
+		nb.setSession(session);
+		if(isNodeExisted(b.getHostname()))
+		{
+			updateNodeStatus(b.getHostname(), nb);
+		}
+		else
+		{
+			insertNode(b.getHostname(), nb);
+		}
 	}
 	public synchronized NodeBean getNodeBean(String hostName)
 	{

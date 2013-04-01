@@ -29,50 +29,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    @Override
 	    public void messageReceived( IoSession session, Object message ) throws Exception
 	    {
-	    	NodeMessage msg=(NodeMessage)message;
-	    	if(msg.getMessageType()==NodeMessage.INSTANCEREPORTMESSAGE)
-	    	{
-	    		logger.info("Recv a instance report");
-	    		NodeReportBean b=JSON.parseObject(msg.getExtendedData(), NodeReportBean.class);
-	    		logger.info("Host:{}: Status:{}",b.getHostname(),b.isRunningFlag());
-	    		session.setAttribute(Config.HOSTNAMEKEY, b.getHostname());
-	    		HubManager manager=HubManager.getHubManager();
-	    		NodeBean nb=new NodeBean();
-	    		nb.setHostname(b.getHostname());
-	    		nb.setReportBean(b);
-	    		nb.setRunningFlag(b.isRunningFlag());
-	    		nb.setSession(session);
-	    		if(manager.isNodeExisted(b.getHostname()))
-	    		{
-	    			manager.updateNodeStatus(b.getHostname(), nb);
-	    		}
-	    		else
-	    		{
-	    			manager.insertNode(b.getHostname(), nb);
-	    		}
-	    	}
-	    	else if(msg.getMessageType()==NodeMessage.RUNRESPONSEMESSAGE)
-	    	{
-	    		String hostName=(String)session.getAttribute(Config.HOSTNAMEKEY);
-	    		NodeBean b=HubManager.getHubManager().getNodeBean(hostName);
-	    		Continuation continuation=b.getContinuation();
-	    		if(msg.isSuccess())
-	    		{
-	    			NodeRunResponseBean responseb=JSON.parseObject(msg.getExtendedData(), NodeRunResponseBean.class);
-	    			continuation.setAttribute(Config.RUNRESPONSEBEAN, responseb);
-	    			logger.info("Remote Run OK");
-	    		}
-	    		else
-	    		{
-	    			logger.info("Remote Run Failed");
-	    		}
-	    		continuation.setAttribute(Config.CONTINUATIONKEY, new Object());
-	    		continuation.resume();
-	    	}
-	    	else if(msg.getMessageType()==NodeMessage.SHUTDOWNRESPONSEMESSAGE)
-	    	{
-	    		
-	    	}
+	    	HubManager.getHubManager().onGotNodeMessage(session, message);
 	    }
 	    @Override
 	    public void sessionIdle( IoSession session, IdleStatus status ) throws Exception

@@ -2,31 +2,35 @@ package com.sysu.cloudgaming.node;
 
 
 import java.io.File;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
+
+
 import java.net.InetAddress;
-import java.net.SocketAddress;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 
-import org.apache.mina.core.buffer.IoBuffer;
+
+import org.apache.mina.core.session.IoSession;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.fastjson.JSON;
 import com.sysu.cloudgaming.config.Config;
+import com.sysu.cloudgaming.node.network.HubMessage;
 import com.sysu.cloudgaming.node.network.NodeMessage;
 import com.sysu.cloudgaming.node.network.NodeNetwork;
+import com.sysu.cloudgaming.node.network.bean.NodeReportBean;
+import com.sysu.cloudgaming.node.network.bean.NodeRunRequestBean;
 import com.sysu.cloudgaming.node.network.bean.NodeRunResponseBean;
-import com.sysu.cloudgaming.node.network.upnp.GatewayDevice;
-import com.sysu.cloudgaming.node.network.upnp.GatewayDiscover;
-import com.sysu.cloudgaming.node.network.upnp.PortMappingEntry;
+
+
 import com.sysu.cloudgaming.node.network.upnp.UPNPManager;
+import com.sysu.cloudgaming.utils.SystemMonitor;
 
 public class NodeManager {
 	private static NodeManager manager=null;
@@ -47,9 +51,99 @@ public class NodeManager {
 	public void setLocalPort(int localPort) {
 		this.localPort = localPort;
 	}
-
-
-	private Random random=new Random();
+	public void onSessionIdle(IoSession session)
+	{
+		session.write(generateInstanceReportMessage());
+	}
+	private void onRequestReport(IoSession session)
+	{
+		session.write(generateInstanceReportMessage());
+	}
+	public void onGotHubMessage(IoSession session,Object message)
+	{
+		HubMessage hubMessage=(HubMessage)message;
+    	switch(hubMessage.getMessageType())
+    	{
+    		case HubMessage.INSTANCEREPORTREQUESTMESSAGE:
+    		{
+    			logger.info("Instance Report Request From Server");
+    			onRequestReport(session);
+    		}
+    		break;
+    		case HubMessage.RUNREQUESTMESSAGE:
+    		{
+    			 logger.info("Run Command Request From Server");
+    			 onRequestRun(session, hubMessage);
+    		}
+    			break;
+    		case HubMessage.SHUTDOWNREQUESTMESSAGE:
+    		{
+    			logger.info("Shutdown Request From Server");
+    			onRequestShutdown(session, hubMessage);
+    		}
+    			break;
+    		default:
+    			logger.warn("Bad protocol found!");
+    			break;
+    	}
+	}
+	private void onRequestRun(IoSession session,HubMessage message)
+	{
+		
+		NodeRunRequestBean b=JSON.parseObject(message.getExtendedData(), NodeRunRequestBean.class);
+		NodeRunResponseBean response=NodeManager.getNodeManager().startApplication(b.getProgramId(), b.getQuality());
+		session.write(generateRunCommandResponseMessage(response));
+	}
+	private void onRequestShutdown(IoSession session,HubMessage message)
+	{
+		boolean result=NodeManager.getNodeManager().shutdownApplication();
+		session.write(generateShutdownCommandResponseMessage(result,NodeManager.getNodeManager().getLastError()));
+	}
+	 private NodeMessage generateRunCommandResponseMessage(NodeRunResponseBean b)
+	    {
+	    	NodeMessage msg=new NodeMessage();
+	    	msg.setMessageType(NodeMessage.RUNRESPONSEMESSAGE);
+	    	byte []extendData=null;
+		    extendData=JSON.toJSONBytes(b);
+		    msg.setMessageLength(extendData.length);
+		    msg.setExtendedData(extendData);
+	    	return msg;
+	    }
+	    private NodeMessage generateShutdownCommandResponseMessage(boolean successful,int errorcode)
+	    {
+	    	NodeMessage msg=new NodeMessage();
+	    	msg.setMessageType(NodeMessage.SHUTDOWNRESPONSEMESSAGE);
+	    	//msg.setErrorCode(errorcode);
+	    	//msg.setSuccess(successful);
+	    	return msg;
+	    }
+	    private NodeMessage generateInstanceReportMessage() 
+	    {
+	    	NodeMessage message=new NodeMessage();
+	    	message.setMessageType(NodeMessage.INSTANCEREPORTMESSAGE);
+	    	NodeReportBean b=new NodeReportBean();
+	    	NodeManager manager=NodeManager.getNodeManager();
+	    	b.setHostname(Config.HOSTNAME);
+	    	b.setRunningFlag(manager.isNodeRunningApplication());
+	    	if(manager.isNodeRunningApplication())
+	    	{
+	
+	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramVersion());
+	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramName());
+	    		b.setRunningApplicationPath(manager.getRunningApplicationProgramBean().getProgramPath());
+	    		b.setCpuCoreNum(SystemMonitor.getCpuCoreNum());
+	    		b.setCpuPower(SystemMonitor.getCpuPower());
+	    		b.setCpuUsage(SystemMonitor.getCpuUsage());
+	    		b.setHostname(Config.HOSTNAME);
+	    		b.setIpAddr(SystemMonitor.getIPAddr());
+	    		b.setMacAddr(SystemMonitor.getMacAddr());
+	    	}
+	    	byte []extendData=null;
+	    	extendData=JSON.toJSONBytes(b);
+	    	message.setMessageLength(extendData.length);
+	    	message.setExtendedData(extendData);
+	    	return message;
+	    }
 	private class WatchDogThread extends Thread
 	{
 		public void run()
@@ -132,6 +226,7 @@ public class NodeManager {
 	{
 		return this.runningbean;
 	}
+
 	public boolean initNodeManager()
 	{
 		if(!searchLocalProgram())
@@ -162,12 +257,27 @@ public class NodeManager {
 	{
 		NodeRunResponseBean b=new NodeRunResponseBean();
 		if(runningFlag)
-			return null;
-		runningFlag=true;
+		{
+			b.setSuccessful(false);
+			b.setErrorCode(-1);
+			return b;
+		}
+		
+		b.setPort(localPort);
+		try
+		{
+			b.setServerIp(InetAddress.getLocalHost().getHostAddress());
+		}
+		catch(Exception e)
+		{
+			logger.warn("Unable to get local node address!",e);
+			b.setSuccessful(false);
+			b.setErrorCode(-1);
+			return b;
+		}
 		if(upnpManager.isInit())
 		{
 			logger.info("Try to open upnp port");
-		
 			if(upnpManager.setupUPNPMapping(localPort))//Some Error may happen!!!!
 			{
 				logger.info("UPNP port open ok!");
@@ -179,34 +289,23 @@ public class NodeManager {
 				logger.warn("Unable to open port");
 			}
 		}
-		if(b.getServerIp()==null)
-		{
-			logger.info("Simple return localaddress and port");
-			b.setPort(localPort);
-			try
-			{
-				b.setServerIp(InetAddress.getLocalHost().getHostAddress());
-			}
-			catch(Exception e)
-			{
-				logger.warn("Unable to get local node address!",e);
-				killAllProcess();
-				return null;
-			}
-		}
 		if(!executeDeamonApplication(quality))
 		{
 			logger.warn("Unable to init server deamon");
 			killAllProcess();
-			return null;
+			b.setSuccessful(false);
+			b.setErrorCode(-1);
+			return b;
 		}
 		if(!executeGameApplication(programId))
 		{
 			logger.warn("Unable to init game application");
 			killAllProcess();
-			return null;
+			b.setSuccessful(false);
+			b.setErrorCode(-1);
+			return b;
 		}
-		
+		runningFlag=true;
 		watchThread=new WatchDogThread();
 		watchThread.start();
 		return b;
@@ -215,7 +314,7 @@ public class NodeManager {
 	{
 		try
 		{
-			ProcessBuilder builder=new ProcessBuilder(Config.DEAMONPATH,"-q "+quality);
+			ProcessBuilder builder=new ProcessBuilder(Config.DEAMONPATH,"-q "+quality+" -p "+this.localPort);
 			gameProcess=builder.start();
 			return true;
 		}
@@ -269,8 +368,8 @@ public class NodeManager {
 	{
 		NodeMessage msg=new NodeMessage();
 		msg.setMessageType(NodeMessage.RUNNINGFINISHMESSAGE);
-		msg.setSuccess(successful);
-		msg.setErrorCode(errorcode);
+		//msg.setSuccess(successful);
+		//msg.setErrorCode(errorcode);
 		nodeNetwork.getNetworkSession().write(msg);
 		return true;
 	}

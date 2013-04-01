@@ -5,11 +5,8 @@ public class NodeMessage {
 	public final static int RUNRESPONSEMESSAGE=2;
 	public final static int SHUTDOWNRESPONSEMESSAGE=3;
 	public final static int RUNNINGFINISHMESSAGE=4;
-	private int messageLength=0;
+	private int messageLength;
 	private int messageType=1;
-	
-	private boolean success=false;
-	private int errorCode=0;
 	private byte extendedData[]=null;
 	public int getMessageLength() {
 		return messageLength;
@@ -24,18 +21,6 @@ public class NodeMessage {
 		this.messageType = messageType;
 	}
 	
-	public boolean isSuccess() {
-		return success;
-	}
-	public void setSuccess(boolean success) {
-		this.success = success;
-	}
-	public int getErrorCode() {
-		return errorCode;
-	}
-	public void setErrorCode(int errorCode) {
-		this.errorCode = errorCode;
-	}
 	public byte[] getExtendedData() {
 		return extendedData;
 	}

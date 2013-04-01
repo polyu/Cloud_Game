@@ -19,15 +19,6 @@ public class NodeMessageEncoder implements ProtocolEncoder {
 		IoBuffer buffer=IoBuffer.allocate(16, false);
 		buffer.setAutoExpand(true);
 		buffer.putInt(message.getMessageType());
-		if(message.isSuccess())
-		{
-			buffer.putInt(1);
-		}
-		else
-		{
-			buffer.putInt(0);
-		}
-		buffer.putInt(message.getErrorCode());
 		buffer.putInt(message.getMessageLength());
 		if(message.getMessageLength()!=0)
 		{

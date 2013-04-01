@@ -23,10 +23,11 @@
  */
 package com.sysu.cloudgaming.node.network.upnp;
 import java.io.BufferedReader;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.BindException;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;

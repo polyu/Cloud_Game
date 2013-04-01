@@ -439,8 +439,8 @@ public class GatewayDevice {
         args.put("NewRemoteHost", "");
         args.put("NewExternalPort", Integer.toString(externalPort));
         args.put("NewProtocol", protocol);
-        Map<String, String> nameValue = simpleUPnPcommand(controlURL,
-                serviceType, "DeletePortMapping", args);
+        /*Map<String, String> nameValue = simpleUPnPcommand(controlURL,
+                serviceType, "DeletePortMapping", args);*/
 
         return true;
     }

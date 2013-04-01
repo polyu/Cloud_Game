@@ -12,14 +12,12 @@ public class NodeMessageDecoder extends CumulativeProtocolDecoder{
 	@Override
 	protected boolean doDecode(IoSession arg0, IoBuffer arg1,
 			ProtocolDecoderOutput arg2) throws Exception {
-		if(arg1.remaining()>=16)
+		if(arg1.remaining()>=8)
 		{
 			
 			arg1.mark();
 			NodeMessage message=new NodeMessage();
 			int type=arg1.getInt();
-			int isSuccess=arg1.getInt();
-			int errorCode=arg1.getInt();
 			int length=arg1.getInt();
 			if(length!=0)
 			{
@@ -27,15 +25,6 @@ public class NodeMessageDecoder extends CumulativeProtocolDecoder{
 				{
 					message.setMessageType(type);
 					message.setMessageLength(length);
-					message.setErrorCode(errorCode);
-					if(isSuccess==1)
-					{
-						message.setSuccess(true);
-					}
-					else
-					{
-						message.setSuccess(false);
-					}
 					byte extendedData[]=new byte[length];
 					arg1.get(extendedData);
 					message.setExtendedData(extendedData);
@@ -51,15 +40,6 @@ public class NodeMessageDecoder extends CumulativeProtocolDecoder{
 			else
 			{
 				message.setMessageType(type);
-				message.setErrorCode(errorCode);
-				if(isSuccess==1)
-				{
-					message.setSuccess(true);
-				}
-				else
-				{
-					message.setSuccess(false);
-				}
 				message.setMessageLength(length);
 				arg2.write(message);
 				return true;
