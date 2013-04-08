@@ -37,6 +37,7 @@ public class PlayServlet extends HttpServlet{
 	}
 	private void execute(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+		
 		if(req.getAttribute(Config.CONTINUATIONKEY)==null)
 		{
 			Continuation continuation = ContinuationSupport.getContinuation(req);
@@ -57,8 +58,15 @@ public class PlayServlet extends HttpServlet{
 			NodeRunRequestBean bean=new NodeRunRequestBean();
 			bean.setProgramId(programId);
 			bean.setQuality(quality);
-			HubManager.getHubManager().sendPlayRequest(bean, continuation);
-			continuation.suspend();
+			if(HubManager.getHubManager().sendPlayRequest(bean, continuation))
+			{
+				continuation.suspend();
+			}
+			else
+			{
+				PrintWriter writer=	resp.getWriter();
+				writer.print("failed");
+			}
 		}
 		else
 		{
@@ -67,7 +75,6 @@ public class PlayServlet extends HttpServlet{
 			//Json output not implement yet
 			if(b==null)
 			{
-				
 				writer.print("failed");
 			}
 			else

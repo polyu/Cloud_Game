@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 
 import org.slf4j.LoggerFactory;
 
+import com.sysu.cloudgaminghub.config.Config;
 import com.sysu.cloudgaminghub.hub.HubManager;
 
 
@@ -17,7 +18,10 @@ public class App
     	private static Logger logger = LoggerFactory.getLogger(App.class);
         public static void main( String[] args )
         {
-        	
+        	if(!Config.loadConfig())
+        	{
+        		logger.warn("Unable to load config! Using default one!");	
+        	}
         	HubManager manager=HubManager.getHubManager();
         	if(manager.initManager())
         	{
@@ -26,6 +30,7 @@ public class App
         	else
         	{
         		logger.warn("Hub System Failed");
+        		System.exit(-1);
         	}
         	
         }

@@ -4,6 +4,7 @@ package com.sysu.cloudgaming.node;
 import java.io.File;
 
 
+
 import java.net.InetAddress;
 
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import com.sysu.cloudgaming.node.network.bean.NodeRunResponseBean;
 
 
 import com.sysu.cloudgaming.node.network.upnp.UPNPManager;
-import com.sysu.cloudgaming.utils.SystemMonitor;
+//import com.sysu.cloudgaming.utils.SystemMonitor;
 
 public class NodeManager {
 	private static NodeManager manager=null;
@@ -131,12 +132,12 @@ public class NodeManager {
 	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramVersion());
 	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramName());
 	    		b.setRunningApplicationPath(manager.getRunningApplicationProgramBean().getProgramPath());
-	    		b.setCpuCoreNum(SystemMonitor.getCpuCoreNum());
-	    		b.setCpuPower(SystemMonitor.getCpuPower());
-	    		b.setCpuUsage(SystemMonitor.getCpuUsage());
+	    		//b.setCpuCoreNum(SystemMonitor.getCpuCoreNum());
+	    		//b.setCpuPower(SystemMonitor.getCpuPower());
+	    		//b.setCpuUsage(SystemMonitor.getCpuUsage());
 	    		b.setHostname(Config.HOSTNAME);
-	    		b.setIpAddr(SystemMonitor.getIPAddr());
-	    		b.setMacAddr(SystemMonitor.getMacAddr());
+	    		//b.setIpAddr(SystemMonitor.getIPAddr());
+	    		//b.setMacAddr(SystemMonitor.getMacAddr());
 	    	}
 	    	byte []extendData=null;
 	    	extendData=JSON.toJSONBytes(b);
@@ -305,6 +306,7 @@ public class NodeManager {
 			b.setErrorCode(-1);
 			return b;
 		}
+		b.setSuccessful(true);
 		runningFlag=true;
 		watchThread=new WatchDogThread();
 		watchThread.start();
@@ -314,7 +316,7 @@ public class NodeManager {
 	{
 		try
 		{
-			ProcessBuilder builder=new ProcessBuilder(Config.DEAMONPATH,"-q "+quality+" -p "+this.localPort);
+			ProcessBuilder builder=new ProcessBuilder(Config.BASEPATH+Config.DEAMONPATH,"-q "+quality+" -p "+this.localPort);
 			gameProcess=builder.start();
 			return true;
 		}
@@ -428,7 +430,7 @@ public class NodeManager {
 		try
 		{
 			programMap.clear();
-			File infoFile=new File(Config.LOCALPROGRAMPATH+"/"+Config.LOCALPROGRAMXMLNAME);
+			File infoFile=new File(Config.BASEPATH+Config.LOCALPROGRAMPATH+"/"+Config.LOCALPROGRAMXMLNAME);
 			if(infoFile.exists())
 			{
 				SAXBuilder builder=new SAXBuilder();
@@ -443,7 +445,7 @@ public class NodeManager {
 						b.setProgramID(g.getChildText("id"));
 						b.setProgramName(g.getChildText("name"));
 						b.setProgramVersion(g.getChildText("ver"));
-						b.setProgramPath(Config.LOCALPROGRAMPATH+'/'+g.getChildText("path"));
+						b.setProgramPath(Config.BASEPATH+Config.LOCALPROGRAMPATH+'/'+g.getChildText("path"));
 						logger.info("Add Game to Map Id:{}, Name:{}",b.getProgramID(),b.getProgramName());
 						programMap.put(b.getProgramID(), b);
 					}

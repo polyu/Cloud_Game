@@ -374,7 +374,7 @@ bool IVideoComponent::openVideoEncoder()
 	this->video_codec_context->time_base.den = 25;
     this->video_codec_context->time_base.num = 1;
 	av_opt_set(this->video_codec_context->priv_data, "tune", "zerolatency", 0);
-	av_opt_set(this->video_codec_context->priv_data, "preset","faster",0);
+	av_opt_set(this->video_codec_context->priv_data, "preset","fast",0);
 	av_opt_set(this->video_codec_context->priv_data,"intra-refresh","1",0);
 	if( avcodec_open2(this->video_codec_context, this->video_codec, NULL)<0)
 	{

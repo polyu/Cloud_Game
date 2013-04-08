@@ -2,15 +2,16 @@ package com.sysu.cloudgaming.utils;
 
 import java.net.InetAddress;
 
-import org.hyperic.sigar.CpuInfo;
-import org.hyperic.sigar.NetFlags;
-import org.hyperic.sigar.NetInterfaceConfig;
-import org.hyperic.sigar.Sigar;
+//import org.hyperic.sigar.CpuInfo;
+//import org.hyperic.sigar.NetFlags;
+//import org.hyperic.sigar.NetInterfaceConfig;
+//import org.hyperic.sigar.Sigar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 public class SystemMonitor {
+	/*
 	private static Logger logger = LoggerFactory.getLogger(SystemMonitor.class);
 	private static Sigar sigar = new Sigar(); 
 	public static double getUpTime()
@@ -183,5 +184,5 @@ public class SystemMonitor {
 			logger.warn(e.getMessage(),e);
 		}
 		return num;
-	}
+	}*/
 }

@@ -28,7 +28,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    public void messageReceived( IoSession session, Object message ) throws Exception
 	    {
 	    	logger.info("Recv a message from hub in session {}",session.getId());
-	    	
+	    	NodeManager.getNodeManager().onGotHubMessage(session, message);
 	    }
 	    @Override
 	    public void sessionIdle( IoSession session, IdleStatus status ) throws Exception

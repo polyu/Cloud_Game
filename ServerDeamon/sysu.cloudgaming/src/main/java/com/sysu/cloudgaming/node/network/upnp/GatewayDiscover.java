@@ -220,6 +220,7 @@ public class GatewayDiscover {
         sock.connect(remoteAddress);
         InetAddress localAddress = sock.getLocalAddress();
         sock.disconnect();
+        sock.close();
         sock = null;
         if(localAddress.getHostAddress().equals("0.0.0.0"))
         {
