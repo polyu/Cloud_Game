@@ -60,13 +60,13 @@ public class HubManager
 	/*
 	 * Find A Free Node And Send Request!
 	 */
-	public synchronized boolean sendPlayRequest(NodeRunRequestBean rb,Continuation continuation)
+	public synchronized int sendPlayRequest(NodeRunRequestBean rb,Continuation continuation)
 	{
 		NodeBean b=findFreeNode();
 		if(b==null)
 		{
 			logger.warn("Cluster Busying");
-			return false;
+			return NodeRunResponseBean.SERVERBUSY;
 		}
 		freeNodesSet.remove(b.getHostname());
 		busyNodesSet.put(b.getHostname(), b);
@@ -79,7 +79,7 @@ public class HubManager
 		message.setExtendedData(extendedData);
 		message.setMessageLength(extendedData.length);
 		session.write(message);
-		return true;
+		return NodeRunResponseBean.NOERROR;
 		
 	}
 	/*

@@ -1,0 +1,21 @@
+#pragma once
+
+
+// AboutDialog 对话框
+
+class AboutDialog : public CDialog
+{
+	DECLARE_DYNAMIC(AboutDialog)
+
+public:
+	AboutDialog(CWnd* pParent = NULL);   // 标准构造函数
+	virtual ~AboutDialog();
+
+// 对话框数据
+	enum { IDD = IDD_ABOUTDIALOG };
+
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+
+	DECLARE_MESSAGE_MAP()
+};

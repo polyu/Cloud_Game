@@ -209,9 +209,19 @@ void IDataTunnel::startTunnelLoop()
 			
 			if(buf[0]&CONNECTIONREQUESTHEADERTYPE)
 			{
-				printf("One way connection OK!Sending HandShake Connection Data\n");
+				
 				this->clientConnected=true;
-				memcpy(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr));
+				if(WaitForSingleObject(this->g_hMutex_send_network,INFINITE)==WAIT_OBJECT_0)
+				{
+					memcpy(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr));
+					ReleaseMutex(g_hMutex_send_network); 
+				}
+				else
+				{
+					printf("Error when setting target address\n");
+					return ;
+				}
+				printf("One way connection OK!Sending HandShake Connection Data\n");
 				//Check Data ! Not implement yet!
 				if(!this->sendConnectionResponseData())
 				{

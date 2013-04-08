@@ -24,6 +24,7 @@ public class PlayServlet extends HttpServlet{
 	/**
 	 * 
 	 */
+	
 	private static final long serialVersionUID = 1L;
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
@@ -37,10 +38,11 @@ public class PlayServlet extends HttpServlet{
 	}
 	private void execute(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-		
+		Continuation continuation = ContinuationSupport.getContinuation(req);
 		if(req.getAttribute(Config.CONTINUATIONKEY)==null)
 		{
-			Continuation continuation = ContinuationSupport.getContinuation(req);
+			
+			continuation.setTimeout(Config.CONTINUATIONTIMEOUT);
 			int quality=4;
 			try
 			{
@@ -58,24 +60,31 @@ public class PlayServlet extends HttpServlet{
 			NodeRunRequestBean bean=new NodeRunRequestBean();
 			bean.setProgramId(programId);
 			bean.setQuality(quality);
-			if(HubManager.getHubManager().sendPlayRequest(bean, continuation))
+			int result=HubManager.getHubManager().sendPlayRequest(bean, continuation);
+			if(result==NodeRunResponseBean.NOERROR)
 			{
 				continuation.suspend();
 			}
 			else
 			{
 				PrintWriter writer=	resp.getWriter();
-				writer.print("failed");
+				writer.print("{\"errorCode\":0,\"successful\":false}");
 			}
 		}
 		else
 		{
+			
 			PrintWriter writer=	resp.getWriter();
+			if(continuation.isExpired())
+			{
+				writer.print("{\"errorCode\":0,\"successful\":false}");
+				return;
+			}
 			NodeRunResponseBean b=(NodeRunResponseBean)req.getAttribute(Config.RUNRESPONSEBEAN);
 			//Json output not implement yet
 			if(b==null)
 			{
-				writer.print("failed");
+				writer.print("{\"errorCode\":0,\"successful\":false}");
 			}
 			else
 			{

@@ -16,13 +16,15 @@ public class Config {
 	public static int STUNPORT=3478;
 	public static final String PROPERTYFILE="agentd.conf";
 	public static String BASEPATH="d:/cloudgaming/";
-	public static String VERSION="1.00 Alpha";
+	public static String VERSION="1.03 Alpha";
 	public static final String HOSTNAMEKEY="HOSTNAME";
 	public static final String CONTINUATIONKEY="CONTINUATION";
 	public static final String RUNRESPONSEBEAN="RUNRESPONSEBEAN";
 	public static final String SUCCESSFULKEY="SUCCESS";
+	public static int CONTINUATIONTIMEOUT=30000;
 	public static boolean loadConfig()
 	{
+		logger.info("Build Version:{}",VERSION);
 		try
 		{
 			Properties p = new Properties();

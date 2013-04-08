@@ -39,7 +39,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    @Override
 	    public void sessionCreated(IoSession session)
 	    {
-	    	
+	    	logger.info("Got a connection from {}",session.getRemoteAddress());
 	    }
 	    @Override
 	    public void sessionClosed(IoSession session)

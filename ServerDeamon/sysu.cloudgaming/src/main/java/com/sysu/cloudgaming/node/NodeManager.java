@@ -44,7 +44,7 @@ public class NodeManager {
 	private Process deamonProcess=null;
 	private NodeNetwork nodeNetwork=new NodeNetwork();
 	private UPNPManager upnpManager=new UPNPManager();
-	
+	public static int WATCHDOGINTERVAL=500;
 	private int localPort=20000;
 	public int getLocalPort() {
 		return localPort;
@@ -92,7 +92,7 @@ public class NodeManager {
 	{
 		
 		NodeRunRequestBean b=JSON.parseObject(message.getExtendedData(), NodeRunRequestBean.class);
-		NodeRunResponseBean response=NodeManager.getNodeManager().startApplication(b.getProgramId(), b.getQuality());
+		NodeRunResponseBean response=startApplication(b);
 		session.write(generateRunCommandResponseMessage(response));
 	}
 	private void onRequestShutdown(IoSession session,HubMessage message)
@@ -154,7 +154,7 @@ public class NodeManager {
 			{
 				try
 				{
-					sleep(5000);
+					sleep(WATCHDOGINTERVAL);
 				}
 				catch(Exception e)
 				{
@@ -162,8 +162,8 @@ public class NodeManager {
 				}
 				try
 				{
-					gameProcess.exitValue();
-					logger.info("Game Process Exited");
+					int exitValue=gameProcess.exitValue();
+					logger.info("Game Process Exited:{}",exitValue);
 					break;
 				}
 				catch(IllegalThreadStateException e)
@@ -172,8 +172,8 @@ public class NodeManager {
 				}
 				try
 				{
-					deamonProcess.exitValue();
-					logger.info("Daemon Process Exited");
+					int exitValue=deamonProcess.exitValue();
+					logger.info("Daemon Process Exited:{}",exitValue);
 					break;
 				}
 				catch(IllegalThreadStateException e)
@@ -254,13 +254,14 @@ public class NodeManager {
 	{
 		return this.errorCode;
 	}
-	public NodeRunResponseBean startApplication(String programId,int quality)
+	public NodeRunResponseBean startApplication(NodeRunRequestBean rb)
 	{
 		NodeRunResponseBean b=new NodeRunResponseBean();
 		if(runningFlag)
 		{
 			b.setSuccessful(false);
-			b.setErrorCode(-1);
+			b.setErrorCode(NodeRunResponseBean.ALREADYRUNNING);
+			logger.warn("System Busy! Already Running Game");
 			return b;
 		}
 		
@@ -273,7 +274,7 @@ public class NodeManager {
 		{
 			logger.warn("Unable to get local node address!",e);
 			b.setSuccessful(false);
-			b.setErrorCode(-1);
+			b.setErrorCode(NodeRunResponseBean.NETWORKERROR);
 			return b;
 		}
 		if(upnpManager.isInit())
@@ -290,20 +291,20 @@ public class NodeManager {
 				logger.warn("Unable to open port");
 			}
 		}
-		if(!executeDeamonApplication(quality))
+		if(!executeDeamonApplication(rb.getQuality()))
 		{
 			logger.warn("Unable to init server deamon");
 			killAllProcess();
 			b.setSuccessful(false);
-			b.setErrorCode(-1);
+			b.setErrorCode(NodeRunResponseBean.EXECFAILED);
 			return b;
 		}
-		if(!executeGameApplication(programId))
+		if(!executeGameApplication(rb.getProgramId()))
 		{
 			logger.warn("Unable to init game application");
 			killAllProcess();
 			b.setSuccessful(false);
-			b.setErrorCode(-1);
+			b.setErrorCode(NodeRunResponseBean.EXECFAILED);
 			return b;
 		}
 		b.setSuccessful(true);
@@ -316,8 +317,13 @@ public class NodeManager {
 	{
 		try
 		{
+			logger.info("Try to open deamon process in quality {}",quality);
 			ProcessBuilder builder=new ProcessBuilder(Config.BASEPATH+Config.DEAMONPATH,"-q "+quality+" -p "+this.localPort);
+			builder.redirectOutput(new File("DeamonLog.txt"));
+			builder.redirectErrorStream(true);
+			
 			gameProcess=builder.start();
+			
 			return true;
 		}
 		catch(Exception e)

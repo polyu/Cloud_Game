@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public class Config {
 	public static final String PROPERTYFILE="agentd.conf";
 	public static String BASEPATH="d:/cloudgaming/";
-	public static String VERSION="1.00 Alpha";
+	public static String VERSION="1.06 Alpha";
 	public static String LOCALPROGRAMPATH="Games/";
 	public static String DEAMONPATH="Server.exe";
 	public static String LOCALPROGRAMXMLNAME="info.xml";
@@ -22,10 +22,11 @@ public class Config {
 	public static int STUNPORT=3478;
 	public static int CONNECT_TIMEOUT=3000;
 	public static String HOSTNAME="GameHost-X-NONAME";
-	public static int REFRESHINTEVAL=30;
+	public static int REFRESHINTEVAL=10;
 	private static Logger logger = LoggerFactory.getLogger(Config.class);
 	public static boolean loadConfig()
 	{
+		logger.info("Build Version:{}",VERSION);
 		try
 		{
 			Properties p = new Properties();
