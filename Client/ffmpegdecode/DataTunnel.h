@@ -11,16 +11,19 @@ using namespace std;
 #define MAXVIDEONALPACKETBUFSIZE 1024*100
 #define MAXVIDEOPACKETBUFSIZE 1024*1000
 #define MAXPENDINGTIME 10*1000
+#define MAXKEEPALIVETIME 10*1000
+#define KEEPALIVEINTERVAL 1*1000
 //===========Explation
 #define VIDEODATAHEADERTYPE 0x1
 #define AUDIODATAHEADERTYPE 0x2
 #define CONTROLERDATAHEADERTYPE 0x4
 #define CONNECTIONREQUESTHEADERTYPE 0x8
 #define CONNECTIONCLOSEHEADERTYPE 0x10
+#define CONNECTIONKEEPALIVEHEADERTYPE 0x20
 #define HEADERLENGTH 1
 #define LASTMARKERBIT 0x40
-//0T0Q LTTT From left to right, second bit show whether the last frame, From right to left, show the type of packet!
-//like Video Audio Controller, L means connection header type,  Q means close connection;
+//0TKQ LTTT From left to right, second bit show whether the last frame, From right to left, show the type of packet!
+//like Video Audio Controller, L means connection header type,  Q means close connection, K means keep alive;
 //=================
 #define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR,12)
 class DataTunnel
@@ -41,6 +44,7 @@ public:
 	bool getVideoData(char **data,int *size);
 	bool getAudioData(char **data,int *size);
 	bool sendConnectionRequestData();
+	void sendConnectionKeepAlivePacket();
 private:
 	SOCKET agentFd;
 	SOCKADDR_IN agentLocalAddr;

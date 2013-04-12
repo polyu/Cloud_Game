@@ -84,6 +84,19 @@ void IDataTunnel::sendConnectionCloseRequest()
 	}
 	
 }
+void IDataTunnel::sendConnectionKeepAlivePacket()
+{
+	//Not reliable way!
+	
+	char tmpBuf[1];
+	tmpBuf[0]=CONNECTIONKEEPALIVEHEADERTYPE;
+	if(WaitForSingleObject(this->g_hMutex_send_network,10)==WAIT_OBJECT_0)
+	{
+		sendto(this->agentFd,tmpBuf,2,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
+		ReleaseMutex(g_hMutex_send_network); 
+	}
+	
+}
 bool IDataTunnel::sendVideoData(char* data,int size,bool isLast)
 {
 	char *tmpBuf=(char*)malloc(size+1);
@@ -181,7 +194,8 @@ void IDataTunnel::startTunnelLoop()
 	timeval tv;
 	tv.tv_sec=2;
 	tv.tv_usec=0;
-	long lastActionTime=clock();
+	//long lastActionTime=clock();
+	long lastKeepAliveTime=clock();
 	SOCKADDR_IN tmpEndPointAddr;
 	int fromlen=sizeof(tmpEndPointAddr);
 	while(runFlag)
@@ -189,12 +203,18 @@ void IDataTunnel::startTunnelLoop()
 		
 		FD_ZERO(&fdread);
 		FD_SET(agentFd,&fdread);
-		if(clock()-lastActionTime>MAXPENDINGTIME)
+		if(clock()-lastKeepAliveTime>MAXKEEPALIVETIME)
+		{
+			this->stopTunnelLoop();
+			printf("Lost Connection\n");
+			return;
+		}
+		/*if(clock()-lastActionTime>MAXPENDINGTIME)
 		{
 				this->stopTunnelLoop();
-				printf("Max Pending Time Arrive\n");
+				printf("Max USER Pending Time Arrive\n");
 				return;
-		}
+		}*/
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
 			
@@ -233,17 +253,25 @@ void IDataTunnel::startTunnelLoop()
 			
 			if(this->clientConnected)
 			{
-				lastActionTime=clock();
+				//lastActionTime=clock();
 				if(memcmp(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr))!=0)
 				{
 					printf("Endpoint Address not meet!\n");
 					continue;
+				}
+				if(clock()-lastKeepAliveTime>KEEPALIVEINTERVAL)
+				{
+					this->sendConnectionKeepAlivePacket();
 				}
 				if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
 				{
 					printf("Got a request from client to abort the game\n");
 					stopTunnelLoop();
 					return ;
+				}
+				else if(buf[0]& CONNECTIONKEEPALIVEHEADERTYPE)
+				{
+					lastKeepAliveTime=clock();
 				}
 				else if(buf[0]&CONTROLERDATAHEADERTYPE)
 				{

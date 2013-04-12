@@ -174,6 +174,7 @@ int main(int argc, char* argv[])
 	aComponent.setDataTunnel(&tunnel);
 	vComponent.setDataTunnel(&tunnel);
 	controller.setDataTunnel(&tunnel);
+	atexit(shutdownServer);
 	_beginthread(videoComponentThread,0,NULL);
 	_beginthread(audioComponentThread,0,NULL);
 	_beginthread(controllerThread,0,NULL);
@@ -184,7 +185,8 @@ int main(int argc, char* argv[])
 	{
 		Sleep(50);
 	}
-	shutdownServer();
+	
+	//shutdownServer();
 	return 0;
 	//system("pause");
 	

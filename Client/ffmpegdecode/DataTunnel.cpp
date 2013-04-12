@@ -173,13 +173,13 @@ void DataTunnel::startTunnelLoop()
 	char buf[10240];
 	fd_set fdread;
 	timeval tv;
-	tv.tv_sec=1;
+	tv.tv_sec=2;
 	tv.tv_usec=0;
-	
-	long lastActionTime=clock();
+	long lastKeepAliveTime=clock();
+	//long lastActionTime=clock();
 	while(runFlag)
 	{
-		if(clock()-lastActionTime>MAXPENDINGTIME)
+		if(clock()-lastKeepAliveTime>MAXKEEPALIVETIME)
 		{
 			MessageBoxA(0,"Lost connection with server\n","Error",0);
 			stopTunnelLoop();
@@ -199,7 +199,7 @@ void DataTunnel::startTunnelLoop()
 		FD_SET(agentFd,&fdread);
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
-				lastActionTime=clock();
+				
 				
 				int size=recvfrom(this->agentFd,buf,10240,0,NULL,NULL);
 				if(size==SOCKET_ERROR)
@@ -216,13 +216,21 @@ void DataTunnel::startTunnelLoop()
 				}
 				if(serverConnected)
 				{
+					if(clock()-lastKeepAliveTime>KEEPALIVEINTERVAL)
+					{
+						this->sendConnectionKeepAlivePacket();
+					}
 					if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
 					{
-						MessageBoxA(0,"Got a request from server to abort the game\n","Sorry",0);
 						stopTunnelLoop();
+						MessageBoxA(0,"The game has exited properly\n","Thanks",MB_OK);
 						return ;
 					}
-					if(buf[0]&AUDIODATAHEADERTYPE)
+					else if(buf[0]& CONNECTIONKEEPALIVEHEADERTYPE)
+					{
+						lastKeepAliveTime=clock();
+					}
+					else if(buf[0]&AUDIODATAHEADERTYPE)
 					{
 						if(WaitForSingleObject(this->g_hMutex_audio_network,3)==WAIT_OBJECT_0)
 						{
@@ -258,8 +266,10 @@ void DataTunnel::startTunnelLoop()
 				}
 
 			}
+		
 	
 		}
+		
 		
 	
 }
@@ -388,4 +398,18 @@ bool DataTunnel::getVideoData(char **data,int *size)
 		printf("Get controller data failed due to video lock error\n");
 		return false;
 	}
+}
+
+void DataTunnel::sendConnectionKeepAlivePacket()
+{
+	//Not reliable way!
+	
+	char tmpBuf[1];
+	tmpBuf[0]=CONNECTIONKEEPALIVEHEADERTYPE;
+	if(WaitForSingleObject(this->g_hMutex_send_network,10)==WAIT_OBJECT_0)
+	{
+		sendto(this->agentFd,tmpBuf,2,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
+		ReleaseMutex(g_hMutex_send_network); 
+	}
+	
 }

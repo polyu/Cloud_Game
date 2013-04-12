@@ -9,17 +9,20 @@ using namespace std;
 #define DEFAULT_LOCALPORT 20000
 #define NETWORKMTU 1450 
 #define MAXWAITQUEUENUM 20
-#define MAXPENDINGTIME 1*60*1000
+#define MAXPENDINGTIME 10*60*1000
+#define MAXKEEPALIVETIME 10*1000
+#define KEEPALIVEINTERVAL 1*1000;
 //===========Explation
 #define VIDEODATAHEADERTYPE 0x1
 #define AUDIODATAHEADERTYPE 0x2
 #define CONTROLERDATAHEADERTYPE 0x4
 #define CONNECTIONREQUESTHEADERTYPE 0x8
 #define CONNECTIONCLOSEHEADERTYPE 0x10
+#define CONNECTIONKEEPALIVEHEADERTYPE 0x20
 #define LASTMARKERBIT 0x40
 #define HEADERLENGTH 1
-//0T0Q LTTT From left to right, second bit show whether the last frame, From right to left, show the type of packet!
-//like Video Audio Controller, L means connection header type, Q means close connection
+//0TKQ LTTT From left to right, second bit show whether the last frame, From right to left, show the type of packet!
+//like Video Audio Controller, L means connection header type, Q means close connection, K mean keep alive
 //=================
 #define SIO_UDP_CONNRESET _WSAIOW(IOC_VENDOR,12)
 class IDataTunnel
@@ -37,6 +40,7 @@ public:
 	void sendConnectionCloseRequest();
 	bool isClientConnected() const;
 	bool getControllerData(char **data,int *size);
+	void sendConnectionKeepAlivePacket();
 	
 private:
 	SOCKET agentFd;

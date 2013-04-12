@@ -187,6 +187,14 @@ public class NodeManager {
 	WatchDogThread watchThread=null;
 	private void killAllProcess()
 	{
+		killGameProcess();
+		killDeamonProcess();
+		runningFlag=false;
+		//nodeNetwork.sendRunningFinishMessage(true, 0);
+
+	}
+	private void killGameProcess()
+	{
 		try
 		{
 			gameProcess.destroy();
@@ -196,6 +204,9 @@ public class NodeManager {
 		{
 			logger.warn("Try to terminate game process But Failed");
 		}
+	}
+	private void killDeamonProcess()
+	{
 		try
 		{
 			deamonProcess.destroy();
@@ -205,9 +216,6 @@ public class NodeManager {
 		{
 			logger.warn("Try to terminate deamon process But Failed");
 		}
-		runningFlag=false;
-		//nodeNetwork.sendRunningFinishMessage(true, 0);
-
 	}
 	public static NodeManager getNodeManager()
 	{
