@@ -34,6 +34,7 @@ public class NodeNetwork {
 	    	ConnectFuture future = connector.connect(new InetSocketAddress(Config.HUBSERVERADDR,Config.HUBSERVERPORT));
             future.awaitUninterruptibly();
             session=future.getSession();
+           
             logger.info("Got hub server");
             return true;
 	    }

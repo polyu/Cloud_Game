@@ -6,7 +6,11 @@
 #include "afxwin.h"
 #include <json/json.h>
 #include <afxinet.h>
-
+#define RESERVEDMEMORY 256
+#define RHEIGHT 720
+#define RWIDTH 1280
+#define SHAREDMEMSIZE 1440*900*32+RESERVEDMEMORY
+#define MAXFPS 40
 // CGUIDlg ¶Ô»°¿ò
 class CGUIDlg : public CDialogEx
 {
@@ -37,5 +41,16 @@ public:
 	afx_msg void OnCbnSelchangeCombo1();
 	afx_msg void onLoginClicked();
 	CComboBox mCombo;
-
+	CComboBox gameCombo;
+	CEdit gameIntroduction;
+	CStatic gamePhoto;
+	bool setupSharedMemory();
+	void uninstallSharedMemory();
+	BYTE* lpvMem;      // pointer to shared memory
+	HANDLE hMapObject; 
+	void resourceDeallocate();
+	bool badMemory;
+	long lastRecordTime;
+	bool isMemoryWritable();
+	void setMemoryReadable();
 };

@@ -6,6 +6,7 @@ static unsigned char audioplayBuf[AUDIOPLAYBUFSIZE];
 static int audioplaycursor=0;
 //******************SDL*******************
 static SDL_Surface *screen;
+HANDLE screenLock;
 static SDL_Overlay *screenOverlay;
 static SDL_AudioSpec wanted;
 static bool isFullScreen=false;
@@ -87,6 +88,11 @@ static void initSDL()
         //printf("Couldn't set 640x480x32 video mode: %s\n",SDL_GetError());
         exit(-3);
     }
+	screenLock=CreateMutex(NULL, FALSE, L"ScreenMutex");
+	if(screenLock==INVALID_HANDLE_VALUE)
+	{
+		exit(-4);
+	}
 	screenOverlay=SDL_CreateYUVOverlay(outputWidth,outputHeight,SDL_IYUV_OVERLAY,screen);
 	SDL_WM_SetCaption("Cloud Gaming",NULL);
 	SDL_ShowCursor(0);
@@ -145,6 +151,7 @@ static void SDL_VideoDisplayThread(void *)
 			
 			if(vdecoder.decodeVideoFrame((char*)data,size,&frame))
 			{
+				WaitForSingleObject(screenLock,INFINITE);
 				SDL_LockYUVOverlay(screenOverlay);
 				screenOverlay->pixels[0]=frame->data[0];
 				screenOverlay->pixels[1]=frame->data[1];
@@ -158,6 +165,7 @@ static void SDL_VideoDisplayThread(void *)
 				rect.y=0;
 				SDL_DisplayYUVOverlay(screenOverlay, &rect);
 				SDL_UnlockYUVOverlay(screenOverlay);
+				ReleaseMutex(screenLock);
 			}
 			free(data);
 		}
@@ -285,6 +293,7 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 						}
 						else if(event.key.keysym.sym==SDLK_F3)
 						{
+							WaitForSingleObject(screenLock,INFINITE);
 							if(!isFullScreen)
 							{
 								screen = SDL_SetVideoMode(outputWidth, outputHeight, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
@@ -295,6 +304,8 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 								screen = SDL_SetVideoMode(outputWidth, outputHeight, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
 								isFullScreen=false;
 							}
+							ReleaseMutex(screenLock);
+
 						}
 						//printf("%d%d\n",event.key.keysym.sym,event.key.keysym.mod);
 						controller.sendKeyEvent(event.key.keysym.sym,event.key.keysym.mod);

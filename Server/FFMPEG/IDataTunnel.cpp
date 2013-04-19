@@ -195,7 +195,8 @@ void IDataTunnel::startTunnelLoop()
 	tv.tv_sec=2;
 	tv.tv_usec=0;
 	//long lastActionTime=clock();
-	long lastKeepAliveTime=clock();
+	long lastSendKeepAliveTime=clock();
+	long lastRecvKeepAliveTime=clock();
 	SOCKADDR_IN tmpEndPointAddr;
 	int fromlen=sizeof(tmpEndPointAddr);
 	while(runFlag)
@@ -203,7 +204,7 @@ void IDataTunnel::startTunnelLoop()
 		
 		FD_ZERO(&fdread);
 		FD_SET(agentFd,&fdread);
-		if(clock()-lastKeepAliveTime>MAXKEEPALIVETIME)
+		if(clock()-lastRecvKeepAliveTime>MAXKEEPALIVETIME)
 		{
 			this->stopTunnelLoop();
 			printf("Lost Connection\n");
@@ -253,14 +254,15 @@ void IDataTunnel::startTunnelLoop()
 			
 			if(this->clientConnected)
 			{
-				//lastActionTime=clock();
+				
 				if(memcmp(&this->endpointAddr,&tmpEndPointAddr,sizeof(tmpEndPointAddr))!=0)
 				{
 					printf("Endpoint Address not meet!\n");
 					continue;
 				}
-				if(clock()-lastKeepAliveTime>KEEPALIVEINTERVAL)
+				if(clock()-lastSendKeepAliveTime>KEEPALIVEINTERVAL)
 				{
+					lastSendKeepAliveTime=clock();
 					this->sendConnectionKeepAlivePacket();
 				}
 				if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
@@ -271,7 +273,8 @@ void IDataTunnel::startTunnelLoop()
 				}
 				else if(buf[0]& CONNECTIONKEEPALIVEHEADERTYPE)
 				{
-					lastKeepAliveTime=clock();
+					printf("Got a keepalive packet\n");
+					lastRecvKeepAliveTime=clock();
 				}
 				else if(buf[0]&CONTROLERDATAHEADERTYPE)
 				{

@@ -22,6 +22,12 @@
     <None Include="res\GUI.ico">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\1.bmp">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\2.bmp">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GUI.h">

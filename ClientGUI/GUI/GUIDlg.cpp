@@ -21,12 +21,19 @@ CGUIDlg::CGUIDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CGUIDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	lpvMem = NULL;
+	hMapObject = NULL;
+	badMemory=false;
+	lastRecordTime=0;
 }
 
 void CGUIDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_COMBO1, mCombo);
+	DDX_Control(pDX, IDC_COMBO2, gameCombo);
+	DDX_Control(pDX, IDC_EDIT1, gameIntroduction);
+	DDX_Control(pDX, IDC_GAMEPHOTO, gamePhoto);
 }
 
 BEGIN_MESSAGE_MAP(CGUIDlg, CDialogEx)
@@ -36,7 +43,7 @@ BEGIN_MESSAGE_MAP(CGUIDlg, CDialogEx)
 	ON_BN_CLICKED(IDCANCEL, &CGUIDlg::OnBnClickedCancel)
 	ON_BN_CLICKED(IDOK,&CGUIDlg::onLoginClicked)
 	ON_EN_CHANGE(IDC_USERNAMEEDIT, &CGUIDlg::OnUsernameChangeEdit)
-	ON_CBN_SELCHANGE(IDC_COMBO1, &CGUIDlg::OnCbnSelchangeCombo1)
+	ON_CBN_SELCHANGE(IDC_COMBO2, &CGUIDlg::OnCbnSelchangeCombo1)
 END_MESSAGE_MAP()
 
 
@@ -53,7 +60,8 @@ void CGUIDlg::onLoginClicked()
 	CString szHeaders2   = L"Content-Type: application/x-www-form-urlencoded;charset=UTF-8";
 	CString url;
 	int quality=mCombo.GetCurSel()+1;
-	url.Format(L"/play?quality=%d",quality);
+	int program=gameCombo.GetCurSel()+1;
+	url.Format(L"/play?quality=%d&programId=%d",quality,program);
 	CHttpConnection* pConnection = session.GetHttpConnection(TEXT("222.200.182.75"),(INTERNET_PORT)8090);
 	CHttpFile* pFile = pConnection->OpenRequest( CHttpConnection::HTTP_VERB_GET,
 												 url);
@@ -140,6 +148,9 @@ BOOL CGUIDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	mCombo.SetCurSel(0);
+	gameCombo.SetCurSel(0);
+	gameIntroduction.SetReadOnly(true);
+	gameIntroduction.SetWindowTextW(TEXT("Dota 是一款即时策略游戏"));
 	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -169,6 +180,12 @@ void CGUIDlg::OnPaint()
 	}
 	else
 	{
+		CDC *pdc=GetDC();
+		int Width = pDC->GetDeviceCaps(HORZRES);//获取当前整个屏幕的宽
+		int Height = pDC->GetDeviceCaps(VERTRES);//获取当前整个屏幕的高
+		CDC memDC;//内存DC
+		memDC.CreateCompatibleDC(pDC);
+		ReleaseDC(pdc);
 		CDialogEx::OnPaint();
 	}
 }
@@ -213,5 +230,63 @@ void CGUIDlg::OnUsernameChangeEdit()
 
 void CGUIDlg::OnCbnSelchangeCombo1()
 {
+	
+	int sel=gameCombo.GetCurSel();
+	if(sel==0)
+	{
+		gameIntroduction.SetWindowTextW(TEXT("Dota 是一款即时策略游戏"));
+		CBitmap bitmap;  // CBitmap对象，用于加载位图   
+		 HBITMAP hBmp;    // 保存CBitmap加载的位图的句柄   
+  
+		bitmap.LoadBitmap(IDB_BITMAP1);  // 将位图IDB_BITMAP1加载到bitmap   
+		hBmp = (HBITMAP)bitmap.GetSafeHandle();  // 获取bitmap加载位图的句柄   
+		gamePhoto.SetBitmap(hBmp);    // 设置
+	}
+	else
+	{
+		gameIntroduction.SetWindowTextW(TEXT("GTA 是一款实时战斗游戏"));
+		CBitmap bitmap;  // CBitmap对象，用于加载位图   
+		 HBITMAP hBmp;    // 保存CBitmap加载的位图的句柄   
+  
+		bitmap.LoadBitmap(IDB_BITMAP2);  // 将位图IDB_BITMAP1加载到bitmap   
+		hBmp = (HBITMAP)bitmap.GetSafeHandle();  // 获取bitmap加载位图的句柄   
+		gamePhoto.SetBitmap(hBmp);    // 设置
+	}
 	// TODO: 在此添加控件通知处理程序代码
+}
+bool CGUIDlg::setupSharedMemory()
+{
+		hMapObject = CreateFileMapping( 
+                INVALID_HANDLE_VALUE,   // use paging file
+                NULL,                   // default security attributes
+                PAGE_READWRITE,         // read/write access
+                0,                      // size: high 32-bits
+                SHAREDMEMSIZE,              // size: low 32-bits
+                TEXT("ded9dllmemfilemap")); // name of map object
+        if (hMapObject == NULL) 
+            return FALSE; 
+		bool fInit = (GetLastError() != ERROR_ALREADY_EXISTS); 
+		lpvMem = (BYTE*)MapViewOfFile( 
+                hMapObject,     // object to map view of
+                FILE_MAP_WRITE, // read/write access
+                0,              // high offset:  map from
+                0,              // low offset:   beginning
+                0);             // default: map entire file
+		if (lpvMem == NULL) 
+           return FALSE; 
+		if (fInit) 
+           memset(lpvMem, '\0', SHAREDMEMSIZE);
+		
+		return TRUE;
+}
+void CGUIDlg::uninstallSharedMemory()
+{
+	if(lpvMem!=NULL)
+	UnmapViewOfFile(lpvMem);
+	lpvMem=NULL;
+	if(hMapObject!=NULL)
+	CloseHandle(hMapObject);
+	hMapObject=NULL;
+	badMemory=false;
+	
 }

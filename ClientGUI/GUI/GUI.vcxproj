@@ -101,6 +101,8 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\1.bmp" />
+    <None Include="..\2.bmp" />
     <None Include="ReadMe.txt" />
     <None Include="res\GUI.ico" />
     <None Include="res\GUI.rc2" />

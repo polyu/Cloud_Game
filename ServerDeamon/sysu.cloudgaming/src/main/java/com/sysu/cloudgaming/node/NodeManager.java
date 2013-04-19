@@ -209,6 +209,7 @@ public class NodeManager {
 	{
 		try
 		{
+			
 			deamonProcess.destroy();
 			logger.info("Daemon Process was killed");
 		}

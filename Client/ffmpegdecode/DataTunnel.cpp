@@ -175,14 +175,16 @@ void DataTunnel::startTunnelLoop()
 	timeval tv;
 	tv.tv_sec=2;
 	tv.tv_usec=0;
-	long lastKeepAliveTime=clock();
+	long lastSendKeepAliveTime=clock();
+	long lastRecvKeepAliveTime=clock();
 	//long lastActionTime=clock();
 	while(runFlag)
 	{
-		if(clock()-lastKeepAliveTime>MAXKEEPALIVETIME)
+		if(clock()-lastRecvKeepAliveTime>MAXKEEPALIVETIME)
 		{
-			MessageBoxA(0,"Lost connection with server\n","Error",0);
+			
 			stopTunnelLoop();
+			MessageBoxA(0,"Lost connection with server\n","Error",0);
 			return;
 		}
 		if(!this->serverConnected)
@@ -216,8 +218,9 @@ void DataTunnel::startTunnelLoop()
 				}
 				if(serverConnected)
 				{
-					if(clock()-lastKeepAliveTime>KEEPALIVEINTERVAL)
+					if(clock()-lastSendKeepAliveTime>KEEPALIVEINTERVAL)
 					{
+						lastSendKeepAliveTime=clock();
 						this->sendConnectionKeepAlivePacket();
 					}
 					if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
@@ -228,7 +231,8 @@ void DataTunnel::startTunnelLoop()
 					}
 					else if(buf[0]& CONNECTIONKEEPALIVEHEADERTYPE)
 					{
-						lastKeepAliveTime=clock();
+						
+						lastRecvKeepAliveTime=clock();
 					}
 					else if(buf[0]&AUDIODATAHEADERTYPE)
 					{
