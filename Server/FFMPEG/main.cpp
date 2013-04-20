@@ -3,7 +3,7 @@
 #include "IController.h"
 #include "getopt.h"
 #include <process.h>
-#define HD1024_768_6M 1
+#define HD1280_720_6M 1
 #define SD800_600_4M 2
 #define CD640_480_2M 3
 #define LD320_240_1M 4
@@ -21,7 +21,7 @@ static void audioComponentThread(void*);
 static void controllerThread(void *);
 static void tunnelThread(void *);
 static void instanceProtect();
-static  bool consoleHandler( DWORD fdwctrltype );
+static bool consoleHandler( DWORD fdwctrltype );
 static bool consoleHandler( DWORD fdwctrltype )
 {
 	switch( fdwctrltype ) 
@@ -39,11 +39,11 @@ static bool consoleHandler( DWORD fdwctrltype )
 			runFlag=false;
 			//shutdownServer();
 			return true;
-			
+
 		default: 
 			return false; 
     } 
-	
+
 }
 static void initExternLibrary()
 {
@@ -52,12 +52,12 @@ static void initExternLibrary()
 }
 static void shutdownServer()
 {
+	tunnel.sendConnectionCloseRequest();
 	tunnel.stopTunnelLoop();
 	vComponent.stopFrameLoop();
 	aComponent.stopFrameLoop();
 	controller.stopControllerLoop();
 	Sleep(2000);
-	tunnel.sendConnectionCloseRequest();
 	WSACleanup();
 	printf("System going to shutdown\n");
 	Sleep(5000);
@@ -67,11 +67,13 @@ static void tunnelThread(void *)
 {
 	tunnel.startTunnelLoop();
 	runFlag=false;
+	
 }
 static void videoComponentThread(void*)
 {
 	vComponent.startFrameLoop();
 	runFlag=false;
+	
 }
 static void audioComponentThread(void*)
 {
@@ -83,6 +85,20 @@ static void controllerThread(void *)
 	controller.startControllerLoop();
 	runFlag=false;
 }
+static void commandThread(void *)
+{
+	char buf;
+	while(runFlag)
+	{
+		scanf("%c",&buf);
+		if(buf=='q')
+		{
+			runFlag=false;
+		}
+		Sleep(50);
+	}
+}
+
 static void handleArgument(int argc, char* argv[])
 {
 	 int c;
@@ -101,9 +117,9 @@ static void handleArgument(int argc, char* argv[])
 						int quality=atoi(optarg);
 						switch(quality)
 						{
-							case HD1024_768_6M:
-								printf("Using HD Mode:1024*768\n");
-								vComponent.setQuality(1024,768,6000000);
+							case HD1280_720_6M:
+								printf("Using HD Mode:1280*720\n");
+								vComponent.setQuality(1280,720,6000000);
 								break;
 							case SD800_600_4M:
 								printf("Using SD Mode:800*600\n");
@@ -175,19 +191,18 @@ int main(int argc, char* argv[])
 	vComponent.setDataTunnel(&tunnel);
 	controller.setDataTunnel(&tunnel);
 	atexit(shutdownServer);
+	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) consoleHandler, true ) ;
 	_beginthread(videoComponentThread,0,NULL);
 	_beginthread(audioComponentThread,0,NULL);
 	_beginthread(controllerThread,0,NULL);
 	_beginthread(tunnelThread,0,NULL);
+	_beginthread(commandThread,0,NULL);
 	runFlag=true;
-	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) consoleHandler, true ) ;
 	while(runFlag)
 	{
-		Sleep(50);
+		Sleep(500);
 	}
-	
-	//shutdownServer();
 	return 0;
-	//system("pause");
+	
 	
 }

@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public class Config {
 	public static final String PROPERTYFILE="agentd.conf";
 	public static String BASEPATH="d:/cloudgaming/";
-	public static String VERSION="1.06 Alpha";
+	public static String VERSION="1.08 Alpha";
 	public static String LOCALPROGRAMPATH="Games/";
 	public static String DEAMONPATH="Server.exe";
 	public static String LOCALPROGRAMXMLNAME="info.xml";

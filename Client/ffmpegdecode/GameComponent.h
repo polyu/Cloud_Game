@@ -8,10 +8,11 @@
 #include <process.h>
 #include "Controller.h"
 using namespace std;
-#define HD1024_768_6M 1
+#define HD1280_720_6M 1
 #define SD800_600_4M 2
 #define CD640_480_2M 3
 #define LD320_240_1M 4
+
 #define AUDIOPLAYBUFSIZE 51200
 //*-**********************SOUND**************
 static void getAudioFromBuffer(void *udata, Uint8 *stream, int len);
@@ -32,4 +33,5 @@ static void SDL_VideoDisplayThread(void *);
 //=================Argument=====================
 static void handleArgument();
 //============PUBLIC API===========
+static void shutdownClient();
 

@@ -40,7 +40,7 @@ public class NodeNetworkHandler extends IoHandlerAdapter{
 	    @Override
 	    public void sessionClosed(IoSession session)
 	    {
-	    	session.close(true);
+	    	
 	    }
 	    
 	    @Override 

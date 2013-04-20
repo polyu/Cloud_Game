@@ -20,6 +20,20 @@ static AudioStreamDecoder adecoder;
 static VideoStreamDecoder vdecoder;
 //===============Controntoler====================
 static Controller controller;
+//===============================================
+static void shutdownClient()
+{
+	
+	runFlag=false;
+	tunnel.stopTunnelLoop();
+	tunnel.sendConnectionCloseRequest();
+	SDL_CloseAudio();
+	SDL_FreeSurface(screen);
+	_exit(0);
+	//WSACleanup();
+	//SDL_Quit();
+	
+}
 //=========================================================
 static void decodeAudioFromQueue()
 {
@@ -47,7 +61,10 @@ static void getAudioFromBuffer(void *udata, Uint8 *stream, int len)
 {
 	while(audioplaycursor<len)
 	{
-		if(!runFlag) return;
+		if(!runFlag)
+		{
+			return;
+		}
 		decodeAudioFromQueue();
 		if(audioplaycursor<len)
 		{
@@ -63,8 +80,8 @@ static void initTunnelNetwork()
 {
 	if(!tunnel.initDataTunnel())
 	{
-		MessageBoxA(0,"Error init data tunnel\n","Error",0);
-		exit(-11);
+		
+		exit(TUNNELINITERROR);
 	}
 }
 static void networkThread(void *)
@@ -78,20 +95,20 @@ static void initSDL()
 	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO)==-1)) 
 	{ 
         //printf("Could not initialize SDL: %s.\n", SDL_GetError());
-       exit(-3);
+       exit(INITAUDIOERROR);
     }
-	atexit(SDL_Quit);
+	
 	
 	//=============Video Screen=======================
 	screen = SDL_SetVideoMode(outputWidth, outputHeight, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
 	if ( screen == NULL ) {
         //printf("Couldn't set 640x480x32 video mode: %s\n",SDL_GetError());
-        exit(-3);
+        exit(INITVIDEOERROR);
     }
 	screenLock=CreateMutex(NULL, FALSE, L"ScreenMutex");
 	if(screenLock==INVALID_HANDLE_VALUE)
 	{
-		exit(-4);
+		exit(INITVIDEOERROR);
 	}
 	screenOverlay=SDL_CreateYUVOverlay(outputWidth,outputHeight,SDL_IYUV_OVERLAY,screen);
 	SDL_WM_SetCaption("Cloud Gaming",NULL);
@@ -106,8 +123,8 @@ static void initSDL()
 	wanted.userdata = NULL; 
 	if(SDL_OpenAudio(&wanted, NULL) < 0) 
 	{  
-		MessageBoxA(0,"Error init Sound Device\n","Error",0); 
-		exit(-3); 
+		
+		exit(INITAUDIOERROR); 
 	}	  
 	SDL_PauseAudio(0);
 }
@@ -117,13 +134,13 @@ static void initDecoder()
 
 	if(!vdecoder.initDecorder())
 	{
-		MessageBoxA(0,"Error init Video Decoder\n","Error",0); 
-		exit(-1);
+		
+		exit(INITDECODERERROR);
 	}
 	if(!adecoder.initDecorder())
 	{
-		MessageBoxA(0,"Error init Audio Decoder\n","Error",0); 
-		exit(-1);
+		
+		exit(INITDECODERERROR);
 	}
 
 }
@@ -131,7 +148,7 @@ static void initController()
 {
 	if(!controller.initController())
 	{
-		exit(-12);
+		exit(INITCONTROLERERROR);
 	}
 	controller.SetDataTunnel(&tunnel); 
 }
@@ -198,10 +215,10 @@ static void handleArgument()
 					int quality=atoi(optarg);//1 Means HD(8M 1024*768), 2 Means Common(4M,800*600) , 3 Means Low Quality (2M 640*480) , 4 Means Low band(1M, 320*240); 
 					switch(quality)
 					{
-						case HD1024_768_6M:
-							vdecoder.setOutputSize(1024,768);
-							outputWidth=1024;
-							outputHeight=768;
+						case HD1280_720_6M:
+							vdecoder.setOutputSize(1280,720);
+							outputWidth=1280;
+							outputHeight=720;
 							break;
 						case SD800_600_4M:
 							vdecoder.setOutputSize(800,600);
@@ -276,6 +293,7 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 	SDL_Event event;
 	_beginthread(networkThread,NULL,NULL);
 	_beginthread(SDL_VideoDisplayThread,NULL,NULL);
+	atexit(shutdownClient);
 	runFlag=true;
 	while(runFlag)
 	{
@@ -339,10 +357,7 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 				 }
 		 }
 	}
-	tunnel.stopTunnelLoop();
-	Sleep(2000);
-	tunnel.sendConnectionCloseRequest();
-	WSACleanup();
+	
 	return 0;
 }
 

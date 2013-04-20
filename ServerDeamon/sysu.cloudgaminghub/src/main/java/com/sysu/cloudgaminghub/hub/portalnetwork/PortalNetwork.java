@@ -24,6 +24,7 @@ public class PortalNetwork {
 		     context.setContextPath("/");
 		     server.setHandler(context);
 		     context.addServlet(new ServletHolder(new PlayServlet()),"/play");
+		     context.addServlet(new ServletHolder(new AuthServlet()),"/auth");
 			 server.start();
 			 return true;
 	     }

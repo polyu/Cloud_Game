@@ -192,7 +192,7 @@ void IDataTunnel::startTunnelLoop()
 	char buf[10240];
 	fd_set fdread;
 	timeval tv;
-	tv.tv_sec=2;
+	tv.tv_sec=1;
 	tv.tv_usec=0;
 	//long lastActionTime=clock();
 	long lastSendKeepAliveTime=clock();
@@ -209,6 +209,12 @@ void IDataTunnel::startTunnelLoop()
 			this->stopTunnelLoop();
 			printf("Lost Connection\n");
 			return;
+		}
+		if(clientConnected&&clock()-lastSendKeepAliveTime>KEEPALIVEINTERVAL)
+		{
+					lastSendKeepAliveTime=clock();
+					printf("Sending connection keep alive packet\n");
+					this->sendConnectionKeepAlivePacket();
 		}
 		/*if(clock()-lastActionTime>MAXPENDINGTIME)
 		{
@@ -260,11 +266,7 @@ void IDataTunnel::startTunnelLoop()
 					printf("Endpoint Address not meet!\n");
 					continue;
 				}
-				if(clock()-lastSendKeepAliveTime>KEEPALIVEINTERVAL)
-				{
-					lastSendKeepAliveTime=clock();
-					this->sendConnectionKeepAlivePacket();
-				}
+				
 				if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
 				{
 					printf("Got a request from client to abort the game\n");

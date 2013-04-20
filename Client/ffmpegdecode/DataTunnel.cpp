@@ -173,7 +173,7 @@ void DataTunnel::startTunnelLoop()
 	char buf[10240];
 	fd_set fdread;
 	timeval tv;
-	tv.tv_sec=2;
+	tv.tv_sec=1;
 	tv.tv_usec=0;
 	long lastSendKeepAliveTime=clock();
 	long lastRecvKeepAliveTime=clock();
@@ -184,7 +184,7 @@ void DataTunnel::startTunnelLoop()
 		{
 			
 			stopTunnelLoop();
-			MessageBoxA(0,"Lost connection with server\n","Error",0);
+			exit(TUNNELBROKENERROR);
 			return;
 		}
 		if(!this->serverConnected)
@@ -196,6 +196,14 @@ void DataTunnel::startTunnelLoop()
 				return ;
 			}
 		
+		}
+		else
+		{
+			if(clock()-lastSendKeepAliveTime>KEEPALIVEINTERVAL)
+			{
+						lastSendKeepAliveTime=clock();
+						this->sendConnectionKeepAlivePacket();
+			}
 		}
 		FD_ZERO(&fdread);
 		FD_SET(agentFd,&fdread);
@@ -218,20 +226,15 @@ void DataTunnel::startTunnelLoop()
 				}
 				if(serverConnected)
 				{
-					if(clock()-lastSendKeepAliveTime>KEEPALIVEINTERVAL)
-					{
-						lastSendKeepAliveTime=clock();
-						this->sendConnectionKeepAlivePacket();
-					}
+					
 					if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
 					{
 						stopTunnelLoop();
-						MessageBoxA(0,"The game has exited properly\n","Thanks",MB_OK);
+						exit(SHUTDOWNSIGNAL);
 						return ;
 					}
 					else if(buf[0]& CONNECTIONKEEPALIVEHEADERTYPE)
 					{
-						
 						lastRecvKeepAliveTime=clock();
 					}
 					else if(buf[0]&AUDIODATAHEADERTYPE)

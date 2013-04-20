@@ -44,7 +44,7 @@ public class NodeManager {
 	private Process deamonProcess=null;
 	private NodeNetwork nodeNetwork=new NodeNetwork();
 	private UPNPManager upnpManager=new UPNPManager();
-	public static int WATCHDOGINTERVAL=500;
+	public static int WATCHDOGINTERVAL=1000;
 	private int localPort=20000;
 	public int getLocalPort() {
 		return localPort;
@@ -168,7 +168,7 @@ public class NodeManager {
 				}
 				catch(IllegalThreadStateException e)
 				{
-					
+					logger.debug("Game Process still running");
 				}
 				try
 				{
@@ -178,7 +178,7 @@ public class NodeManager {
 				}
 				catch(IllegalThreadStateException e)
 				{
-					
+					logger.debug("Deamon Process still running");
 				}
 			}
 			killAllProcess();
@@ -187,6 +187,7 @@ public class NodeManager {
 	WatchDogThread watchThread=null;
 	private void killAllProcess()
 	{
+		
 		killGameProcess();
 		killDeamonProcess();
 		runningFlag=false;
@@ -210,13 +211,16 @@ public class NodeManager {
 		try
 		{
 			
-			deamonProcess.destroy();
-			logger.info("Daemon Process was killed");
+			
+			logger.info("Shutting down deamon by sending quit button");
+			Thread.sleep(10000);
 		}
 		catch(Exception e)
 		{
 			logger.warn("Try to terminate deamon process But Failed");
 		}
+		deamonProcess.destroy();
+		logger.info("Daemon Process was killed");
 	}
 	public static NodeManager getNodeManager()
 	{
@@ -331,7 +335,7 @@ public class NodeManager {
 			builder.redirectOutput(new File("DeamonLog.txt"));
 			builder.redirectErrorStream(true);
 			
-			gameProcess=builder.start();
+			deamonProcess=builder.start();
 			
 			return true;
 		}
@@ -356,7 +360,7 @@ public class NodeManager {
 			try
 			{
 				ProcessBuilder builder=new ProcessBuilder(runningbean.getProgramPath());
-				deamonProcess=builder.start();
+				gameProcess=builder.start();
 				return true;
 			}
 			catch(Exception e)

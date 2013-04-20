@@ -1,7 +1,11 @@
 package com.sysu.cloudgaming.node.network;
 
 import java.net.InetSocketAddress;
+
+import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.future.IoFuture;
+import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
@@ -34,7 +38,23 @@ public class NodeNetwork {
 	    	ConnectFuture future = connector.connect(new InetSocketAddress(Config.HUBSERVERADDR,Config.HUBSERVERPORT));
             future.awaitUninterruptibly();
             session=future.getSession();
-           
+            CloseFuture closeFuture=session.getCloseFuture();
+            closeFuture.addListener(new IoFutureListener<CloseFuture>()
+            {
+				@Override
+				public void operationComplete(CloseFuture arg0) {
+					logger.info("Reconnecting the server");
+					try
+					{
+					Thread.sleep(5000);
+					}
+					catch(Exception e)
+					{
+						
+					}
+					setupNodeNetwork();
+			}
+			});
             logger.info("Got hub server");
             return true;
 	    }
