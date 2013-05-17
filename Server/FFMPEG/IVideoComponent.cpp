@@ -1,7 +1,7 @@
 #include "IVideoComponent.h"
 IVideoComponent::IVideoComponent()
 {
-	
+
 	frameCounter=0;
 	fpsClock=clock();
 	lastWidth=0;
@@ -47,8 +47,8 @@ void IVideoComponent::uninstallSharedMemory()
 	if(hMapObject!=NULL)
 	CloseHandle(hMapObject);
 	hMapObject=NULL;
-	
-	
+
+
 }
 bool IVideoComponent::setupSharedMemory()
 {
@@ -72,7 +72,7 @@ bool IVideoComponent::setupSharedMemory()
            return FALSE; 
 		if (fInit) 
            memset(lpvMem, '\0', SHAREDMEMSIZE);
-		
+
 		return TRUE;
 }
 bool IVideoComponent::initVideoComponent()
@@ -87,8 +87,8 @@ bool IVideoComponent::initVideoComponent()
 		printf("Video Encoder Failed\n");
 		return false;
 	}
-	
-	
+
+
 	workingThread=true;
 	return true;
 }
@@ -99,7 +99,7 @@ void IVideoComponent::startFrameLoop()
 		//if(isMemoryReadable())
 		if(isMemoryReadable()&&tunnel!=NULL&&tunnel->isClientConnected())//Safe Protect
 		{	
-			
+
 			UINT copySize=0;
 			UINT height=0;
 			UINT width=0;
@@ -155,7 +155,7 @@ void IVideoComponent::startFrameLoop()
 				rgb_stride[0]=width*2;
 			}
 			sws_scale(img_convert_ctx, rgb_src, rgb_stride, 0, height, rawFrame->data, rawFrame->linesize);
-			
+
 			//=============Write encoded frame and send=============================
 			write_video_frame(rawFrame);
 			//==========================================
@@ -204,7 +204,7 @@ void IVideoComponent::removeSwscale()
 		sws_freeContext(img_convert_ctx);
 		img_convert_ctx=NULL;
 	}
-	
+
 }
 AVFrame *IVideoComponent::allocFrame(enum PixelFormat pix_fmt, int width, int height)
 {
@@ -225,7 +225,7 @@ bool IVideoComponent::sendOutFrame(AVPacket *pkt)
 	PBYTE p_buffer = pkt->data;
 	int	i_buffer = pkt->size;
 	//printf("=====================================Total Size:%d\n",i_buffer);
-	
+
 
 	while( i_buffer > 4 && ( p_buffer[0] != 0 || p_buffer[1] != 0 || p_buffer[2] != 1 ) )
 	{
@@ -237,7 +237,7 @@ bool IVideoComponent::sendOutFrame(AVPacket *pkt)
 		int i_offset;
 		int i_size = i_buffer;
 		int i_skip = i_buffer;
-		
+
 	/* search nal end */
 		for( i_offset = 4; i_offset+2 < i_buffer ; i_offset++)
 		{
@@ -298,7 +298,7 @@ bool IVideoComponent::sendOutSliceFrame(const PBYTE pNal,int nalSize,bool isLast
 			//printf("FU-A NAL:%d IsStart:%d\n",nalSize,i);
 			if(tunnel!=NULL&&tunnel->isClientConnected())
 			{
-				
+
 				tunnel->sendVideoData((char*)packetBuf,nalSize,isLast && (i == i_count-1));
 			}
 			free(packetBuf);
@@ -326,7 +326,7 @@ bool IVideoComponent::write_video_frame(AVFrame *frame)
     }
 	if (got_output) 
 	{
-		
+
 		ret = sendOutFrame(&pkt);
 		av_free_packet(&pkt);
 		if(ret<0)

@@ -62,8 +62,8 @@ bool ISoundComponent::setupSwscale()
 }
 void ISoundComponent::startFrameLoop()
 {
-	
-	
+
+
 	HRESULT hr;
 	long debugFrameCounter=0;
 	while(runFlag)
@@ -136,7 +136,7 @@ void ISoundComponent::startFrameLoop()
 		}
 		int bytesToWrite = frameCount * waveFormat->nBlockAlign;
 		int ret=-1;
-	
+
 		if(this->waveFormat->nSamplesPerSec==OUTPUTSAMPLERATE)//48000 Not need to use cpu!
 		{
 			this->sendChunkedData((BYTE*)data,bytesToWrite);
@@ -165,7 +165,7 @@ void ISoundComponent::startFrameLoop()
 			av_freep(&src_data);
 			av_freep(&dst_data);
 		}
-		
+
 		//======================
 		 hr = audioCaptureClient->ReleaseBuffer(frameCount);
 		if (FAILED(hr))	
@@ -178,7 +178,7 @@ void ISoundComponent::startFrameLoop()
 		  return;            
 		}
 	}
-	
+
 	audioClient->Stop();
 	audioCaptureClient->Release();
 	audioClient->Release();
@@ -235,7 +235,7 @@ bool ISoundComponent::initSoundComponent()
 		  PWAVEFORMATEXTENSIBLE waveFormatEx = reinterpret_cast<PWAVEFORMATEXTENSIBLE>(waveFormat);
 		  if (IsEqualGUID(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, waveFormatEx->SubFormat)) 
 		  {
-			
+
 			waveFormatEx->SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
 			waveFormatEx->Samples.wValidBitsPerSample = 16;
 			waveFormat->wBitsPerSample = 16;
@@ -328,7 +328,7 @@ bool ISoundComponent::sendChunkedData(BYTE *data,int bytesToWrite)
 	BYTE* tmpBUF=(BYTE*)malloc(requestFrameByteSize);
 	while(soundBufferCursor>=requestFrameByteSize)//DATA OUT
 	{
-		
+
 		memcpy(tmpBUF,soundBuffer,requestFrameByteSize);
 		memmove(soundBuffer,soundBuffer+requestFrameByteSize,soundBufferCursor-requestFrameByteSize);
 		soundBufferCursor-=requestFrameByteSize;
@@ -352,7 +352,7 @@ bool ISoundComponent::openAudioEncoder()
 		printf( "aideo codec not found/n");
 		return false;
     }
-	
+
 	this->audio_codec_context=avcodec_alloc_context3(this->audio_codec);
 	this->audio_codec_context->sample_fmt  = AV_SAMPLE_FMT_S16;
     this->audio_codec_context->bit_rate    = 64000;
@@ -369,7 +369,7 @@ bool ISoundComponent::openAudioEncoder()
 
 bool ISoundComponent::write_audio_frame(AVFrame *frame)
 {
-	
+
 	AVPacket pkt;
     int got_output,ret;
     av_init_packet(&pkt);
@@ -400,14 +400,14 @@ bool ISoundComponent::write_audio_frame(AVFrame *frame)
 		printf( "Unknown Error in AUDIO Encoding! But just return true\n");
 	}
 	return true;
-	
+
 }
 
 
 
 void ISoundComponent::cleanupEncoder()
 {
-	
+
 	if(this->audio_codec_context!=0)
 	{
 		avcodec_close(this->audio_codec_context);
@@ -418,7 +418,7 @@ void ISoundComponent::cleanupEncoder()
 		av_freep(&this->audio_codec);
 		this->audio_codec=0;
 	}
-	
+
 }
 
 int ISoundComponent::getRequestedFrameSize() const

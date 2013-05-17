@@ -75,7 +75,7 @@ void DataTunnel::sendConnectionCloseRequest()
 		sendto(this->agentFd,tmpBuf,2,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
 		ReleaseMutex(g_hMutex_send_network); 
 	}
-	
+
 }
 bool DataTunnel::initDataTunnel()
 {
@@ -123,7 +123,7 @@ bool DataTunnel::initDataTunnel()
 		printf("Failed to patch the udp socket\n");
 		return false;
 	}
-	
+
 	this->runFlag=true;
 	return true;
 }
@@ -140,7 +140,7 @@ bool DataTunnel::sendConnectionRequestData()
 	}
 	if(ret==SOCKET_ERROR)
 	{
-		
+
 		printf("Error Happen in sending connection data:%d\n",WSAGetLastError());
 		return false;
 	}
@@ -182,7 +182,7 @@ void DataTunnel::startTunnelLoop()
 	{
 		if(clock()-lastRecvKeepAliveTime>MAXKEEPALIVETIME)
 		{
-			
+
 			stopTunnelLoop();
 			exit(TUNNELBROKENERROR);
 			return;
@@ -195,7 +195,7 @@ void DataTunnel::startTunnelLoop()
 				printf("Error in sending back connection data\n");
 				return ;
 			}
-		
+
 		}
 		else
 		{
@@ -209,8 +209,8 @@ void DataTunnel::startTunnelLoop()
 		FD_SET(agentFd,&fdread);
 		if(select(0,&fdread,0,0,&tv)!=0)
 		{
-				
-				
+
+
 				int size=recvfrom(this->agentFd,buf,10240,0,NULL,NULL);
 				if(size==SOCKET_ERROR)
 				{
@@ -226,7 +226,7 @@ void DataTunnel::startTunnelLoop()
 				}
 				if(serverConnected)
 				{
-					
+
 					if(buf[0]&CONNECTIONCLOSEHEADERTYPE)
 					{
 						stopTunnelLoop();
@@ -268,17 +268,17 @@ void DataTunnel::startTunnelLoop()
 							continue;
 						}*/
 						handleNALPacket(buf,size);
-					
+
 					}
 				}
 
 			}
-		
-	
+
+
 		}
-		
-		
-	
+
+
+
 }
 void DataTunnel::stopTunnelLoop()
 {
@@ -291,7 +291,7 @@ void DataTunnel::handleNALPacket(char *buf, int size)
 			BYTE head1=*(buf+1);
 			BYTE head2=*(buf+2);
 			BYTE type=head1&0x1f;
-			
+
 			if(type==0x1c)
 			{
 				//printf("It's a fu-a nal:%d\n",size-1);
@@ -410,7 +410,7 @@ bool DataTunnel::getVideoData(char **data,int *size)
 void DataTunnel::sendConnectionKeepAlivePacket()
 {
 	//Not reliable way!
-	
+
 	char tmpBuf[1];
 	tmpBuf[0]=CONNECTIONKEEPALIVEHEADERTYPE;
 	if(WaitForSingleObject(this->g_hMutex_send_network,10)==WAIT_OBJECT_0)
@@ -418,5 +418,5 @@ void DataTunnel::sendConnectionKeepAlivePacket()
 		sendto(this->agentFd,tmpBuf,2,0,(const sockaddr*)&this->endpointAddr,sizeof(this->endpointAddr));
 		ReleaseMutex(g_hMutex_send_network); 
 	}
-	
+
 }

@@ -23,7 +23,7 @@ static Controller controller;
 //===============================================
 static void shutdownClient()
 {
-	
+
 	runFlag=false;
 	tunnel.stopTunnelLoop();
 	tunnel.sendConnectionCloseRequest();
@@ -32,7 +32,7 @@ static void shutdownClient()
 	_exit(0);
 	//WSACleanup();
 	//SDL_Quit();
-	
+
 }
 //=========================================================
 static void decodeAudioFromQueue()
@@ -41,7 +41,7 @@ static void decodeAudioFromQueue()
 	int outSize;
 	char *data;
 	int size;
-	
+
 	if(tunnel.isServerConnected()&&tunnel.getAudioData(&data,&size))
 	{
 		if(adecoder.decodeAudioFrame((char *)data,size,&frame,&outSize))
@@ -55,7 +55,7 @@ static void decodeAudioFromQueue()
 		}
 		free(data);
 	}
-	
+
 }
 static void getAudioFromBuffer(void *udata, Uint8 *stream, int len)
 {
@@ -80,7 +80,7 @@ static void initTunnelNetwork()
 {
 	if(!tunnel.initDataTunnel())
 	{
-		
+
 		exit(TUNNELINITERROR);
 	}
 }
@@ -97,8 +97,8 @@ static void initSDL()
         //printf("Could not initialize SDL: %s.\n", SDL_GetError());
        exit(INITAUDIOERROR);
     }
-	
-	
+
+
 	//=============Video Screen=======================
 	screen = SDL_SetVideoMode(outputWidth, outputHeight, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
 	if ( screen == NULL ) {
@@ -123,7 +123,7 @@ static void initSDL()
 	wanted.userdata = NULL; 
 	if(SDL_OpenAudio(&wanted, NULL) < 0) 
 	{  
-		
+
 		exit(INITAUDIOERROR); 
 	}	  
 	SDL_PauseAudio(0);
@@ -134,12 +134,12 @@ static void initDecoder()
 
 	if(!vdecoder.initDecorder())
 	{
-		
+
 		exit(INITDECODERERROR);
 	}
 	if(!adecoder.initDecorder())
 	{
-		
+
 		exit(INITDECODERERROR);
 	}
 
@@ -159,13 +159,13 @@ static void SDL_VideoDisplayThread(void *)
 	while(runFlag)
 	{
 		Sleep(GUISLEEPTIME);
-		
+
 		AVFrame* frame;
 		char *data;
 		int size;
 		if(tunnel.isServerConnected()&&tunnel.getVideoData(&data,&size))
 		{
-			
+
 			if(vdecoder.decodeVideoFrame((char*)data,size,&frame))
 			{
 				WaitForSingleObject(screenLock,INFINITE);
@@ -186,9 +186,9 @@ static void SDL_VideoDisplayThread(void *)
 			}
 			free(data);
 		}
-		
+
 	}
-	
+
 }
 //==========================================
 static void initExternLibrary()
@@ -201,7 +201,7 @@ static void handleArgument()
 {
 	 int c;
 	 int digit_optind = 0;
-	 
+
 	 while (true)
       {
 			int this_option_optind = optind ? optind : 1;
@@ -271,19 +271,19 @@ static void handleArgument()
 
 	if(__argc==5)//Quality And Port Set
 	{
-		
+
 		int remotePort=atoi(__argv[3]);
 		if(remotePort<65534&&remotePort>1024)
 		{
 			tunnel.setEndpointAddr(__argv[2],remotePort);
 		}
-		
+
 	}
 }
 
-
 int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow )
 {
+	
 	handleArgument();
 	initExternLibrary();
 	initSDL();
@@ -323,14 +323,18 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 								isFullScreen=false;
 							}
 							ReleaseMutex(screenLock);
-
 						}
-						//printf("%d%d\n",event.key.keysym.sym,event.key.keysym.mod);
-						controller.sendKeyEvent(event.key.keysym.sym,event.key.keysym.mod);
-				    break;
-
+						else
+						{
+						//LOG4CPLUS_INFO(Logger::getInstance(TEXT("CLIENTLOG")),"%d%d\n",event.key.keysym.sym,event.key.keysym.mod);
+							controller.sendKeyEvent(event.key.keysym.sym,event.key.keysym.mod,PRESSDOWNDIRECTION);
+						}				   
+						break;
+					case SDL_KEYUP:
+						controller.sendKeyEvent(event.key.keysym.sym,0,PRESSUPDIRECTION);
+						break;
 					case SDL_MOUSEMOTION:
-						//printf("Mouse moved by %d,%d to (%d,%d)\n",event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
+						//LOG4CPLUS_INFO(Logger::getInstance(TEXT("CLIENTLOG")),"Mouse moved by %d,%d to (%d,%d)\n",event.motion.xrel, event.motion.yrel,event.motion.x, event.motion.y);
 						controller.sendMouseEvent(event.motion.xrel, event.motion.yrel,0,0);
 					break;
 
@@ -340,7 +344,7 @@ int WINAPI WinMain( HINSTANCE hInst , HINSTANCE hPrev , LPSTR line , int CmdShow
 							SDL_WM_GrabInput(SDL_GRAB_ON);
 							break;
 						}
-						//printf("Mouse button %d pressed at (%d,%d,%d,%d)\n",event.button.button, event.button.x, event.button.y,event.motion.xrel,event.motion.yrel);
+						//LOG4CPLUS_INFO(Logger::getInstance(TEXT("CLIENTLOG")),"Mouse button %d pressed at (%d,%d,%d,%d)\n",event.button.button, event.button.x, event.button.y,event.motion.xrel,event.motion.yrel);
 						controller.sendMouseEvent(0,0,event.button.button,PRESSDOWNDIRECTION);
 						break;
 

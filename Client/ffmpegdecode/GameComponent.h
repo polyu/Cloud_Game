@@ -34,4 +34,4 @@ static void SDL_VideoDisplayThread(void *);
 static void handleArgument();
 //============PUBLIC API===========
 static void shutdownClient();
-
+static void initLogger();

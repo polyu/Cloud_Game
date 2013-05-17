@@ -67,13 +67,13 @@ static void tunnelThread(void *)
 {
 	tunnel.startTunnelLoop();
 	runFlag=false;
-	
+
 }
 static void videoComponentThread(void*)
 {
 	vComponent.startFrameLoop();
 	runFlag=false;
-	
+
 }
 static void audioComponentThread(void*)
 {
@@ -85,19 +85,7 @@ static void controllerThread(void *)
 	controller.startControllerLoop();
 	runFlag=false;
 }
-static void commandThread(void *)
-{
-	char buf;
-	while(runFlag)
-	{
-		scanf("%c",&buf);
-		if(buf=='q')
-		{
-			runFlag=false;
-		}
-		Sleep(50);
-	}
-}
+
 
 static void handleArgument(int argc, char* argv[])
 {
@@ -109,7 +97,7 @@ static void handleArgument(int argc, char* argv[])
 			c = getopt (argc, argv, "q:p:");
 			if (c == -1)
 				break;
-			
+
 			switch (c)
 			{
 				case 'q':
@@ -148,7 +136,7 @@ static void handleArgument(int argc, char* argv[])
 					}
 					break;
 
-				
+
 			}
     }
 
@@ -196,13 +184,13 @@ int main(int argc, char* argv[])
 	_beginthread(audioComponentThread,0,NULL);
 	_beginthread(controllerThread,0,NULL);
 	_beginthread(tunnelThread,0,NULL);
-	_beginthread(commandThread,0,NULL);
+	
 	runFlag=true;
 	while(runFlag)
 	{
 		Sleep(500);
 	}
 	return 0;
-	
-	
+
+
 }

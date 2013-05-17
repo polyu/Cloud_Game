@@ -51,7 +51,7 @@ bool AudioStreamDecoder::decodeAudioFrame(char*indata,int insize,AVFrame **outda
                                                        audioframe->nb_samples,
                                                       this->audio_codec_context->sample_fmt, 1);
 		//printf("OutSize:%d,format:%d\n",*outSize,audioframe->format);
-		
+
 		return true;
 	}
 	else
@@ -73,7 +73,7 @@ bool AudioStreamDecoder::openAudioCodec()
 	this->audio_codec_context = avcodec_alloc_context3(this->audio_codec);
 	this->audio_codec_context->channels=2;
 	this->audio_codec_context->sample_rate=OUTPUTSAMPLERATE;
-				
+
 	if (avcodec_open2(this->audio_codec_context, this->audio_codec,NULL) < 0) 
 	{
         printf( "could not open audio codec\n");
@@ -85,7 +85,7 @@ bool AudioStreamDecoder::openAudioCodec()
 
 bool AudioStreamDecoder::initDecorder()
 {
-	
+
 	if(!this->openAudioCodec())
 	{
 		printf("Can open add video stream@!\n");
@@ -100,5 +100,3 @@ bool AudioStreamDecoder::initDecorder()
 	av_init_packet(&audioavpkt);
 	return true;
 }
-
-

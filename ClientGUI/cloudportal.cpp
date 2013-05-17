@@ -70,6 +70,7 @@ void CloudPortal::replyFinished(QNetworkReply *reply)  //当回复结束后
             int exitcode=proc.exitCode();
             this->show();
             qDebug()<<exitcode;
+            QMessageBox::about(this,"Debug",QString("%1").arg(exitcode));
             if(exitcode==TUNNELBROKENERROR)
             {
                 QMessageBox::warning(this,"Error","Lost connection with server");

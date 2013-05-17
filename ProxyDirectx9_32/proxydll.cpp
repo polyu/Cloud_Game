@@ -53,6 +53,37 @@ IDirect3D9* WINAPI Direct3DCreate9(UINT SDKVersion)
 	return (gl_pmyIDirect3D9);
 }
 
+int WINAPI D3DPERF_EndEvent()
+{
+    if (!gl_hOriginalDll) LoadOriginalDll(); // looking for the "right d3d9.dll"
+    
+    typedef int (WINAPI* D3DPERF_EE)(void);
+    D3DPERF_EE D3DPERF_EndEvent_fn = (D3DPERF_EE) GetProcAddress( gl_hOriginalDll, "D3DPERF_EndEvent");
+
+    return D3DPERF_EndEvent_fn();
+}
+
+ int WINAPI D3DPERF_BeginEvent(D3DCOLOR col, LPCWSTR wszName)
+{
+    if (!gl_hOriginalDll) LoadOriginalDll(); // looking for the "right d3d9.dll"
+    
+    typedef int (WINAPI* D3DPERF_BE)(D3DCOLOR,LPCWSTR);
+    D3DPERF_BE D3DPERF_BeginEvent_fn = (D3DPERF_BE) GetProcAddress( gl_hOriginalDll, "D3DPERF_BeginEvent");
+
+    return D3DPERF_BeginEvent_fn(col, wszName);
+}
+
+void WINAPI D3DPERF_SetMarker(D3DCOLOR col, LPCWSTR wszName)
+{
+    if (!gl_hOriginalDll) LoadOriginalDll(); // looking for the "right d3d9.dll"
+    
+    typedef void (WINAPI* D3DPERF_SM)(D3DCOLOR,LPCWSTR);
+    D3DPERF_SM D3DPERF_SetMarker_fn = (D3DPERF_SM) GetProcAddress( gl_hOriginalDll, "D3DPERF_SetMarker");
+
+    D3DPERF_SetMarker_fn(col, wszName);
+}
+
+
 void InitInstance(HANDLE hModule) 
 {
 	

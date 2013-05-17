@@ -90,7 +90,7 @@ public class NodeManager {
 	}
 	private void onRequestRun(IoSession session,HubMessage message)
 	{
-		
+
 		NodeRunRequestBean b=JSON.parseObject(message.getExtendedData(), NodeRunRequestBean.class);
 		NodeRunResponseBean response=startApplication(b);
 		session.write(generateRunCommandResponseMessage(response));
@@ -128,7 +128,7 @@ public class NodeManager {
 	    	b.setRunningFlag(manager.isNodeRunningApplication());
 	    	if(manager.isNodeRunningApplication())
 	    	{
-	
+
 	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramVersion());
 	    		b.setRunningApplication(manager.getRunningApplicationProgramBean().getProgramName());
 	    		b.setRunningApplicationPath(manager.getRunningApplicationProgramBean().getProgramPath());
@@ -149,7 +149,7 @@ public class NodeManager {
 	{
 		public void run()
 		{
-			
+
 			while(true)
 			{
 				try
@@ -158,7 +158,7 @@ public class NodeManager {
 				}
 				catch(Exception e)
 				{
-					
+
 				}
 				try
 				{
@@ -187,7 +187,7 @@ public class NodeManager {
 	WatchDogThread watchThread=null;
 	private void killAllProcess()
 	{
-		
+
 		killGameProcess();
 		killDeamonProcess();
 		runningFlag=false;
@@ -210,8 +210,8 @@ public class NodeManager {
 	{
 		try
 		{
-			
-			
+
+
 			logger.info("Shutting down deamon by sending quit button");
 			Thread.sleep(10000);
 		}
@@ -224,7 +224,7 @@ public class NodeManager {
 	}
 	public static NodeManager getNodeManager()
 	{
-		
+
 		if(manager==null)
 		{
 			manager=new NodeManager();
@@ -233,8 +233,8 @@ public class NodeManager {
 	}
 	private NodeManager()
 	{
-		
-		
+
+
 	}
 	public ProgramBean getRunningApplicationProgramBean()
 	{
@@ -277,7 +277,7 @@ public class NodeManager {
 			logger.warn("System Busy! Already Running Game");
 			return b;
 		}
-		
+
 		b.setPort(localPort);
 		try
 		{
@@ -334,9 +334,9 @@ public class NodeManager {
 			ProcessBuilder builder=new ProcessBuilder(Config.BASEPATH+Config.DEAMONPATH,"-q "+quality+" -p "+this.localPort);
 			builder.redirectOutput(new File("DeamonLog.txt"));
 			builder.redirectErrorStream(true);
-			
+
 			deamonProcess=builder.start();
-			
+
 			return true;
 		}
 		catch(Exception e)
@@ -344,7 +344,7 @@ public class NodeManager {
 			logger.warn(e.getMessage(),e);
 			return false;
 		}
-		
+
 	}
 	private boolean executeGameApplication(String programId)
 	{
@@ -360,6 +360,7 @@ public class NodeManager {
 			try
 			{
 				ProcessBuilder builder=new ProcessBuilder(runningbean.getProgramPath());
+				builder.directory(new File(runningbean.getProgramPath()).getParentFile());
 				gameProcess=builder.start();
 				return true;
 			}
@@ -370,7 +371,7 @@ public class NodeManager {
 			}
 		}
 	}
-	
+
 	public boolean shutdownApplication()
 	{
 		if(!runningFlag)
@@ -384,7 +385,7 @@ public class NodeManager {
 			return true;
 		}
 	}
-	
+
 	public boolean sendRunningFinishMessage(boolean successful,int errorcode)
 	{
 		NodeMessage msg=new NodeMessage();
@@ -394,8 +395,8 @@ public class NodeManager {
 		nodeNetwork.getNetworkSession().write(msg);
 		return true;
 	}
-	
-	
+
+
 	/*
 	 * UDP HOLE FUNCTION
 	 */
@@ -442,10 +443,10 @@ public class NodeManager {
 		}
     	return null;
 	}*/
-	
+
 	public  boolean searchLocalProgram()
 	{
-		
+
 		try
 		{
 			programMap.clear();
@@ -453,7 +454,7 @@ public class NodeManager {
 			if(infoFile.exists())
 			{
 				SAXBuilder builder=new SAXBuilder();
-				
+
 					Document doc=builder.build(infoFile);
 					Element info=doc.getRootElement();
 					List<Element> games=info.getChildren("program");
@@ -469,8 +470,8 @@ public class NodeManager {
 						programMap.put(b.getProgramID(), b);
 					}
 					return true;
-				
-				
+
+
 			}
 			else
 			{
@@ -478,12 +479,12 @@ public class NodeManager {
 			}
 			return false;
 		}
-		
+
 		catch(Exception e)
 		{
 			logger.warn(e.getMessage(),e);
 			return false;
 		}
 	}
-	
+
 }

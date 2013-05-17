@@ -17,7 +17,7 @@ VideoStreamDecoder::~VideoStreamDecoder()
 	{
 		avcodec_close(video_codec_context);
 		video_codec=0;
-		
+
 	}
 	if(this->video_codec!=0)
 	{
@@ -94,7 +94,7 @@ bool VideoStreamDecoder::openVideoCodec()
 
 bool VideoStreamDecoder::initDecorder()
 {
-	
+
 	if(!this->openVideoCodec())
 	{
 		printf("Can open add video stream@!\n");
@@ -135,7 +135,7 @@ void VideoStreamDecoder::removeSwscale()
 		sws_freeContext(img_convert_ctx);
 		img_convert_ctx=NULL;
 	}
-	
+
 }
 AVFrame *VideoStreamDecoder::alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 {
@@ -144,4 +144,3 @@ AVFrame *VideoStreamDecoder::alloc_picture(enum PixelFormat pix_fmt, int width, 
         av_freep(&picture);
     return picture;
 }
-

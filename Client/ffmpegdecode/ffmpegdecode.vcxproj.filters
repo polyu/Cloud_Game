@@ -21,9 +21,6 @@
     <ClCompile Include="Controller.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="VideoStreamDecoder.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="AudioStreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -34,6 +31,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Server\FFMPEG\getopt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoStreamDecoder.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

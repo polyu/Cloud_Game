@@ -41,13 +41,14 @@ void IController::startControllerLoop()
 			ControlEvent *cevent=(ControlEvent*)dataBuf;
 			if(cevent->type==KEYEVENT)
 			{
-				printf("Got Keyevent %d<-->%d\n",cevent->keyCode1,cevent->keyCode2);
-				this->sendKeyboardEvent(cevent->keyCode1,cevent->keyCode2);
+				printf("Got Keyevent %d %d %d\n",cevent->keyCode1, cevent->keyCode2,cevent->direction);
+				this->replayKeyboardEvent(cevent->keyCode1,cevent->keyCode2,cevent->direction);
 			}
 			else if(cevent->type==MOUSEEVENT)
 			{
-				printf("Got Mouseevent%d<-->%d<-->%d<-->%d\n",cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
-				this->sendMouseEvent(cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
+				printf("Got Mouseevent %d %d %d %d\n",cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
+				
+				this->replayMouseEvent(cevent->relx,cevent->rely,cevent->clickedButton,cevent->direction);
 			}
 			free(dataBuf);
 		}
@@ -56,6 +57,7 @@ void IController::startControllerLoop()
 			Sleep(ANTISPIN);
 		}
 	}
+	cleanPressedKeySet();
 }
 void IController::stopControllerLoop()
 {
@@ -64,27 +66,43 @@ void IController::stopControllerLoop()
 
 
 
-bool IController::sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2)
+bool IController::replayKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2,int direction)
 {
-	printf("Push %d--->%d\n",virtualKeyCode1,virtualKeyCode2);
+	
 	if(virtualKeyCode2!=0)
 	{
 		 keybd_event(virtualKeyCode2,MapVirtualKey(virtualKeyCode2, 0),0,0);
 		 keybd_event(virtualKeyCode1,MapVirtualKey(virtualKeyCode1, 0),0,0);
-		 Sleep(20);
+		 Sleep(10);
 		 keybd_event(virtualKeyCode1,MapVirtualKey(virtualKeyCode1, 0),KEYEVENTF_KEYUP,0);
 		 keybd_event(virtualKeyCode2,MapVirtualKey(virtualKeyCode2, 0),KEYEVENTF_KEYUP,0);
 	}
 	else
 	{
-		keybd_event(virtualKeyCode1,MapVirtualKey(virtualKeyCode1, 0),0,0);
-		Sleep(20);
-		keybd_event(virtualKeyCode1,MapVirtualKey(virtualKeyCode1, 0),KEYEVENTF_KEYUP,0);
+		if(direction==PRESSDOWNDIRECTION)
+		{
+			keybd_event(virtualKeyCode1,MapVirtualKey(virtualKeyCode1, 0),0,0);
+			this->pressedKeySet.insert(virtualKeyCode1);
+		}
+		else
+		{
+			keybd_event(virtualKeyCode1,MapVirtualKey(virtualKeyCode1, 0),KEYEVENTF_KEYUP,0);
+			this->pressedKeySet.erase(virtualKeyCode1);
+		}
 	}
 	return true;
 
 }
-bool IController::sendMouseEvent(int relx,int rely,int button,int direction)
+void IController::cleanPressedKeySet()
+{
+	set<int>::const_iterator b=this->pressedKeySet.begin();
+	for(; b!=this->pressedKeySet.end(); ++b)
+	{
+       keybd_event(*b,MapVirtualKey(*b, 0),KEYEVENTF_KEYUP,0);
+	}
+	this->pressedKeySet.clear();
+}
+bool IController::replayMouseEvent(int relx,int rely,int button,int direction)
 {
 	if(button==0)
 	{

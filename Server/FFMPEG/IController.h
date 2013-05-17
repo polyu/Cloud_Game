@@ -2,6 +2,8 @@
 #include "stdafx.h"
 #include "IDataTunnel.h"
 #include <windows.h>
+#include <set>
+using namespace std;
 #define KEYEVENT 1
 #define MOUSEEVENT 2
 #define PRESSDOWNDIRECTION 0
@@ -26,9 +28,10 @@ public:
 	void stopControllerLoop();
 	void setDataTunnel(IDataTunnel *tunnel);
 private:
-	bool sendKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2);
-	bool sendMouseEvent(int relx,int rely,int button,int updown);
+	bool replayKeyboardEvent(int virtualKeyCode1,int virtualKeyCode2,int direction);
+	bool replayMouseEvent(int relx,int rely,int button,int updown);
 	bool runFlag;
 	IDataTunnel *tunnel;
-	
+	set<int> pressedKeySet;
+	void cleanPressedKeySet();
 };
